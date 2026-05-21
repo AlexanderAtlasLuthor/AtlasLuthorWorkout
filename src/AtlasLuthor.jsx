@@ -448,6 +448,10 @@ export default function AtlasLuthor() {
     weeklyStreak >= 2 ? `${weeklyStreak} Week Streak` : null,
     progressEntries.some(entry => entry.type === "manual") ? "Progress Logged" : null,
   ].filter(Boolean);
+  const restTimerRadius = 44;
+  const restTimerCircumference = 2 * Math.PI * restTimerRadius;
+  const restTimerProgress = restTimer.duration > 0 ? restTimer.secondsLeft / restTimer.duration : 0;
+  const restTimerOffset = restTimerCircumference * (1 - restTimerProgress);
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
     setWorkoutData(prev => ({
@@ -1078,21 +1082,48 @@ export default function AtlasLuthor() {
             {total > 0 && (
               <div style={{ padding: "16px 20px 0" }}>
                 <div className="home-card" style={{ padding: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, marginBottom: 12 }}>
                     <div>
                       <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
                         REST TIMER
                       </p>
-                      <p style={{ fontSize: 26, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
-                        {formatTimer(restTimer.secondsLeft)}
+                      <p style={{ fontSize: 13, color: "#666", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
+                        {restTimer.running ? "Recover, then attack the next set." : "Start after a hard set."}
                       </p>
                     </div>
 
-                    {restTimer.secondsLeft > 0 && (
-                      <button className="edit-btn" onClick={stopRestTimer}>
-                        Stop
-                      </button>
-                    )}
+                    <div style={{ position: "relative", width: 112, height: 112, flexShrink: 0 }}>
+                      <svg viewBox="0 0 112 112" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                        <circle
+                          cx="56"
+                          cy="56"
+                          r={restTimerRadius}
+                          fill="none"
+                          stroke="rgba(255,255,255,0.08)"
+                          strokeWidth="9"
+                        />
+                        <circle
+                          cx="56"
+                          cy="56"
+                          r={restTimerRadius}
+                          fill="none"
+                          stroke={theme.accent}
+                          strokeWidth="9"
+                          strokeLinecap="round"
+                          strokeDasharray={restTimerCircumference}
+                          strokeDashoffset={restTimerOffset}
+                          style={{ transition: "stroke-dashoffset 1s linear, stroke 0.2s ease", filter: `drop-shadow(0 0 10px ${theme.accent}55)` }}
+                        />
+                      </svg>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                        <p style={{ fontSize: 23, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
+                          {formatTimer(restTimer.secondsLeft)}
+                        </p>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#666", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                          {restTimer.running ? "REST" : "READY"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
@@ -1102,6 +1133,12 @@ export default function AtlasLuthor() {
                       </button>
                     ))}
                   </div>
+
+                  {restTimer.secondsLeft > 0 && (
+                    <button className="edit-btn" onClick={stopRestTimer} style={{ width: "100%", marginTop: 10, padding: 10 }}>
+                      Stop Timer
+                    </button>
+                  )}
                 </div>
               </div>
             )}
