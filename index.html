@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="theme-color" content="#0C0C10" />
@@ -10,9 +10,31 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Atlas" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <style>
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+        background: #0C0C10;
+      }
+
+      body {
+        min-height: 100vh;
+        color: #FFFFFF;
+        overscroll-behavior-y: none;
+      }
+
+      @supports (min-height: 100dvh) {
+        body,
+        #root {
+          min-height: 100dvh;
+        }
+      }
+    </style>
     <title>Atlas Luthor Workout</title>
   </head>
-  <body>
+  <body style="background: #0C0C10;">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

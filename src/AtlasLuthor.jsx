@@ -449,7 +449,7 @@ export default function AtlasLuthor() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0C0C10", color: "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100dvh", background: "#0C0C10", color: "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
