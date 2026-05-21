@@ -128,6 +128,7 @@ const STORAGE_KEYS = {
   cloudSettings: "atlas-luthor-cloud-settings",
   notificationSettings: "atlas-luthor-notification-settings",
   setProgress: "atlas-luthor-set-progress",
+  appSettings: "atlas-luthor-app-settings",
 };
 
 const DEFAULT_PROFILE = {
@@ -162,6 +163,12 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   lastRestNotice: "",
 };
 
+const DEFAULT_APP_SETTINGS = {
+  name: "Atlas",
+  language: "en",
+  themeMode: "auto",
+};
+
 const WEIGHT_OPTIONS = Array.from({ length: 61 }, (_, index) => `${index * 5} lb`);
 const BODY_WEIGHT_OPTIONS = Array.from({ length: 121 }, (_, index) => String(120 + index));
 const HEIGHT_OPTIONS = ["5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"", "5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "5'11\"", "6'0\"", "6'1\"", "6'2\"", "6'3\"", "6'4\""];
@@ -173,6 +180,67 @@ const PROGRESS_GOAL_OPTIONS = ["70", "75", "80", "85", "90", "95", "100"];
 const SESSION_GOAL_OPTIONS = ["3", "4", "5", "6", "7", "8", "9", "10", "11"];
 const CARDIO_OPTIONS = ["", "10 min", "15 min", "20 min", "Run 1 mile", "Stairs Level 5", "Row Machine 15 min"];
 const SOUND_OPTIONS = ["silent", "chime", "pulse", "bell"];
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+];
+const THEME_MODE_OPTIONS = [
+  { value: "auto", label: "Auto" },
+  { value: "dark", label: "Dark" },
+  { value: "light", label: "Light" },
+];
+const UI_TEXT = {
+  en: {
+    goodMorning: "Good morning",
+    goodNight: "Good night",
+    todayCommand: "Today Command",
+    bodyStatus: "Body Status",
+    atlasScore: "Atlas Score",
+    monthCalendar: "Month Calendar",
+    prTracker: "PR Tracker",
+    fatigueDeload: "Fatigue / Deload",
+    myGoals: "My Goals",
+    progressMemory: "Progress Memory",
+    streakBadges: "Streak / Badges",
+    progressPhotos: "Progress Photos",
+    weeklyMetrics: "Weekly Metrics",
+    weekPlan: "Week Plan",
+    settings: "Settings",
+    reminders: "Reminders",
+    pages: "Pages",
+    profileName: "Profile name",
+    language: "Language",
+    theme: "Theme",
+    lightStarts: "Auto: light from 00:00, dark from 18:00.",
+    openFullPhotos: "Open photo page",
+    noPhotos: "No progress photos yet.",
+  },
+  es: {
+    goodMorning: "Buenos días",
+    goodNight: "Buenas noches",
+    todayCommand: "Comando de Hoy",
+    bodyStatus: "Estado Corporal",
+    atlasScore: "Puntaje Atlas",
+    monthCalendar: "Calendario Mensual",
+    prTracker: "Récords Personales",
+    fatigueDeload: "Fatiga / Deload",
+    myGoals: "Mis Metas",
+    progressMemory: "Memoria de Progreso",
+    streakBadges: "Racha / Insignias",
+    progressPhotos: "Fotos de Progreso",
+    weeklyMetrics: "Métricas Semanales",
+    weekPlan: "Plan Semanal",
+    settings: "Configuración",
+    reminders: "Recordatorios",
+    pages: "Páginas",
+    profileName: "Nombre del perfil",
+    language: "Idioma",
+    theme: "Tema",
+    lightStarts: "Auto: claro desde 00:00, oscuro desde 18:00.",
+    openFullPhotos: "Abrir página de fotos",
+    noPhotos: "Aún no hay fotos de progreso.",
+  },
+};
 
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
@@ -250,6 +318,14 @@ function getMonthKey(date = new Date()) {
 function getDayNameFromDate(date) {
   const map = ["Domingo", "Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes", "SÃ¡bado"];
   return map[date.getDay()];
+}
+
+function getAutoTheme(hour = new Date().getHours()) {
+  return hour >= 18 ? "dark" : "light";
+}
+
+function getGreetingKey(hour = new Date().getHours()) {
+  return hour < 12 ? "goodMorning" : "goodNight";
 }
 
 function getMonthDays(monthKey) {
@@ -331,6 +407,10 @@ export default function AtlasLuthor() {
   const [calendarLog, setCalendarLog] = useState(() => safeLoad(STORAGE_KEYS.calendarLog, {}));
   const [progressPhotos, setProgressPhotos] = useState(() => safeLoad(STORAGE_KEYS.progressPhotos, []));
   const [cloudSettings, setCloudSettings] = useState(() => safeLoad(STORAGE_KEYS.cloudSettings, DEFAULT_CLOUD_SETTINGS));
+  const [appSettings, setAppSettings] = useState(() => ({
+    ...DEFAULT_APP_SETTINGS,
+    ...safeLoad(STORAGE_KEYS.appSettings, DEFAULT_APP_SETTINGS),
+  }));
   const [notificationSettings, setNotificationSettings] = useState(() => {
     const saved = safeLoad(STORAGE_KEYS.notificationSettings, DEFAULT_NOTIFICATION_SETTINGS);
 
@@ -357,6 +437,7 @@ export default function AtlasLuthor() {
   const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "" });
   const [reminderDraft, setReminderDraft] = useState({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
+  const [clockNow, setClockNow] = useState(() => new Date());
   const notifiedTimersRef = useRef(new Set());
 
   const day = workoutData[activeDay];
@@ -404,12 +485,22 @@ export default function AtlasLuthor() {
   }, [cloudSettings]);
 
   useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.appSettings, JSON.stringify(appSettings));
+  }, [appSettings]);
+
+  useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.notificationSettings, JSON.stringify(notificationSettings));
   }, [notificationSettings]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.setProgress, JSON.stringify(setProgress));
   }, [setProgress]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setClockNow(new Date()), 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     if (!restTimer.running || !restTimer.endsAt) return undefined;
@@ -788,19 +879,25 @@ export default function AtlasLuthor() {
   const quickSetsDone = Number(setProgress[quickExerciseKey] || 0);
   const quickTotalSets = Number(quickExercise?.sets || 0);
   const quickSetsLeft = Math.max(quickTotalSets - quickSetsDone, 0);
+  const language = appSettings.language === "es" ? "es" : "en";
+  const text = UI_TEXT[language];
+  const activeThemeMode = appSettings.themeMode === "auto" ? getAutoTheme(clockNow.getHours()) : appSettings.themeMode;
+  const isLightMode = activeThemeMode === "light";
+  const greeting = text[getGreetingKey(clockNow.getHours())];
+  const userName = appSettings.name?.trim() || "Atlas";
   const featurePages = [
-    { id: "today", title: "Today Command", label: "Today", accent: TYPE_THEME[weeklyMetrics.todayType].accent },
-    { id: "body", title: "Body Status", label: "Body", accent: "#FFFFFF" },
-    { id: "score", title: "Atlas Score", label: "Score", accent: "#FFFFFF" },
-    { id: "calendar", title: "Month Calendar", label: "Calendar", accent: "#90C8FF" },
-    { id: "prs", title: "PR Tracker", label: "PRs", accent: "#FFD060" },
-    { id: "fatigue", title: "Fatigue / Deload", label: "Fatigue", accent: deloadWarning ? "#FFD060" : "#FFFFFF" },
-    { id: "goals", title: "My Goals", label: "Goals", accent: "#FFFFFF" },
-    { id: "progress", title: "Progress Memory", label: "Progress", accent: "#90C8FF" },
-    { id: "badges", title: "Streak / Badges", label: "Badges", accent: "#B8A0FF" },
-    { id: "photos", title: "Progress Photos", label: "Photos", accent: "#FFFFFF" },
-    { id: "metrics", title: "Weekly Metrics", label: "Metrics", accent: "#FFFFFF" },
-    { id: "week", title: "Week Plan", label: "Week", accent: "#FFFFFF" },
+    { id: "today", title: text.todayCommand, label: "Today", accent: TYPE_THEME[weeklyMetrics.todayType].accent },
+    { id: "body", title: text.bodyStatus, label: "Body", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "score", title: text.atlasScore, label: "Score", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "calendar", title: text.monthCalendar, label: "Calendar", accent: "#90C8FF" },
+    { id: "prs", title: text.prTracker, label: "PRs", accent: "#FFD060" },
+    { id: "fatigue", title: text.fatigueDeload, label: "Fatigue", accent: deloadWarning ? "#FFD060" : isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "goals", title: text.myGoals, label: "Goals", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "progress", title: text.progressMemory, label: "Progress", accent: "#90C8FF" },
+    { id: "badges", title: text.streakBadges, label: "Badges", accent: "#B8A0FF" },
+    { id: "photos", title: text.progressPhotos, label: "Photos", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "metrics", title: text.weeklyMetrics, label: "Metrics", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "week", title: text.weekPlan, label: "Week", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
   ];
   const activeFeature = featurePages.find(page => page.id === activeFeaturePage) || featurePages[0];
   const weeklySetProgress = days.reduce((sum, dayName) => (
@@ -813,6 +910,77 @@ export default function AtlasLuthor() {
   ), 0);
   const totalPhotoCount = progressPhotos.length;
   const latestPhoto = progressPhotos[0];
+  const remainingExercises = Math.max(weeklyMetrics.totalExercises - weeklyMetrics.completedExercises, 0);
+  const setCompletionPct = weeklyMetrics.totalSets > 0 ? Math.round((weeklySetProgress / weeklyMetrics.totalSets) * 100) : 0;
+  const allExerciseRows = days.flatMap(dayName =>
+    workoutData[dayName].sessions.flatMap((currentSession, sessionIndex) =>
+      currentSession.exercises.map((exercise, exerciseIndex) => {
+        const key = getExerciseKey(dayName, sessionIndex, exerciseIndex);
+        const setsDone = Number(setProgress[key] || 0);
+        const setsTotal = Number(exercise.sets || 0);
+
+        return {
+          key,
+          dayName,
+          sessionName: currentSession.name,
+          exercise,
+          checked: !!checked[key],
+          setsDone,
+          setsTotal,
+          setsLeft: Math.max(setsTotal - setsDone, 0),
+          note: exerciseNotes[key],
+        };
+      })
+    )
+  );
+  const incompleteExerciseRows = allExerciseRows.filter(row => !row.checked).slice(0, 8);
+  const heaviestExerciseRows = [...allExerciseRows]
+    .map(row => ({ ...row, weightNumber: toNumber(row.exercise.weight) }))
+    .sort((a, b) => b.weightNumber - a.weightNumber)
+    .slice(0, 8);
+  const noteRows = allExerciseRows.filter(row => row.note && (row.note.pain || row.note.difficulty || row.note.pr || row.note.technique));
+  const calendarStatusCounts = calendarCells.filter(Boolean).reduce(
+    (counts, cell) => {
+      const logged = calendarLog[cell.key];
+      const isPast = cell.key < getDateKey();
+      const status = logged?.status || (isPast ? "missed" : "planned");
+      return { ...counts, [status]: (counts[status] || 0) + 1 };
+    },
+    { completed: 0, trained: 0, missed: 0, rest: 0, planned: 0 }
+  );
+  const dayBreakdowns = days.map(dayName => {
+    const currentDay = workoutData[dayName];
+    const totalDayExercises = currentDay.sessions.reduce((sum, currentSession) => sum + currentSession.exercises.length, 0);
+    const totalDaySets = currentDay.sessions.reduce(
+      (sum, currentSession) => sum + currentSession.exercises.reduce((setSum, exercise) => setSum + Number(exercise.sets || 0), 0),
+      0
+    );
+    const doneDayExercises = currentDay.sessions.reduce(
+      (sum, currentSession, sessionIndex) =>
+        sum + currentSession.exercises.filter((_, exerciseIndex) => checked[getExerciseKey(dayName, sessionIndex, exerciseIndex)]).length,
+      0
+    );
+    const doneDaySets = currentDay.sessions.reduce(
+      (sum, currentSession, sessionIndex) =>
+        sum + currentSession.exercises.reduce((setSum, exercise, exerciseIndex) => {
+          const key = getExerciseKey(dayName, sessionIndex, exerciseIndex);
+          return setSum + Math.min(Number(setProgress[key] || 0), Number(exercise.sets || 0));
+        }, 0),
+      0
+    );
+
+    return {
+      dayName,
+      type: currentDay.type,
+      label: currentDay.label,
+      sessions: currentDay.sessions,
+      totalDayExercises,
+      totalDaySets,
+      doneDayExercises,
+      doneDaySets,
+      progressPct: totalDayExercises > 0 ? Math.round((doneDayExercises / totalDayExercises) * 100) : 0,
+    };
+  });
 
   const openFeaturePage = id => {
     setActiveFeaturePage(id);
@@ -924,6 +1092,7 @@ export default function AtlasLuthor() {
         calendarLog,
         progressPhotos,
         cloudSettings,
+        appSettings,
         notificationSettings,
         setProgress,
         lastProgressionReview,
@@ -960,6 +1129,7 @@ export default function AtlasLuthor() {
         if (data.calendarLog) setCalendarLog(data.calendarLog);
         if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
         if (data.cloudSettings) setCloudSettings(data.cloudSettings);
+        if (data.appSettings) setAppSettings({ ...DEFAULT_APP_SETTINGS, ...data.appSettings });
         if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
         if (data.setProgress) setSetProgress(data.setProgress);
         if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
@@ -992,6 +1162,7 @@ export default function AtlasLuthor() {
         exerciseNotes,
         calendarLog,
         progressPhotos,
+        appSettings,
         notificationSettings,
         setProgress,
         lastProgressionReview,
@@ -1030,6 +1201,7 @@ export default function AtlasLuthor() {
       if (data.exerciseNotes) setExerciseNotes(data.exerciseNotes);
       if (data.calendarLog) setCalendarLog(data.calendarLog);
       if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
+      if (data.appSettings) setAppSettings({ ...DEFAULT_APP_SETTINGS, ...data.appSettings });
       if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
       if (data.setProgress) setSetProgress(data.setProgress);
       if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
@@ -1277,7 +1449,7 @@ export default function AtlasLuthor() {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#0C0C10", color: "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate" }}>
+    <div className={`app-root ${isLightMode ? "light-mode" : "dark-mode"}`} style={{ minHeight: "100dvh", background: isLightMode ? "#F3F4F6" : "#0C0C10", color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1366,6 +1538,62 @@ export default function AtlasLuthor() {
         .detail-row-main { color: #FFFFFF; font-size: 14px; font-weight: 900; min-width: 0; overflow-wrap: anywhere; }
         .detail-row-sub { color: #777; font-size: 12px; line-height: 1.35; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
 
+        .light-mode .ambient-bg { background: #F3F4F6; }
+        .light-mode .ambient-bg::before {
+          background: conic-gradient(from 145deg at 50% 50%, #F5F6F8 0deg, rgba(255,255,255,0.96) 66deg, rgba(176,186,202,0.38) 126deg, #EEF0F4 186deg, rgba(168,188,214,0.34) 252deg, rgba(255,255,255,0.82) 320deg, #F5F6F8 360deg);
+          opacity: 0.88;
+        }
+        .light-mode .ambient-bg::after {
+          background:
+            linear-gradient(120deg, transparent 0%, rgba(12,12,16,0.045) 22%, transparent 39%, rgba(88,153,204,0.08) 58%, transparent 78%),
+            linear-gradient(235deg, rgba(255,255,255,0.45), transparent 34%, rgba(12,12,16,0.035) 72%, transparent);
+        }
+        .light-mode .app-header,
+        .light-mode .home-card,
+        .light-mode .stat-box,
+        .light-mode .session-tab,
+        .light-mode .ex-card,
+        .light-mode .feature-hero,
+        .light-mode .detail-card,
+        .light-mode .detail-row,
+        .light-mode .setting-row,
+        .light-mode .modal {
+          background: rgba(255,255,255,0.82) !important;
+          border-color: rgba(15,18,26,0.12) !important;
+          box-shadow: 0 16px 44px rgba(20,24,36,0.08);
+        }
+        .light-mode .dark-btn,
+        .light-mode .edit-btn,
+        .light-mode .input,
+        .light-mode .menu-button {
+          background: rgba(255,255,255,0.78) !important;
+          border-color: rgba(15,18,26,0.14) !important;
+          color: #101015 !important;
+        }
+        .light-mode .primary-btn {
+          background: #101015 !important;
+          color: #FFFFFF !important;
+        }
+        .light-mode p,
+        .light-mode h1,
+        .light-mode h2,
+        .light-mode h3,
+        .light-mode span,
+        .light-mode .detail-value,
+        .light-mode .detail-row-main,
+        .light-mode .setting-title {
+          color: #101015 !important;
+        }
+        .light-mode .detail-label,
+        .light-mode .detail-row-sub,
+        .light-mode .setting-sub,
+        .light-mode .photo-meta {
+          color: #5A6270 !important;
+        }
+        .light-mode .menu-button span {
+          background: #101015;
+        }
+
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 20; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
         .modal { width: 100%; max-width: 520px; max-height: 82vh; overflow: auto; background: #101015; border: 1.5px solid #2A2A34; border-radius: 22px; padding: 18px; box-shadow: 0 20px 80px rgba(0,0,0,0.4); }
 
@@ -1423,6 +1651,20 @@ export default function AtlasLuthor() {
 
         {screen === "home" && (
           <div className="fade-up" style={{ padding: "20px" }}>
+            <div className="feature-hero" style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace" }}>
+                {activeThemeMode.toUpperCase()} MODE
+              </p>
+              <h2 className="feature-title">
+                {greeting}, {userName}
+              </h2>
+              <p className="feature-copy">
+                {language === "es"
+                  ? `Hoy es ${weeklyMetrics.today}. Tu protocolo ${weeklyMetrics.todayType} está listo con ${weeklyMetrics.weeklyProgress}% de progreso semanal.`
+                  : `Today is ${weeklyMetrics.today}. Your ${weeklyMetrics.todayType} protocol is ready with ${weeklyMetrics.weeklyProgress}% weekly progress.`}
+              </p>
+            </div>
+
             <div className="home-card" style={{ marginBottom: 14, borderColor: "#2A2A34" }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
                 TODAY - {weeklyMetrics.todayLabel} / {weeklyMetrics.todayType}
@@ -1708,8 +1950,34 @@ export default function AtlasLuthor() {
 
             <div className="home-card" style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                PROGRESS PHOTOS
+                {text.progressPhotos.toUpperCase()}
               </p>
+              <div style={{ display: "grid", gridTemplateColumns: latestPhoto ? "1.15fr 0.85fr" : "1fr", gap: 12, alignItems: "stretch", marginBottom: 12 }}>
+                {latestPhoto ? (
+                  <img
+                    src={latestPhoto.dataUrl}
+                    alt={latestPhoto.note || "Latest progress"}
+                    style={{ width: "100%", minHeight: 170, maxHeight: 230, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }}
+                  />
+                ) : (
+                  <div style={{ minHeight: 150, borderRadius: 12, border: "1px dashed #343442", display: "flex", alignItems: "center", justifyContent: "center", color: "#777", fontFamily: "'DM Sans', sans-serif", fontWeight: 800, padding: 12, textAlign: "center" }}>
+                    {text.noPhotos}
+                  </div>
+                )}
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div className="detail-card">
+                    <p className="detail-label">TOTAL</p>
+                    <p className="detail-value">{totalPhotoCount}</p>
+                  </div>
+                  <div className="detail-card">
+                    <p className="detail-label">LATEST</p>
+                    <p className="detail-value">{latestPhoto?.date || "--"}</p>
+                  </div>
+                  <button className="dark-btn" onClick={() => openFeaturePage("photos")}>
+                    {text.openFullPhotos}
+                  </button>
+                </div>
+              </div>
               <div style={{ display: "grid", gap: 10 }}>
                 <input
                   className="input"
@@ -1884,6 +2152,20 @@ export default function AtlasLuthor() {
                   <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true })}>Quick Mode</button>
                   <button className="dark-btn" onClick={resetWeek}>Reset Week</button>
                 </div>
+                <div className="home-card">
+                  <p className="detail-label">NEXT PRIORITIES</p>
+                  <div className="detail-list">
+                    {(incompleteExerciseRows.length ? incompleteExerciseRows : [{ key: "done", exercise: { name: "All exercises completed", weight: "" }, dayName: weeklyMetrics.today, sessionName: "Protocol", setsDone: 0, setsTotal: 0, setsLeft: 0 }]).slice(0, 4).map(row => (
+                      <div key={`${row.key}-today-priority`} className="detail-row">
+                        <div>
+                          <p className="detail-row-main">{row.exercise.name}</p>
+                          <p className="detail-row-sub">{row.dayName} - {row.sessionName} - {row.setsDone}/{row.setsTotal} sets</p>
+                        </div>
+                        <span style={{ color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1907,6 +2189,40 @@ export default function AtlasLuthor() {
                 <button className="primary-btn" onClick={() => setEditingProfile({ ...profile })}>
                   EDIT BODY STATUS
                 </button>
+                <div className="home-card">
+                  <p className="detail-label">BODY TREND</p>
+                  <p className="detail-row-main">
+                    {weightChange === 0 ? "Stable since start" : weightChange > 0 ? "Up from starting weight" : "Down from starting weight"}
+                  </p>
+                  <p className="detail-row-sub">
+                    Start date {profile.startDate}. Target date {goals.targetDate}. Current gap to target is {signedNumber(weightToGoal)} LB.
+                  </p>
+                </div>
+                <div className="detail-list">
+                  {progressEntries.slice(0, 5).map(entry => (
+                    <div key={`${entry.id}-body-row`} className="detail-row">
+                      <div>
+                        <p className="detail-row-main">{entry.date}</p>
+                        <p className="detail-row-sub">{entry.type === "manual" ? "Manual body check" : "Auto progress capture"}</p>
+                      </div>
+                      <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} LB</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="home-card">
+                  <p className="detail-label">DAY BY DAY</p>
+                  <div className="detail-list">
+                    {dayBreakdowns.map(row => (
+                      <div key={`${row.dayName}-metric-detail`} className="detail-row">
+                        <div>
+                          <p className="detail-row-main">{row.label} - {row.dayName}</p>
+                          <p className="detail-row-sub">{row.doneDayExercises}/{row.totalDayExercises} exercises - {row.doneDaySets}/{row.totalDaySets} sets</p>
+                        </div>
+                        <span style={{ color: TYPE_THEME[row.type].accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.progressPct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1923,6 +2239,15 @@ export default function AtlasLuthor() {
                   <div className="detail-card"><p className="detail-label">PRS</p><p className="detail-value">{prEntries.length}</p></div>
                   <div className="detail-card"><p className="detail-label">AVG RPE</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
                   <div className="detail-card"><p className="detail-label">DELOAD</p><p className="detail-value">{deloadWarning ? "-10" : "+5"}</p></div>
+                </div>
+                <div className="home-card">
+                  <p className="detail-label">SCORE BREAKDOWN</p>
+                  <div className="detail-list">
+                    <div className="detail-row"><p className="detail-row-main">Weekly completion</p><span>{Math.round(weeklyMetrics.weeklyProgress * 0.45)} pts</span></div>
+                    <div className="detail-row"><p className="detail-row-main">Session target</p><span>{Math.round(Math.min(weeklyMetrics.completedSessions / weeklySessionsGoal, 1) * 25)} pts</span></div>
+                    <div className="detail-row"><p className="detail-row-main">Streak pressure</p><span>{Math.min(weeklyStreak, 4) * 5} pts</span></div>
+                    <div className="detail-row"><p className="detail-row-main">PR momentum</p><span>{prEntries.length * 3} pts</span></div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1948,6 +2273,14 @@ export default function AtlasLuthor() {
                     })}
                   </div>
                 </div>
+                <div className="detail-grid">
+                  {Object.entries(calendarStatusCounts).map(([status, count]) => (
+                    <div key={status} className="detail-card">
+                      <p className="detail-label">{status.toUpperCase()}</p>
+                      <p className="detail-value">{count}</p>
+                    </div>
+                  ))}
+                </div>
                 {calendarCells.filter(Boolean).slice(-10).map(cell => {
                   const logged = calendarLog[cell.key];
                   const isPast = cell.key < getDateKey();
@@ -1967,6 +2300,10 @@ export default function AtlasLuthor() {
 
             {activeFeaturePage === "prs" && (
               <div className="detail-list">
+                <div className="detail-grid">
+                  <div className="detail-card"><p className="detail-label">TOTAL PRS</p><p className="detail-value">{prEntries.length}</p></div>
+                  <div className="detail-card"><p className="detail-label">HEAVIEST</p><p className="detail-value">{heaviestExerciseRows[0]?.exercise.weight || "--"}</p></div>
+                </div>
                 {(prEntries.length ? prEntries : [{ key: "empty-pr", exerciseName: "No PRs marked yet", sessionName: "Open Notes on an exercise and mark PR", weight: "", date: "" }]).map(entry => (
                   <div key={entry.key} className="detail-row">
                     <div>
@@ -1976,6 +2313,20 @@ export default function AtlasLuthor() {
                     <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} {entry.date}</span>
                   </div>
                 ))}
+                <div className="home-card">
+                  <p className="detail-label">HEAVIEST PROGRAMMED LOADS</p>
+                  <div className="detail-list">
+                    {heaviestExerciseRows.slice(0, 5).map(row => (
+                      <div key={`${row.key}-heavy`} className="detail-row">
+                        <div>
+                          <p className="detail-row-main">{row.exercise.name}</p>
+                          <p className="detail-row-sub">{row.dayName} - {row.sessionName}</p>
+                        </div>
+                        <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1990,6 +2341,20 @@ export default function AtlasLuthor() {
                 <div className="home-card" style={{ borderColor: deloadWarning ? "#FFD06066" : "rgba(255,255,255,0.075)" }}>
                   <p className="detail-row-main">{deloadWarning ? "Lower load, reduce intensity, or add recovery." : "No fatigue warning from the current notes."}</p>
                   <p className="detail-row-sub">Pain marked Sharp/Stop or RPE 9-10 raises the warning signal.</p>
+                </div>
+                <div className="home-card">
+                  <p className="detail-label">RECENT NOTE SIGNALS</p>
+                  <div className="detail-list">
+                    {(noteRows.length ? noteRows : [{ key: "empty-note", exercise: { name: "No exercise notes yet" }, dayName: "Notes", sessionName: "Add pain/RPE from any exercise", note: {} }]).slice(0, 6).map(row => (
+                      <div key={`${row.key}-fatigue-note`} className="detail-row">
+                        <div>
+                          <p className="detail-row-main">{row.exercise.name}</p>
+                          <p className="detail-row-sub">{row.dayName} - {row.sessionName} - Pain {row.note?.pain || "N/A"} - RPE {row.note?.difficulty || "N/A"}</p>
+                        </div>
+                        <span style={{ color: row.note?.pr ? "#FFD060" : "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.note?.pr ? "PR" : "NOTE"}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -2011,6 +2376,10 @@ export default function AtlasLuthor() {
                   </div>
                 ))}
                 <button className="primary-btn" onClick={() => setEditingGoals({ ...goals })}>SET MY GOALS</button>
+                <div className="detail-grid">
+                  <div className="detail-card"><p className="detail-label">REMAINING EXERCISES</p><p className="detail-value">{remainingExercises}</p></div>
+                  <div className="detail-card"><p className="detail-label">SET COMPLETION</p><p className="detail-value">{setCompletionPct}%</p></div>
+                </div>
               </div>
             )}
 
@@ -2616,10 +2985,36 @@ export default function AtlasLuthor() {
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              SETTINGS
+              {text.settings.toUpperCase()}
             </p>
 
             <div className="settings-grid">
+              <input
+                className="input"
+                value={appSettings.name}
+                onChange={event => setAppSettings(prev => ({ ...prev, name: event.target.value }))}
+                placeholder={text.profileName}
+              />
+              <select
+                className="input"
+                value={appSettings.language}
+                onChange={event => setAppSettings(prev => ({ ...prev, language: event.target.value }))}
+              >
+                {LANGUAGE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <select
+                className="input"
+                value={appSettings.themeMode}
+                onChange={event => setAppSettings(prev => ({ ...prev, themeMode: event.target.value }))}
+              >
+                {THEME_MODE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <p className="setting-sub">{text.lightStarts}</p>
+
               <div className="setting-row">
                 <div>
                   <p className="setting-title">Notifications</p>
