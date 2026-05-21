@@ -130,23 +130,29 @@ function getCalendarVisual(status, isLight) {
 const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 const STORAGE_KEYS = {
-  workout: "atlas-luthor-workout-data",
-  checked: "atlas-luthor-checked",
-  lastProgression: "atlas-luthor-last-progression-review",
-  profile: "atlas-luthor-profile",
-  goals: "atlas-luthor-goals",
-  progressLog: "atlas-luthor-progress-log",
-  exerciseNotes: "atlas-luthor-exercise-notes",
-  calendarLog: "atlas-luthor-calendar-log",
-  progressPhotos: "atlas-luthor-progress-photos",
-  photoAlbums: "atlas-luthor-photo-albums",
-  cloudSettings: "atlas-luthor-cloud-settings",
-  notificationSettings: "atlas-luthor-notification-settings",
-  setProgress: "atlas-luthor-set-progress",
-  appSettings: "atlas-luthor-app-settings",
   users: "atlas-luthor-users",
   activeUser: "atlas-luthor-active-user",
+  dataPrefix: "atlas-luthor-data:",
 };
+
+// Legacy global keys from the pre-multi-user layout. They are not per-account,
+// so they are migrated away from and removed to prevent cross-account bleed.
+const LEGACY_STORAGE_KEYS = [
+  "atlas-luthor-workout-data",
+  "atlas-luthor-checked",
+  "atlas-luthor-last-progression-review",
+  "atlas-luthor-profile",
+  "atlas-luthor-goals",
+  "atlas-luthor-progress-log",
+  "atlas-luthor-exercise-notes",
+  "atlas-luthor-calendar-log",
+  "atlas-luthor-progress-photos",
+  "atlas-luthor-photo-albums",
+  "atlas-luthor-cloud-settings",
+  "atlas-luthor-notification-settings",
+  "atlas-luthor-set-progress",
+  "atlas-luthor-app-settings",
+];
 
 const DEFAULT_PROFILE = {
   currentWeight: "197",
@@ -199,6 +205,40 @@ function withNameParts(settings) {
   }
 
   return next;
+}
+
+// Reduces an account record to auth/metadata only. Drops legacy plaintext
+// passwords and the duplicated data blob older versions stored here.
+function cleanRegistryEntry(entry) {
+  return {
+    id: entry.id || entry.userId,
+    userId: entry.userId || entry.id,
+    name: entry.name || "",
+    createdAt: entry.createdAt || new Date().toISOString(),
+    passwordSalt: entry.passwordSalt || "",
+    passwordHash: entry.passwordHash || "",
+  };
+}
+
+// A complete, account-scoped data bundle. Used for new accounts and to wipe
+// the in-memory state on logout so one account never shows another's data.
+function defaultUserData() {
+  return {
+    workoutData: cloneData(baseWorkoutData),
+    checked: {},
+    lastProgressionReview: null,
+    profile: cloneData(DEFAULT_PROFILE),
+    goals: cloneData(DEFAULT_GOALS),
+    progressLog: [],
+    exerciseNotes: {},
+    calendarLog: {},
+    progressPhotos: [],
+    photoAlbums: [],
+    cloudSettings: cloneData(DEFAULT_CLOUD_SETTINGS),
+    notificationSettings: cloneData(DEFAULT_NOTIFICATION_SETTINGS),
+    setProgress: {},
+    appSettings: withNameParts(DEFAULT_APP_SETTINGS),
+  };
 }
 
 const DEFAULT_SIGNUP = {
@@ -334,6 +374,107 @@ function safeLoad(key, fallback) {
   }
 }
 
+// Writes JSON to localStorage and reports success so the UI can warn the
+// user instead of silently losing data when the quota is exceeded.
+function safeSave(key, value) {
+  if (typeof window === "undefined") return true;
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function safeRemove(key) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Ignore storage errors when clearing legacy keys.
+  }
+}
+
+function makeSalt() {
+  const bytes = new Uint8Array(16);
+
+  if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+// Hashes a password with its salt. Uses SHA-256 when the secure crypto API is
+// available and falls back to a lightweight hash so login never crashes.
+async function hashPassword(password, salt) {
+  const text = `${salt}:${password}`;
+
+  try {
+    if (typeof window !== "undefined" && window.crypto?.subtle) {
+      const encoded = new TextEncoder().encode(text);
+      const digest = await window.crypto.subtle.digest("SHA-256", encoded);
+      return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+    }
+  } catch {
+    // Fall through to the lightweight hash below.
+  }
+
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `fnv${(hash >>> 0).toString(16)}`;
+}
+
+// Resizes and re-encodes an image so photos stay small enough for localStorage.
+function compressImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error("read-failed"));
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onerror = () => reject(new Error("decode-failed"));
+      image.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+          resolve(String(reader.result));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, width, height);
+
+        try {
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        } catch {
+          resolve(String(reader.result));
+        }
+      };
+
+      image.src = String(reader.result);
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
 function addFiveToWeight(weight) {
   if (!weight || typeof weight !== "string") return weight;
   return weight.replace(/\d+/g, number => String(Number(number) + 5));
@@ -393,7 +534,7 @@ function getMonthKey(date = new Date()) {
 }
 
 function getDayNameFromDate(date) {
-  const map = ["Domingo", "Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes", "SÃ¡bado"];
+  const map = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
   return map[date.getDay()];
 }
 
@@ -506,32 +647,23 @@ export default function AtlasLuthor() {
   const [authError, setAuthError] = useState("");
   const [activeDay, setActiveDay] = useState(getTodayDayName());
   const [activeSession, setActiveSession] = useState(0);
-  const [checked, setChecked] = useState(() => safeLoad(STORAGE_KEYS.checked, {}));
-  const [workoutData, setWorkoutData] = useState(() => safeLoad(STORAGE_KEYS.workout, baseWorkoutData));
+  const [checked, setChecked] = useState({});
+  const [workoutData, setWorkoutData] = useState(() => cloneData(baseWorkoutData));
   const [editingExercise, setEditingExercise] = useState(null);
   const [editingCardio, setEditingCardio] = useState(null);
-  const [lastProgressionReview, setLastProgressionReview] = useState(() =>
-    safeLoad(STORAGE_KEYS.lastProgression, null)
-  );
-  const [profile, setProfile] = useState(() => safeLoad(STORAGE_KEYS.profile, DEFAULT_PROFILE));
-  const [goals, setGoals] = useState(() => safeLoad(STORAGE_KEYS.goals, DEFAULT_GOALS));
-  const [progressLog, setProgressLog] = useState(() => safeLoad(STORAGE_KEYS.progressLog, []));
-  const [exerciseNotes, setExerciseNotes] = useState(() => safeLoad(STORAGE_KEYS.exerciseNotes, {}));
-  const [calendarLog, setCalendarLog] = useState(() => safeLoad(STORAGE_KEYS.calendarLog, {}));
-  const [progressPhotos, setProgressPhotos] = useState(() => safeLoad(STORAGE_KEYS.progressPhotos, []));
-  const [photoAlbums, setPhotoAlbums] = useState(() => safeLoad(STORAGE_KEYS.photoAlbums, []));
-  const [cloudSettings, setCloudSettings] = useState(() => safeLoad(STORAGE_KEYS.cloudSettings, DEFAULT_CLOUD_SETTINGS));
-  const [appSettings, setAppSettings] = useState(() => withNameParts(safeLoad(STORAGE_KEYS.appSettings, DEFAULT_APP_SETTINGS)));
-  const [notificationSettings, setNotificationSettings] = useState(() => {
-    const saved = safeLoad(STORAGE_KEYS.notificationSettings, DEFAULT_NOTIFICATION_SETTINGS);
-
-    return {
-      ...DEFAULT_NOTIFICATION_SETTINGS,
-      ...saved,
-      customReminders: Array.isArray(saved.customReminders) ? saved.customReminders : [],
-    };
-  });
-  const [setProgress, setSetProgress] = useState(() => safeLoad(STORAGE_KEYS.setProgress, {}));
+  const [lastProgressionReview, setLastProgressionReview] = useState(null);
+  const [profile, setProfile] = useState(() => cloneData(DEFAULT_PROFILE));
+  const [goals, setGoals] = useState(() => cloneData(DEFAULT_GOALS));
+  const [progressLog, setProgressLog] = useState([]);
+  const [exerciseNotes, setExerciseNotes] = useState({});
+  const [calendarLog, setCalendarLog] = useState({});
+  const [progressPhotos, setProgressPhotos] = useState([]);
+  const [photoAlbums, setPhotoAlbums] = useState([]);
+  const [cloudSettings, setCloudSettings] = useState(() => cloneData(DEFAULT_CLOUD_SETTINGS));
+  const [appSettings, setAppSettings] = useState(() => withNameParts(DEFAULT_APP_SETTINGS));
+  const [notificationSettings, setNotificationSettings] = useState(() => cloneData(DEFAULT_NOTIFICATION_SETTINGS));
+  const [setProgress, setSetProgress] = useState({});
+  const [storageFull, setStorageFull] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
   const [editingGoals, setEditingGoals] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
@@ -559,98 +691,46 @@ export default function AtlasLuthor() {
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(users));
+    safeSave(STORAGE_KEYS.users, users);
   }, [users]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.activeUser, JSON.stringify(activeUserId));
+    safeSave(STORAGE_KEYS.activeUser, activeUserId);
   }, [activeUserId]);
 
+  // Removes legacy, non-account-scoped storage keys left by older versions.
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.workout, JSON.stringify(workoutData));
-  }, [workoutData]);
+    LEGACY_STORAGE_KEYS.forEach(safeRemove);
+  }, []);
 
+  // Persists the signed-in account's data to its own namespaced key. It only
+  // writes after that account's data has been loaded into state, so the
+  // initial render cannot overwrite stored data with defaults, and logout
+  // (no active account) cannot leak or wipe anything.
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.checked, JSON.stringify(checked));
-  }, [checked]);
+    if (!activeUserId || !users[activeUserId] || loadedUserRef.current !== activeUserId) return;
 
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.lastProgression, JSON.stringify(lastProgressionReview));
-  }, [lastProgressionReview]);
+    const saved = safeSave(STORAGE_KEYS.dataPrefix + activeUserId, {
+      workoutData,
+      checked,
+      lastProgressionReview,
+      profile,
+      goals,
+      progressLog,
+      exerciseNotes,
+      calendarLog,
+      progressPhotos,
+      photoAlbums,
+      cloudSettings,
+      notificationSettings,
+      setProgress,
+      appSettings,
+    });
 
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
-  }, [profile]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
-  }, [goals]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.progressLog, JSON.stringify(progressLog));
-  }, [progressLog]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.exerciseNotes, JSON.stringify(exerciseNotes));
-  }, [exerciseNotes]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.calendarLog, JSON.stringify(calendarLog));
-  }, [calendarLog]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.progressPhotos, JSON.stringify(progressPhotos));
-  }, [progressPhotos]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.photoAlbums, JSON.stringify(photoAlbums));
-  }, [photoAlbums]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.cloudSettings, JSON.stringify(cloudSettings));
-  }, [cloudSettings]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.appSettings, JSON.stringify(appSettings));
-  }, [appSettings]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.notificationSettings, JSON.stringify(notificationSettings));
-  }, [notificationSettings]);
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEYS.setProgress, JSON.stringify(setProgress));
-  }, [setProgress]);
-
-  useEffect(() => {
-    if (!activeUserId || !users[activeUserId]) return;
-
-    setUsers(prev => ({
-      ...prev,
-      [activeUserId]: {
-        ...prev[activeUserId],
-        name: `${appSettings.firstName || ""} ${appSettings.lastName || ""}`.trim() || appSettings.name || "Atlas",
-        updatedAt: new Date().toISOString(),
-        data: {
-          workoutData,
-          checked,
-          lastProgressionReview,
-          profile,
-          goals,
-          progressLog,
-          exerciseNotes,
-          calendarLog,
-          progressPhotos,
-          photoAlbums,
-          cloudSettings,
-          notificationSettings,
-          setProgress,
-          appSettings,
-        },
-      },
-    }));
+    setStorageFull(!saved);
   }, [
     activeUserId,
+    users,
     workoutData,
     checked,
     lastProgressionReview,
@@ -723,7 +803,9 @@ export default function AtlasLuthor() {
         sum + currentSession.exercises.filter((_, exerciseIndex) => nextChecked[getExerciseKey(today, sessionIndex, exerciseIndex)]).length,
       0
     );
-    const status = dayExercises === 0 ? "rest" : dayDone === dayExercises ? "completed" : dayDone > 0 ? "trained" : "missed";
+    // Today is never "missed" while it is still in progress.
+    const status =
+      dayExercises === 0 ? "rest" : dayDone === dayExercises ? "completed" : dayDone > 0 ? "trained" : "planned";
 
     setCalendarLog(prev => ({
       ...prev,
@@ -893,6 +975,8 @@ export default function AtlasLuthor() {
   }, [notificationSettings, weeklyMetrics.today, weeklyMetrics.todayType]);
 
   useEffect(() => {
+    if (!activeUserId || loadedUserRef.current !== activeUserId) return;
+
     const date = getDateKey();
 
     setProgressLog(prev => {
@@ -991,6 +1075,20 @@ export default function AtlasLuthor() {
   const restTimerOffset = restTimerCircumference * (1 - restTimerProgress);
   const currentMonthKey = getMonthKey();
   const calendarCells = getMonthDays(currentMonthKey);
+  // Resolves a calendar day's status. Unlogged past days are only "missed"
+  // when that weekday is actually programmed as a training day; scheduled
+  // rest days show as "rest" instead of a false miss.
+  const getCalendarStatus = cell => {
+    const logged = calendarLog[cell.key];
+    if (logged?.status) return logged.status;
+
+    const dayPlan = workoutData[cell.dayName];
+    const isRestDay =
+      !dayPlan || dayPlan.sessions.every(currentSession => currentSession.rest || currentSession.exercises.length === 0);
+
+    if (isRestDay) return "rest";
+    return cell.key < getDateKey() ? "missed" : "planned";
+  };
   const prEntries = useMemo(
     () =>
       Object.entries(exerciseNotes)
@@ -1119,9 +1217,7 @@ export default function AtlasLuthor() {
   const noteRows = allExerciseRows.filter(row => row.note && (row.note.pain || row.note.difficulty || row.note.pr || row.note.technique));
   const calendarStatusCounts = calendarCells.filter(Boolean).reduce(
     (counts, cell) => {
-      const logged = calendarLog[cell.key];
-      const isPast = cell.key < getDateKey();
-      const status = logged?.status || (isPast ? "missed" : "planned");
+      const status = getCalendarStatus(cell);
       return { ...counts, [status]: (counts[status] || 0) + 1 };
     },
     { completed: 0, trained: 0, missed: 0, rest: 0, planned: 0 }
@@ -1238,12 +1334,17 @@ export default function AtlasLuthor() {
     };
   };
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     const userId = signupDraft.userId.trim().toLowerCase();
     const password = signupDraft.password.trim();
 
     if (!userId || !password || !signupDraft.firstName.trim()) {
       setAuthError("Add your first name, a User ID, and a password.");
+      return;
+    }
+
+    if (password.length < 4) {
+      setAuthError("Use a password with at least 4 characters.");
       return;
     }
 
@@ -1253,52 +1354,121 @@ export default function AtlasLuthor() {
     }
 
     const data = createUserDataFromSignup(signupDraft);
+    const salt = makeSalt();
+    const passwordHash = await hashPassword(password, salt);
     const nextUser = {
       id: userId,
       userId,
-      password,
       name: `${signupDraft.firstName.trim()} ${signupDraft.lastName.trim()}`.trim(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      data,
+      passwordSalt: salt,
+      passwordHash,
     };
 
+    safeSave(STORAGE_KEYS.dataPrefix + userId, data);
+    loadedUserRef.current = userId;
     setUsers(prev => ({ ...prev, [userId]: nextUser }));
     applyUserData(data);
     setActiveUserId(userId);
+    setSignupDraft(DEFAULT_SIGNUP);
     setAuthError("");
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const userId = loginDraft.userId.trim().toLowerCase();
     const password = loginDraft.password.trim();
     const user = users[userId];
 
-    if (!user || user.password !== password) {
+    if (!user) {
       setAuthError("User ID not found or password is incorrect.");
       return;
     }
 
-    applyUserData(user.data);
+    let verified = false;
+    if (user.passwordHash) {
+      const candidate = await hashPassword(password, user.passwordSalt || "");
+      verified = candidate === user.passwordHash;
+    } else if (typeof user.password === "string") {
+      verified = user.password === password;
+    }
+
+    if (!verified) {
+      setAuthError("User ID not found or password is incorrect.");
+      return;
+    }
+
+    // Prefer the account's namespaced data; fall back to the legacy copy.
+    const storedData =
+      safeLoad(STORAGE_KEYS.dataPrefix + userId, null) || user.data || defaultUserData();
+
+    // Upgrade legacy plaintext passwords to a salted hash on login.
+    let registryUser = cleanRegistryEntry(user);
+    if (!user.passwordHash) {
+      const salt = makeSalt();
+      registryUser = {
+        ...registryUser,
+        passwordSalt: salt,
+        passwordHash: await hashPassword(password, salt),
+      };
+    }
+
+    safeSave(STORAGE_KEYS.dataPrefix + userId, storedData);
+    loadedUserRef.current = userId;
+    setUsers(prev => ({ ...prev, [userId]: registryUser }));
+    applyUserData(storedData);
     setActiveUserId(userId);
+    setLoginDraft({ userId: "", password: "" });
     setAuthError("");
   };
 
   const handleLogout = () => {
+    loadedUserRef.current = "";
+    setActiveUserId("");
+    applyUserData(defaultUserData());
     setShowMenu(false);
     setShowSettings(false);
-    setActiveUserId("");
-    loadedUserRef.current = "";
+    setShowReminders(false);
+    setShowDataTools(false);
+    setEditingExercise(null);
+    setEditingCardio(null);
+    setEditingNote(null);
+    setEditingRoutine(null);
+    setEditingProfile(null);
+    setEditingGoals(null);
+    setViewingPhoto(null);
     setLoginDraft({ userId: "", password: "" });
+    setSignupDraft(DEFAULT_SIGNUP);
+    setAuthError("");
     setAuthMode("login");
-    setScreen("home");
   };
 
   useEffect(() => {
     if (!activeUserId || !users[activeUserId] || loadedUserRef.current === activeUserId) return;
 
     loadedUserRef.current = activeUserId;
-    applyUserData(users[activeUserId].data);
+
+    const user = users[activeUserId];
+    const storedData =
+      safeLoad(STORAGE_KEYS.dataPrefix + activeUserId, null) || user.data || defaultUserData();
+
+    safeSave(STORAGE_KEYS.dataPrefix + activeUserId, storedData);
+    applyUserData(storedData);
+
+    // Migrate legacy account records left in the registry.
+    if (user.data || (typeof user.password === "string" && !user.passwordHash)) {
+      (async () => {
+        let migrated = cleanRegistryEntry(user);
+        if (!user.passwordHash && typeof user.password === "string") {
+          const salt = makeSalt();
+          migrated = {
+            ...migrated,
+            passwordSalt: salt,
+            passwordHash: await hashPassword(user.password, salt),
+          };
+        }
+        setUsers(prev => (prev[activeUserId] ? { ...prev, [activeUserId]: migrated } : prev));
+      })();
+    }
   }, [activeUserId, users]);
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
@@ -1504,10 +1674,19 @@ export default function AtlasLuthor() {
       return;
     }
 
+    if (!window.confirm("Cloud download replaces your current data with the data from the endpoint. Continue?")) {
+      return;
+    }
+
     try {
       const response = await fetch(cloudSettings.endpoint);
       const parsed = await response.json();
-      const data = parsed.data || parsed;
+      const data = parsed && typeof parsed === "object" ? parsed.data || parsed : {};
+
+      if (!data || typeof data !== "object") {
+        setCloudSettings(prev => ({ ...prev, status: "Download failed: invalid data" }));
+        return;
+      }
 
       if (data.workoutData) setWorkoutData(data.workoutData);
       if (data.checked) setChecked(data.checked);
@@ -1569,28 +1748,30 @@ export default function AtlasLuthor() {
     setViewingPhoto(prev => (prev && prev.id === photoId ? { ...prev, album } : prev));
   };
 
-  const handleAvatarPhoto = event => {
+  const handleAvatarPhoto = async event => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAppSettings(prev => ({ ...prev, avatar: String(reader.result) }));
-      event.target.value = "";
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressImage(file, 320, 0.82);
+      setAppSettings(prev => ({ ...prev, avatar: dataUrl }));
+    } catch {
+      window.alert("That image could not be processed. Try a different photo.");
+    }
   };
 
-  const handleProgressPhoto = event => {
+  const handleProgressPhoto = async event => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotoDraft(prev => ({ ...prev, dataUrl: String(reader.result) }));
-      event.target.value = "";
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressImage(file, 1000, 0.78);
+      setPhotoDraft(prev => ({ ...prev, dataUrl }));
+    } catch {
+      window.alert("That image could not be processed. Try a different photo.");
+    }
   };
 
   async function sendAtlasNotification(title, body, sound = "chime") {
@@ -1863,11 +2044,11 @@ export default function AtlasLuthor() {
         }
 
         .page-shell { width: 100%; position: relative; z-index: 1; }
-        .app-header { position: relative; padding: calc(56px + env(safe-area-inset-top)) 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
-        .industry-mark { font-size: 10px; letter-spacing: 4px; color: #A7A7AD; font-family: 'Orbitron', monospace; margin-bottom: 18px; font-weight: 900; }
-        .menu-button { position: absolute; top: calc(16px + env(safe-area-inset-top)); right: 16px; width: 44px; height: 44px; border-radius: 13px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(12,12,16,0.72); backdrop-filter: blur(18px); display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex-direction: column; cursor: pointer; }
+        .app-header { position: relative; padding: calc(16px + env(safe-area-inset-top)) 64px 14px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .menu-button { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 14px; width: 44px; height: 44px; border-radius: 13px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(12,12,16,0.72); backdrop-filter: blur(18px); display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex-direction: column; cursor: pointer; }
         .menu-button span { width: 18px; height: 2px; border-radius: 2px; background: #FFFFFF; display: block; }
-        .day-pill { cursor: pointer; flex: 1; padding: 10px 4px; border-radius: 10px; text-align: center; border: 1px solid transparent; transition: all 0.2s; }
+        .day-pill { cursor: pointer; flex: 1; padding: 10px 4px; border-radius: 10px; text-align: center; border: 1px solid transparent; transition: all 0.2s; background: transparent; font-family: inherit; }
+        .day-pill:focus-visible, .ex-card:focus-visible, .session-tab:focus-visible, .dark-btn:focus-visible, .primary-btn:focus-visible, .edit-btn:focus-visible, .menu-button:focus-visible, .album-chip:focus-visible { outline: 2px solid #90C8FF; outline-offset: 2px; }
         .session-tab { cursor: pointer; flex: 1; padding: 12px 10px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(20,20,24,0.78); backdrop-filter: blur(16px); transition: all 0.2s; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #888; text-align: center; }
         .ex-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.075); background: rgba(19,19,24,0.82); backdrop-filter: blur(16px); cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
         .ex-card:hover { border-color: rgba(255,255,255,0.14); background: rgba(24,24,32,0.88); }
@@ -1909,19 +2090,19 @@ export default function AtlasLuthor() {
         .settings-grid { display: grid; gap: 10px; }
         .setting-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid #24242E; border-radius: 12px; padding: 12px; background: #101015; }
         .setting-title { color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 800; min-width: 0; overflow-wrap: anywhere; }
-        .setting-sub { color: #777; font-family: 'DM Sans', sans-serif; font-size: 12px; line-height: 1.4; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
+        .setting-sub { color: #9CA1AC; font-family: 'DM Sans', sans-serif; font-size: 12px; line-height: 1.4; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
         .feature-page { padding: 20px; }
         .feature-hero { background: rgba(19,19,24,0.86); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; backdrop-filter: blur(18px); margin-bottom: 14px; }
         .feature-title { font-size: 25px; color: #FFFFFF; font-weight: 900; font-family: 'Orbitron', monospace; letter-spacing: 2px; line-height: 1.05; margin-top: 8px; }
-        .feature-copy { color: #777; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.55; margin-top: 10px; }
+        .feature-copy { color: #9CA1AC; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.55; margin-top: 10px; }
         .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .detail-card { border: 1px solid #24242E; background: #101015; border-radius: 12px; padding: 12px; min-width: 0; }
-        .detail-label { color: #666; font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2px; margin-bottom: 5px; }
+        .detail-label { color: #8C92A0; font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2px; margin-bottom: 5px; }
         .detail-value { color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 900; overflow-wrap: anywhere; }
         .detail-list { display: grid; gap: 10px; }
         .detail-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid #24242E; background: #101015; border-radius: 12px; padding: 12px; font-family: 'DM Sans', sans-serif; min-width: 0; }
         .detail-row-main { color: #FFFFFF; font-size: 14px; font-weight: 900; min-width: 0; overflow-wrap: anywhere; }
-        .detail-row-sub { color: #777; font-size: 12px; line-height: 1.35; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
+        .detail-row-sub { color: #9CA1AC; font-size: 12px; line-height: 1.35; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
 
         .light-mode .ambient-bg { background: #F3F4F6; }
         .light-mode .ambient-bg::before {
@@ -2053,21 +2234,15 @@ export default function AtlasLuthor() {
             <span />
             <span />
           </button>
-          <p className="industry-mark">
-            FUENMAYOR INDUSTRIES
-          </p>
-          <p style={{ fontSize: 9, letterSpacing: 5, color: "#444", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
-            PROTOCOL ACTIVE
-          </p>
-          <h1 style={{ fontSize: 38, fontWeight: 900, letterSpacing: 5, color: "#FFFFFF", lineHeight: 1, fontFamily: "'Orbitron', monospace" }}>
-            ATLAS
+          <h1 style={{ fontSize: 22, fontWeight: 900, letterSpacing: 4, lineHeight: 1, fontFamily: "'Orbitron', monospace" }}>
+            <span style={{ color: isLightMode ? "#101015" : "#FFFFFF" }}>ATLAS</span>{" "}
+            <span style={{ color: "#90C8FF" }}>LUTHOR</span>
           </h1>
-          <h1 style={{ fontSize: 38, fontWeight: 900, letterSpacing: 6, color: "#888", lineHeight: 1.1, fontFamily: "'Orbitron', monospace" }}>
-            LUTHOR
-          </h1>
-          <p style={{ fontSize: 11, color: "#444", marginTop: 8, fontFamily: "'DM Sans', sans-serif", letterSpacing: 1 }}>
-            {profile.startDate} - {goals.targetDate} · {profile.currentWeight} LB · {profile.height}
-          </p>
+          {activeUserId && (
+            <p style={{ fontSize: 10, color: isLightMode ? "#5A6270" : "#7C828E", marginTop: 5, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.5 }}>
+              {profile.currentWeight} LB · {profile.height} · target {goals.targetDate}
+            </p>
+          )}
         </div>
 
         {!activeUserId && authMode === "landing" && (
@@ -2234,16 +2409,29 @@ export default function AtlasLuthor() {
 
         {activeUserId && screen === "home" && (
           <div className="fade-up" style={{ padding: "20px" }}>
+            {storageFull && (
+              <div className="home-card" style={{ marginBottom: 14, borderColor: "#E5604D88", background: isLightMode ? "#FBEAE8" : "#1C0D0A" }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, color: "#E5604D", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                  STORAGE FULL
+                </p>
+                <p style={{ color: isLightMode ? "#7A2A20" : "#E59A8E", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                  This device's storage is full, so recent changes could not be saved. Export a
+                  backup, then remove some progress photos to free space.
+                </p>
+              </div>
+            )}
             <div className="feature-hero" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                <div
+                <button
+                  type="button"
+                  aria-label="Open settings"
                   onClick={() => { setShowMenu(false); setShowSettings(true); }}
-                  style={{ width: 58, height: 58, borderRadius: 999, overflow: "hidden", border: `2px solid ${themeFor(weeklyMetrics.todayType).accent}`, background: isLightMode ? "#E9EAEE" : "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  style={{ width: 58, height: 58, borderRadius: 999, overflow: "hidden", padding: 0, border: `2px solid ${themeFor(weeklyMetrics.todayType).accent}`, background: isLightMode ? "#E9EAEE" : "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                 >
                   {userAvatar
                     ? <img src={userAvatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 22, color: "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
-                </div>
+                </button>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace" }}>
                     {activeThemeMode.toUpperCase()} MODE
@@ -2276,18 +2464,6 @@ export default function AtlasLuthor() {
               <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
                 START TODAY
               </button>
-
-              <div className="compact-actions">
-                <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true })}>
-                  Today Only
-                </button>
-                <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true })}>
-                  Quick
-                </button>
-                <button className="dark-btn" onClick={resetWeek}>
-                  Reset Week
-                </button>
-              </div>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
@@ -2355,11 +2531,9 @@ export default function AtlasLuthor() {
                 {calendarCells.map((cell, index) => {
                   if (!cell) return <div key={`blank-${index}`} />;
 
-                  const logged = calendarLog[cell.key];
                   const todayKey = getDateKey();
-                  const isPast = cell.key < todayKey;
                   const isToday = cell.key === todayKey;
-                  const status = logged?.status || (isPast ? "missed" : "planned");
+                  const status = getCalendarStatus(cell);
                   const visual = getCalendarVisual(status, isLightMode);
 
                   return (
@@ -2753,9 +2927,7 @@ export default function AtlasLuthor() {
                 <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
                   START TODAY
                 </button>
-                <div className="compact-actions">
-                  <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true })}>Today Only</button>
-                  <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true })}>Quick Mode</button>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
                   <button className="dark-btn" onClick={resetWeek}>Reset Week</button>
                 </div>
                 <div className="home-card">
@@ -2867,11 +3039,8 @@ export default function AtlasLuthor() {
                     ))}
                     {calendarCells.map((cell, index) => {
                       if (!cell) return <div key={`blank-detail-${index}`} />;
-                      const logged = calendarLog[cell.key];
-                      const todayKey = getDateKey();
-                      const isPast = cell.key < todayKey;
-                      const isToday = cell.key === todayKey;
-                      const status = logged?.status || (isPast ? "missed" : "planned");
+                      const isToday = cell.key === getDateKey();
+                      const status = getCalendarStatus(cell);
                       const visual = getCalendarVisual(status, isLightMode);
                       return (
                         <div key={cell.key} title={`${cell.key} - ${status}`} style={{ aspectRatio: "1", borderRadius: 8, background: visual.bg, color: visual.fg, border: isToday ? `2px solid ${isLightMode ? "#101015" : "#FFFFFF"}` : "1px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
@@ -2902,8 +3071,7 @@ export default function AtlasLuthor() {
                 </div>
                 {calendarCells.filter(Boolean).slice(-10).map(cell => {
                   const logged = calendarLog[cell.key];
-                  const isPast = cell.key < getDateKey();
-                  const status = logged?.status || (isPast ? "missed" : "planned");
+                  const status = getCalendarStatus(cell);
                   return (
                     <div key={`${cell.key}-row`} className="detail-row">
                       <div>
@@ -3216,22 +3384,25 @@ export default function AtlasLuthor() {
                   const t = themeFor(workoutData[d].type);
 
                   return (
-                    <div
+                    <button
                       key={d}
+                      type="button"
                       className="day-pill"
+                      aria-label={`${displayDay(d)} - ${workoutData[d].type}`}
+                      aria-pressed={isActive}
                       style={isActive ? { background: t.badge, border: `1.5px solid ${t.accent}50` } : {}}
                       onClick={() => {
                         setActiveDay(d);
                         setActiveSession(0);
                       }}
                     >
-                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: isActive ? t.accent : "#555", fontFamily: "'Orbitron', monospace" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: isActive ? t.accent : "#6E7480", fontFamily: "'Orbitron', monospace" }}>
                         {displayDayShort(d, workoutData[d].label)}
                       </div>
-                      <div style={{ fontSize: 8, color: isActive ? t.sub : "#333", marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                      <div style={{ fontSize: 8, color: isActive ? t.sub : "#5A5F6A", marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                         {workoutData[d].type.slice(0, 3)}
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -3248,11 +3419,20 @@ export default function AtlasLuthor() {
                 </span>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 {total > 0 && (
-                  <div style={{ fontSize: 13, color: "#666", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                  <div style={{ fontSize: 13, color: "#888", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                     <span style={{ color: theme.accent, fontWeight: 700 }}>{done}</span> / {total} done
                   </div>
+                )}
+                {total > 0 && (
+                  <button
+                    className="edit-btn"
+                    onClick={() => setQuickMode(prev => !prev)}
+                    style={quickMode ? { color: theme.accent, borderColor: theme.accent + "66" } : {}}
+                  >
+                    {quickMode ? "Full" : "Quick"}
+                  </button>
                 )}
                 <button
                   className="edit-btn"
@@ -3480,7 +3660,17 @@ export default function AtlasLuthor() {
                   <div
                     key={i}
                     className={`ex-card${isDone ? " done" : ""}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isDone}
+                    aria-label={`${ex.name}, ${isDone ? "completed" : "not completed"}`}
                     onClick={() => toggleExercise(i)}
+                    onKeyDown={event => {
+                      if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        toggleExercise(i);
+                      }
+                    }}
                     style={highlightedExerciseIndex === i && !isDone ? { borderColor: theme.accent, boxShadow: `0 0 22px ${theme.accent}22` } : {}}
                   >
                     <div className="check" style={isDone ? { background: theme.accent, borderColor: theme.accent, color: isLightMode ? "#FFFFFF" : "#000" } : {}}>
@@ -3626,26 +3816,15 @@ export default function AtlasLuthor() {
               >
                 Manage Workouts
               </button>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <button
-                  className="dark-btn"
-                  onClick={() => {
-                    setShowMenu(false);
-                    openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true });
-                  }}
-                >
-                  Quick Today
-                </button>
-                <button
-                  className="dark-btn"
-                  onClick={() => {
-                    resetWeek();
-                    setShowMenu(false);
-                  }}
-                >
-                  Reset Week
-                </button>
-              </div>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  resetWeek();
+                  setShowMenu(false);
+                }}
+              >
+                Reset Week
+              </button>
             </div>
 
             <p className="menu-section-label">PAGES</p>
@@ -3772,6 +3951,11 @@ export default function AtlasLuthor() {
                   Enable
                 </button>
               </div>
+              <p className="setting-sub">
+                {language === "es"
+                  ? "Los recordatorios solo se disparan mientras la app está abierta. Una notificación en segundo plano necesitaría un servidor de push."
+                  : "Reminders only fire while the app is open. Background notifications would need a push server."}
+              </p>
 
               <input
                 className="input"
@@ -4078,6 +4262,12 @@ export default function AtlasLuthor() {
                   style={{ display: "none" }}
                 />
               </label>
+
+              <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 12, lineHeight: 1.5 }}>
+                Cloud sync sends your data to the endpoint you enter, with no built-in
+                authentication. Only use an endpoint you control and trust. Download replaces
+                your current data.
+              </p>
 
               <input
                 className="input"
