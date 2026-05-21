@@ -127,6 +127,7 @@ const STORAGE_KEYS = {
   progressPhotos: "atlas-luthor-progress-photos",
   cloudSettings: "atlas-luthor-cloud-settings",
   notificationSettings: "atlas-luthor-notification-settings",
+  setProgress: "atlas-luthor-set-progress",
 };
 
 const DEFAULT_PROFILE = {
@@ -156,6 +157,17 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   lastWorkoutNotice: "",
   lastRestNotice: "",
 };
+
+const WEIGHT_OPTIONS = Array.from({ length: 61 }, (_, index) => `${index * 5} lb`);
+const BODY_WEIGHT_OPTIONS = Array.from({ length: 121 }, (_, index) => String(120 + index));
+const HEIGHT_OPTIONS = ["5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"", "5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "5'11\"", "6'0\"", "6'1\"", "6'2\"", "6'3\"", "6'4\""];
+const SET_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map(String);
+const REP_OPTIONS = [4, 5, 6, 8, 10, 12, 15, 20, "3x3", "AMRAP"].map(String);
+const RPE_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+const PAIN_OPTIONS = ["", "None", "Tight", "Mild", "Moderate", "Sharp", "Stop"];
+const PROGRESS_GOAL_OPTIONS = ["70", "75", "80", "85", "90", "95", "100"];
+const SESSION_GOAL_OPTIONS = ["3", "4", "5", "6", "7", "8", "9", "10", "11"];
+const CARDIO_OPTIONS = ["", "10 min", "15 min", "20 min", "Run 1 mile", "Stairs Level 5", "Row Machine 15 min"];
 
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
@@ -287,6 +299,7 @@ export default function AtlasLuthor() {
   const [notificationSettings, setNotificationSettings] = useState(() =>
     safeLoad(STORAGE_KEYS.notificationSettings, DEFAULT_NOTIFICATION_SETTINGS)
   );
+  const [setProgress, setSetProgress] = useState(() => safeLoad(STORAGE_KEYS.setProgress, {}));
   const [editingProfile, setEditingProfile] = useState(null);
   const [editingGoals, setEditingGoals] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
@@ -348,6 +361,10 @@ export default function AtlasLuthor() {
   }, [notificationSettings]);
 
   useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.setProgress, JSON.stringify(setProgress));
+  }, [setProgress]);
+
+  useEffect(() => {
     if (!restTimer.running || restTimer.secondsLeft <= 0) return undefined;
 
     const timerId = window.setInterval(() => {
@@ -397,6 +414,31 @@ export default function AtlasLuthor() {
     }));
   };
 
+  const updateSetCount = (exerciseIndex, delta) => {
+    const key = getExerciseKey(activeDay, activeSession, exerciseIndex);
+    const exercise = session.exercises[exerciseIndex];
+    const totalSets = Number(exercise?.sets || 0);
+    const currentSets = Number(setProgress[key] || 0);
+    const nextSets = Math.max(0, Math.min(totalSets, currentSets + delta));
+    const nextSetProgress = { ...setProgress, [key]: nextSets };
+    const nextChecked = { ...checked };
+
+    if (totalSets > 0 && nextSets >= totalSets) {
+      nextChecked[key] = true;
+      const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
+      setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
+      startRestTimer(90);
+    } else {
+      nextChecked[key] = false;
+      setHighlightedExerciseIndex(exerciseIndex);
+      if (delta > 0) startRestTimer(90);
+    }
+
+    setSetProgress(nextSetProgress);
+    setChecked(nextChecked);
+    updateCalendarForToday(nextChecked);
+  };
+
   const toggleExercise = exerciseIndex => {
     const key = getExerciseKey(activeDay, activeSession, exerciseIndex);
     const wasDone = !!checked[key];
@@ -406,10 +448,12 @@ export default function AtlasLuthor() {
     updateCalendarForToday(nextChecked);
 
     if (!wasDone) {
+      setSetProgress(prev => ({ ...prev, [key]: Number(session.exercises[exerciseIndex]?.sets || 0) }));
       const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
       setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
       startRestTimer(90);
     } else {
+      setSetProgress(prev => ({ ...prev, [key]: 0 }));
       setHighlightedExerciseIndex(exerciseIndex);
     }
   };
@@ -653,6 +697,9 @@ export default function AtlasLuthor() {
   const quickExercise = session.exercises[quickExerciseIndex] || session.exercises[0];
   const quickExerciseKey = quickExercise ? getExerciseKey(activeDay, activeSession, quickExerciseIndex) : "";
   const quickNote = quickExerciseKey ? exerciseNotes[quickExerciseKey] : null;
+  const quickSetsDone = Number(setProgress[quickExerciseKey] || 0);
+  const quickTotalSets = Number(quickExercise?.sets || 0);
+  const quickSetsLeft = Math.max(quickTotalSets - quickSetsDone, 0);
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
     setWorkoutData(prev => ({
@@ -757,6 +804,7 @@ export default function AtlasLuthor() {
         progressPhotos,
         cloudSettings,
         notificationSettings,
+        setProgress,
         lastProgressionReview,
       },
     };
@@ -792,6 +840,7 @@ export default function AtlasLuthor() {
         if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
         if (data.cloudSettings) setCloudSettings(data.cloudSettings);
         if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
+        if (data.setProgress) setSetProgress(data.setProgress);
         if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
         setShowDataTools(false);
       } catch {
@@ -823,6 +872,7 @@ export default function AtlasLuthor() {
         calendarLog,
         progressPhotos,
         notificationSettings,
+        setProgress,
         lastProgressionReview,
       },
     };
@@ -860,6 +910,7 @@ export default function AtlasLuthor() {
       if (data.calendarLog) setCalendarLog(data.calendarLog);
       if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
       if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
+      if (data.setProgress) setSetProgress(data.setProgress);
       if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
     } catch {
@@ -1745,14 +1796,30 @@ export default function AtlasLuthor() {
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.sets}x{quickExercise.reps}</p>
                       <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>SETS</p>
                     </div>
+                    <div className="stat-box">
+                      <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickSetsDone}/{quickTotalSets}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>DONE</p>
+                    </div>
+                    <div className="stat-box">
+                      <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickSetsLeft}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>LEFT</p>
+                    </div>
                   </div>
                   {quickNote && (
                     <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
                       {quickNote.pr ? "PR · " : ""}{quickNote.difficulty ? `RPE ${quickNote.difficulty} · ` : ""}{quickNote.technique || quickNote.pain}
                     </p>
                   )}
-                  <button className="primary-btn" onClick={() => toggleExercise(quickExerciseIndex)}>
-                    Mark Done
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                    <button className="dark-btn" onClick={() => updateSetCount(quickExerciseIndex, -1)}>
+                      - Set
+                    </button>
+                    <button className="primary-btn" onClick={() => updateSetCount(quickExerciseIndex, 1)}>
+                      + Set
+                    </button>
+                  </div>
+                  <button className="dark-btn" onClick={() => toggleExercise(quickExerciseIndex)}>
+                    Mark Exercise Done
                   </button>
                   <button
                     className="dark-btn"
@@ -1832,6 +1899,9 @@ export default function AtlasLuthor() {
                 const isDone = !!checked[key];
                 const note = exerciseNotes[key];
                 const hasNote = note && (note.pain || note.difficulty || note.pr || note.technique);
+                const setsDone = Number(setProgress[key] || 0);
+                const totalExerciseSets = Number(ex.sets || 0);
+                const setsLeft = Math.max(totalExerciseSets - setsDone, 0);
 
                 return (
                   <div
@@ -1851,11 +1921,36 @@ export default function AtlasLuthor() {
                       <p style={{ fontSize: 12, color: isDone ? "#383838" : "#666", marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
                         {ex.sets} sets x {ex.reps} reps
                       </p>
+                      <p style={{ fontSize: 11, color: isDone ? "#444" : "#AAAAAA", marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
+                        Sets {setsDone}/{totalExerciseSets} · {setsLeft} left
+                      </p>
                       {hasNote && (
                         <p style={{ fontSize: 11, color: isDone ? "#444" : theme.accent, marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {note.pr ? "PR · " : ""}{note.difficulty ? `RPE ${note.difficulty} · ` : ""}{note.technique || note.pain || "Notes saved"}
                         </p>
                       )}
+                    </div>
+
+                    <div style={{ display: "grid", gap: 6 }}>
+                      <button
+                        className="edit-btn"
+                        onClick={event => {
+                          event.stopPropagation();
+                          updateSetCount(i, 1);
+                        }}
+                        style={{ color: theme.accent }}
+                      >
+                        +Set
+                      </button>
+                      <button
+                        className="edit-btn"
+                        onClick={event => {
+                          event.stopPropagation();
+                          updateSetCount(i, -1);
+                        }}
+                      >
+                        -Set
+                      </button>
                     </div>
 
                     <button
@@ -1932,12 +2027,15 @@ export default function AtlasLuthor() {
               {editingExercise.name}
             </h3>
 
-            <input
+            <select
               className="input"
               value={editingExercise.weight}
               onChange={event => setEditingExercise(prev => ({ ...prev, weight: event.target.value }))}
-              placeholder="Example: 30 lb"
-            />
+            >
+              {Array.from(new Set([editingExercise.weight, ...WEIGHT_OPTIONS])).map(weight => (
+                <option key={weight} value={weight}>{weight}</option>
+              ))}
+            </select>
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingExercise(null)}>
@@ -1973,12 +2071,15 @@ export default function AtlasLuthor() {
                 placeholder="Cardio name"
               />
 
-              <input
+              <select
                 className="input"
                 value={editingCardio.duration}
                 onChange={event => setEditingCardio(prev => ({ ...prev, duration: event.target.value }))}
-                placeholder="Duration / distance / level"
-              />
+              >
+                {Array.from(new Set([editingCardio.duration, ...CARDIO_OPTIONS])).map(option => (
+                  <option key={option || "empty"} value={option}>{option || "No duration"}</option>
+                ))}
+              </select>
             </div>
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
@@ -2019,20 +2120,25 @@ export default function AtlasLuthor() {
             </h3>
 
             <div style={{ display: "grid", gap: 10 }}>
-              <input
+              <select
                 className="input"
                 value={editingNote.pain}
                 onChange={event => setEditingNote(prev => ({ ...prev, pain: event.target.value }))}
-                placeholder="Pain / discomfort"
-              />
+              >
+                {PAIN_OPTIONS.map(option => (
+                  <option key={option || "empty"} value={option}>{option || "Pain / discomfort"}</option>
+                ))}
+              </select>
 
-              <input
+              <select
                 className="input"
                 value={editingNote.difficulty}
                 onChange={event => setEditingNote(prev => ({ ...prev, difficulty: event.target.value }))}
-                placeholder="Difficulty 1-10"
-                inputMode="numeric"
-              />
+              >
+                {RPE_OPTIONS.map(option => (
+                  <option key={option || "empty"} value={option}>{option ? `RPE ${option}` : "Difficulty 1-10"}</option>
+                ))}
+              </select>
 
               <input
                 className="input"
@@ -2154,9 +2260,15 @@ export default function AtlasLuthor() {
                 <div key={`${exercise.name}-${exerciseIndex}`} style={{ border: "1px solid #24242E", borderRadius: 12, padding: 10, display: "grid", gap: 8 }}>
                   <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} />
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                    <input className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })} />
-                    <input className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })} />
-                    <input className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })} />
+                    <select className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })}>
+                      {SET_OPTIONS.map(option => <option key={option} value={option}>{option} sets</option>)}
+                    </select>
+                    <select className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })}>
+                      {Array.from(new Set([String(exercise.reps), ...REP_OPTIONS])).map(option => <option key={option} value={option}>{option} reps</option>)}
+                    </select>
+                    <select className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })}>
+                      {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
+                    </select>
                   </div>
                   <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)}>
                     Remove
@@ -2168,9 +2280,15 @@ export default function AtlasLuthor() {
             <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
               <input className="input" value={editingRoutine.draft.name} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))} placeholder="New exercise name" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                <input className="input" value={editingRoutine.draft.sets} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, sets: event.target.value } }))} placeholder="Sets" />
-                <input className="input" value={editingRoutine.draft.reps} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, reps: event.target.value } }))} placeholder="Reps" />
-                <input className="input" value={editingRoutine.draft.weight} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, weight: event.target.value } }))} placeholder="Weight" />
+                <select className="input" value={editingRoutine.draft.sets} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, sets: event.target.value } }))}>
+                  {SET_OPTIONS.map(option => <option key={option} value={option}>{option} sets</option>)}
+                </select>
+                <select className="input" value={editingRoutine.draft.reps} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, reps: event.target.value } }))}>
+                  {REP_OPTIONS.map(option => <option key={option} value={option}>{option} reps</option>)}
+                </select>
+                <select className="input" value={editingRoutine.draft.weight} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, weight: event.target.value } }))}>
+                  {WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                </select>
               </div>
               <button className="primary-btn" onClick={addRoutineExercise}>
                 Add Exercise
@@ -2196,36 +2314,45 @@ export default function AtlasLuthor() {
             </p>
 
             <div style={{ display: "grid", gap: 10 }}>
-              <input
+              <select
                 className="input"
                 value={editingProfile.currentWeight}
                 onChange={event => setEditingProfile(prev => ({ ...prev, currentWeight: event.target.value }))}
-                placeholder="Current weight"
-                inputMode="decimal"
-              />
+              >
+                {Array.from(new Set([editingProfile.currentWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
+                  <option key={option} value={option}>{option} LB current</option>
+                ))}
+              </select>
 
-              <input
+              <select
                 className="input"
                 value={editingProfile.startWeight}
                 onChange={event => setEditingProfile(prev => ({ ...prev, startWeight: event.target.value }))}
-                placeholder="Start weight"
-                inputMode="decimal"
-              />
+              >
+                {Array.from(new Set([editingProfile.startWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
+                  <option key={option} value={option}>{option} LB start</option>
+                ))}
+              </select>
 
-              <input
+              <select
                 className="input"
                 value={editingProfile.targetWeight}
                 onChange={event => setEditingProfile(prev => ({ ...prev, targetWeight: event.target.value }))}
-                placeholder="Target weight"
-                inputMode="decimal"
-              />
+              >
+                {Array.from(new Set([editingProfile.targetWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
+                  <option key={option} value={option}>{option} LB target</option>
+                ))}
+              </select>
 
-              <input
+              <select
                 className="input"
                 value={editingProfile.height}
                 onChange={event => setEditingProfile(prev => ({ ...prev, height: event.target.value }))}
-                placeholder="Height"
-              />
+              >
+                {Array.from(new Set([editingProfile.height, ...HEIGHT_OPTIONS])).map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
 
               <input
                 className="input"
@@ -2270,21 +2397,25 @@ export default function AtlasLuthor() {
                 placeholder="Main goal"
               />
 
-              <input
+              <select
                 className="input"
                 value={editingGoals.weeklyProgressGoal}
                 onChange={event => setEditingGoals(prev => ({ ...prev, weeklyProgressGoal: event.target.value }))}
-                placeholder="Weekly progress goal %"
-                inputMode="numeric"
-              />
+              >
+                {Array.from(new Set([editingGoals.weeklyProgressGoal, ...PROGRESS_GOAL_OPTIONS])).map(option => (
+                  <option key={option} value={option}>{option}% weekly goal</option>
+                ))}
+              </select>
 
-              <input
+              <select
                 className="input"
                 value={editingGoals.weeklySessionsGoal}
                 onChange={event => setEditingGoals(prev => ({ ...prev, weeklySessionsGoal: event.target.value }))}
-                placeholder="Weekly sessions goal"
-                inputMode="numeric"
-              />
+              >
+                {Array.from(new Set([editingGoals.weeklySessionsGoal, ...SESSION_GOAL_OPTIONS])).map(option => (
+                  <option key={option} value={option}>{option} sessions</option>
+                ))}
+              </select>
 
               <input
                 className="input"
