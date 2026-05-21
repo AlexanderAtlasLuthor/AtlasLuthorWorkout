@@ -107,12 +107,25 @@ const baseWorkoutData = {
 };
 
 const TYPE_THEME = {
-  PUSH: { accent: "#E8E8E8", sub: "#A0A0A0", badge: "#2a2a2a" },
-  PULL: { accent: "#90C8FF", sub: "#5899CC", badge: "#0d1f33" },
-  LEGS: { accent: "#B8A0FF", sub: "#8060CC", badge: "#180d33" },
-  OMNIMAN: { accent: "#FFD060", sub: "#CC9900", badge: "#2a1e00" },
-  CUSTOM: { accent: "#9AA0AA", sub: "#6E7480", badge: "#202025" },
+  PUSH: { accent: "#E8E8E8", sub: "#A0A0A0", badge: "#2a2a2a", lightAccent: "#3C4250", lightSub: "#6B7280", lightBadge: "#E4E6EB" },
+  PULL: { accent: "#90C8FF", sub: "#5899CC", badge: "#0d1f33", lightAccent: "#1F6FB8", lightSub: "#3F7FB0", lightBadge: "#DBEAFA" },
+  LEGS: { accent: "#B8A0FF", sub: "#8060CC", badge: "#180d33", lightAccent: "#6A4ACC", lightSub: "#7E68C0", lightBadge: "#E7E1FB" },
+  OMNIMAN: { accent: "#FFD060", sub: "#CC9900", badge: "#2a1e00", lightAccent: "#9A7400", lightSub: "#B08A1F", lightBadge: "#F6E9C2" },
+  CUSTOM: { accent: "#9AA0AA", sub: "#6E7480", badge: "#202025", lightAccent: "#4A4F58", lightSub: "#6E7480", lightBadge: "#E5E6E9" },
 };
+
+const CALENDAR_STATUS = {
+  completed: { label: "Completed", dark: { bg: "#3FB98A", fg: "#04130C" }, light: { bg: "#2E9E73", fg: "#FFFFFF" } },
+  trained: { label: "Trained", dark: { bg: "#90C8FF", fg: "#06182B" }, light: { bg: "#3F8FD6", fg: "#FFFFFF" } },
+  missed: { label: "Missed", dark: { bg: "#E5604D", fg: "#2A0A06" }, light: { bg: "#D6493A", fg: "#FFFFFF" } },
+  rest: { label: "Rest", dark: { bg: "#3A3A44", fg: "#AEB2BC" }, light: { bg: "#D7D9DF", fg: "#3A3F49" } },
+  planned: { label: "Planned", dark: { bg: "#16161C", fg: "#5A5A66" }, light: { bg: "#ECEDF1", fg: "#9AA0AC" } },
+};
+
+function getCalendarVisual(status, isLight) {
+  const entry = CALENDAR_STATUS[status] || CALENDAR_STATUS.planned;
+  return isLight ? entry.light : entry.dark;
+}
 
 const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -232,7 +245,7 @@ const UI_TEXT = {
     profileName: "Profile name",
     language: "Language",
     theme: "Theme",
-    lightStarts: "Auto: light from 00:00, dark from 18:00.",
+    lightStarts: "Auto: light mode until 1:00 PM, dark mode from 1:00 PM to 11:59 PM.",
     openFullPhotos: "Open photo page",
     noPhotos: "No progress photos yet.",
   },
@@ -257,7 +270,7 @@ const UI_TEXT = {
     profileName: "Nombre del perfil",
     language: "Idioma",
     theme: "Tema",
-    lightStarts: "Auto: claro desde 00:00, oscuro desde 18:00.",
+    lightStarts: "Auto: modo claro hasta la 1:00 PM, modo oscuro de 1:00 PM a 11:59 PM.",
     openFullPhotos: "Abrir página de fotos",
     noPhotos: "Aún no hay fotos de progreso.",
   },
@@ -368,7 +381,7 @@ function getDayNameFromDate(date) {
 }
 
 function getAutoTheme(hour = new Date().getHours()) {
-  return hour >= 18 ? "dark" : "light";
+  return hour >= 13 ? "dark" : "light";
 }
 
 function getGreetingKey(hour = new Date().getHours()) {
@@ -470,7 +483,7 @@ export default function AtlasLuthor() {
   const [screen, setScreen] = useState("home");
   const [users, setUsers] = useState(() => safeLoad(STORAGE_KEYS.users, {}));
   const [activeUserId, setActiveUserId] = useState(() => safeLoad(STORAGE_KEYS.activeUser, ""));
-  const [authMode, setAuthMode] = useState(() => (safeLoad(STORAGE_KEYS.activeUser, "") ? "login" : "signup"));
+  const [authMode, setAuthMode] = useState("landing");
   const [loginDraft, setLoginDraft] = useState({ userId: "", password: "" });
   const [signupDraft, setSignupDraft] = useState(DEFAULT_SIGNUP);
   const [authError, setAuthError] = useState("");
@@ -527,7 +540,6 @@ export default function AtlasLuthor() {
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
-  const theme = TYPE_THEME[day.type];
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(users));
@@ -1019,6 +1031,13 @@ export default function AtlasLuthor() {
   const text = UI_TEXT[language];
   const activeThemeMode = appSettings.themeMode === "auto" ? getAutoTheme(clockNow.getHours()) : appSettings.themeMode;
   const isLightMode = activeThemeMode === "light";
+  const themeFor = type => {
+    const base = TYPE_THEME[type] || TYPE_THEME.CUSTOM;
+    return isLightMode
+      ? { ...base, accent: base.lightAccent, sub: base.lightSub, badge: base.lightBadge }
+      : base;
+  };
+  const theme = themeFor(day.type);
   const greeting = text[getGreetingKey(clockNow.getHours())];
   const userName = appSettings.name?.trim() || "Atlas";
   const displayDay = dayName => getDisplayDay(dayName, language);
@@ -1026,7 +1045,7 @@ export default function AtlasLuthor() {
   const weekHeaderLabels = getWeekHeaderLabels(language);
   const todayDisplayName = displayDay(weeklyMetrics.today);
   const featurePages = [
-    { id: "today", title: text.todayCommand, label: "Today", accent: TYPE_THEME[weeklyMetrics.todayType].accent },
+    { id: "today", title: text.todayCommand, label: "Today", accent: themeFor(weeklyMetrics.todayType).accent },
     { id: "body", title: text.bodyStatus, label: "Body", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "score", title: text.atlasScore, label: "Score", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "calendar", title: text.monthCalendar, label: "Calendar", accent: "#90C8FF" },
@@ -1646,6 +1665,49 @@ export default function AtlasLuthor() {
     }));
   };
 
+  const updateRoutineSessionMeta = patch => {
+    const { dayName, sessionIndex } = editingRoutine;
+
+    setWorkoutData(prev => ({
+      ...prev,
+      [dayName]: {
+        ...prev[dayName],
+        sessions: prev[dayName].sessions.map((currentSession, currentSessionIndex) =>
+          currentSessionIndex === sessionIndex ? { ...currentSession, ...patch } : currentSession
+        ),
+      },
+    }));
+  };
+
+  const addRoutineSession = () => {
+    const { dayName } = editingRoutine;
+    const nextIndex = workoutData[dayName].sessions.length;
+
+    setWorkoutData(prev => ({
+      ...prev,
+      [dayName]: {
+        ...prev[dayName],
+        sessions: [...prev[dayName].sessions, { time: "PM", name: "New Session", warmup: null, exercises: [] }],
+      },
+    }));
+    setEditingRoutine(prev => ({ ...prev, sessionIndex: nextIndex }));
+  };
+
+  const removeRoutineSession = () => {
+    const { dayName, sessionIndex } = editingRoutine;
+
+    if (workoutData[dayName].sessions.length <= 1) return;
+
+    setWorkoutData(prev => ({
+      ...prev,
+      [dayName]: {
+        ...prev[dayName],
+        sessions: prev[dayName].sessions.filter((_, index) => index !== sessionIndex),
+      },
+    }));
+    setEditingRoutine(prev => ({ ...prev, sessionIndex: Math.max(0, prev.sessionIndex - 1) }));
+  };
+
   const duplicateRoutineSession = () => {
     const { dayName, sessionIndex } = editingRoutine;
 
@@ -1660,31 +1722,6 @@ export default function AtlasLuthor() {
         ),
       },
     }));
-  };
-
-  const moveRoutineSession = direction => {
-    const { dayName, sessionIndex } = editingRoutine;
-    const currentDayIndex = days.indexOf(dayName);
-    const nextDayName = days[currentDayIndex + direction];
-
-    if (!nextDayName) return;
-
-    setWorkoutData(prev => {
-      const movingSession = prev[dayName].sessions[sessionIndex];
-
-      return {
-        ...prev,
-        [dayName]: {
-          ...prev[dayName],
-          sessions: prev[dayName].sessions.filter((_, index) => index !== sessionIndex),
-        },
-        [nextDayName]: {
-          ...prev[nextDayName],
-          sessions: [...prev[nextDayName].sessions, movingSession],
-        },
-      };
-    });
-    setEditingRoutine(prev => ({ ...prev, dayName: nextDayName, sessionIndex: workoutData[nextDayName].sessions.length }));
   };
 
   const acceptProgression = () => {
@@ -1725,7 +1762,9 @@ export default function AtlasLuthor() {
     <div className={`app-root ${isLightMode ? "light-mode" : "dark-mode"}`} style={{ minHeight: "100dvh", background: isLightMode ? "#F3F4F6" : "#0C0C10", color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=DM+Sans:wght@400;500;600&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+        button, .day-pill, .ex-card, .session-tab, label { -webkit-tap-highlight-color: transparent; }
+        input, select, textarea { font-size: 16px; }
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
@@ -1788,7 +1827,10 @@ export default function AtlasLuthor() {
         .primary-btn { width: 100%; border: 0; border-radius: 14px; padding: 15px 16px; background: #FFFFFF; color: #050507; font-family: 'Orbitron', monospace; font-weight: 900; letter-spacing: 2px; cursor: pointer; }
         .dark-btn { border: 1.5px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 12px 14px; background: rgba(20,20,24,0.8); backdrop-filter: blur(16px); color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-weight: 700; cursor: pointer; }
         .edit-btn { border: 1px solid rgba(255,255,255,0.1); background: rgba(15,15,20,0.78); color: #888; border-radius: 8px; padding: 6px 8px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; }
-        .input { width: 100%; border: 1.5px solid #282834; background: #0F0F14; color: #FFFFFF; border-radius: 12px; padding: 12px; font-family: 'DM Sans', sans-serif; font-weight: 700; outline: none; }
+        .input { width: 100%; min-width: 0; max-width: 100%; border: 1.5px solid #282834; background: #0F0F14; color: #FFFFFF; border-radius: 12px; padding: 12px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; outline: none; }
+        input[type="date"].input, input[type="time"].input { -webkit-appearance: none; appearance: none; display: block; min-height: 46px; }
+        .field-label { color: #8A8F99; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+        .menu-section-label { color: #6E7480; font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 3px; margin: 4px 2px 2px; }
         .compact-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
         .photo-strip { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
         .photo-card { flex: 0 0 118px; min-width: 0; border: 1px solid #24242E; border-radius: 10px; overflow: hidden; background: #101015; scroll-snap-align: start; }
@@ -1868,15 +1910,19 @@ export default function AtlasLuthor() {
         }
         .light-mode [style*="#101015"],
         .light-mode [style*="#0F0F14"],
+        .light-mode [style*="#111115"],
+        .light-mode [style*="#15151B"],
+        .light-mode [style*="#151207"],
+        .light-mode [style*="#1A1A22"],
         .light-mode [style*="#20202A"],
-        .light-mode [style*="#24242E"],
-        .light-mode [style*="rgb(16, 16, 21)"],
-        .light-mode [style*="rgb(15, 15, 20)"],
-        .light-mode [style*="rgb(32, 32, 42)"],
-        .light-mode [style*="rgb(36, 36, 46)"] {
-          background: rgba(255,255,255,0.82) !important;
+        .light-mode [style*="#24242E"] {
+          background: rgba(255,255,255,0.86) !important;
           border-color: rgba(15,18,26,0.13) !important;
         }
+        .light-mode .industry-mark,
+        .light-mode .field-label,
+        .light-mode .menu-section-label,
+        .light-mode .detail-label { color: #5A6270 !important; }
         .light-mode img + p,
         .light-mode button span,
         .light-mode [style*="#101015"] p,
@@ -1941,8 +1987,47 @@ export default function AtlasLuthor() {
           </p>
         </div>
 
-        {!activeUserId && (
+        {!activeUserId && authMode === "landing" && (
           <div className="fade-up feature-page">
+            <div className="feature-hero">
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>
+                WELCOME TO ATLAS LUTHOR
+              </p>
+              <h2 className="feature-title">Your Strength Command Center</h2>
+              <p className="feature-copy">
+                Atlas Luthor is a personal workout app. Plan your weekly split, track every set with rest timers, log body weight and progress photos, and let the protocol guide your gains.
+              </p>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14, display: "grid", gap: 14 }}>
+              {[
+                { title: "Build your routine", copy: "Start with the Atlas Push/Pull/Legs protocol or create your own split, then edit it any time." },
+                { title: "Track every workout", copy: "Check off sets, run rest timers, add notes, and mark personal records as you train." },
+                { title: "See your progress", copy: "Month calendar, weekly metrics, body status, progress photos, and a live Atlas Score." },
+              ].map(item => (
+                <div key={item.title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{ width: 9, height: 9, borderRadius: 999, background: "#90C8FF", marginTop: 6, flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 15, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{item.title}</p>
+                    <p style={{ fontSize: 13, color: "#888", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginTop: 3 }}>{item.copy}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="home-card" style={{ display: "grid", gap: 10 }}>
+              <button className="primary-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>GET STARTED</button>
+              <button className="dark-btn" onClick={() => { setAuthMode("login"); setAuthError(""); }}>I already have an account</button>
+            </div>
+          </div>
+        )}
+
+        {!activeUserId && authMode !== "landing" && (
+          <div className="fade-up feature-page">
+            <button className="dark-btn" onClick={() => { setAuthMode("landing"); setAuthError(""); }} style={{ marginBottom: 14 }}>
+              Back
+            </button>
+
             <div className="feature-hero">
               <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>
                 {authMode === "signup" ? "CREATE PROFILE" : "WELCOME BACK"}
@@ -1962,35 +2047,92 @@ export default function AtlasLuthor() {
             )}
 
             {authMode === "login" ? (
-              <div className="home-card" style={{ display: "grid", gap: 10 }}>
-                <input className="input" value={loginDraft.userId} onChange={event => setLoginDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="User ID" />
-                <input className="input" type="password" value={loginDraft.password} onChange={event => setLoginDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
+              <div className="home-card" style={{ display: "grid", gap: 12 }}>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">USER ID</span>
+                  <input className="input" value={loginDraft.userId} onChange={event => setLoginDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="User ID" />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">PASSWORD</span>
+                  <input className="input" type="password" value={loginDraft.password} onChange={event => setLoginDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
+                </label>
                 <button className="primary-btn" onClick={handleLogin}>LOGIN</button>
                 <button className="dark-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>Create new account</button>
               </div>
             ) : (
-              <div className="home-card" style={{ display: "grid", gap: 10 }}>
-                <input className="input" value={signupDraft.name} onChange={event => setSignupDraft(prev => ({ ...prev, name: event.target.value }))} placeholder="Name" />
-                <input className="input" value={signupDraft.userId} onChange={event => setSignupDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="User ID" />
-                <input className="input" type="password" value={signupDraft.password} onChange={event => setSignupDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
-                <select className="input" value={signupDraft.trainingPlan} onChange={event => setSignupDraft(prev => ({ ...prev, trainingPlan: event.target.value }))}>
-                  {TRAINING_PLAN_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-                <select className="input" value={signupDraft.currentWeight} onChange={event => setSignupDraft(prev => ({ ...prev, currentWeight: event.target.value }))}>
-                  {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB current</option>)}
-                </select>
-                <select className="input" value={signupDraft.targetWeight} onChange={event => setSignupDraft(prev => ({ ...prev, targetWeight: event.target.value }))}>
-                  {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB target</option>)}
-                </select>
-                <select className="input" value={signupDraft.height} onChange={event => setSignupDraft(prev => ({ ...prev, height: event.target.value }))}>
-                  {HEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
-                </select>
-                <input className="input" type="date" value={signupDraft.startDate} onChange={event => setSignupDraft(prev => ({ ...prev, startDate: event.target.value }))} />
-                <input className="input" type="date" value={signupDraft.targetDate} onChange={event => setSignupDraft(prev => ({ ...prev, targetDate: event.target.value }))} />
-                <input className="input" value={signupDraft.focusGoal} onChange={event => setSignupDraft(prev => ({ ...prev, focusGoal: event.target.value }))} placeholder="Main goal" />
-                <select className="input" value={signupDraft.language} onChange={event => setSignupDraft(prev => ({ ...prev, language: event.target.value }))}>
-                  {LANGUAGE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
+              <div className="home-card" style={{ display: "grid", gap: 12 }}>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">NAME</span>
+                  <input className="input" value={signupDraft.name} onChange={event => setSignupDraft(prev => ({ ...prev, name: event.target.value }))} placeholder="Your name" />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">USER ID</span>
+                  <input className="input" value={signupDraft.userId} onChange={event => setSignupDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="Choose a User ID" />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">PASSWORD</span>
+                  <input className="input" type="password" value={signupDraft.password} onChange={event => setSignupDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Choose a password" />
+                </label>
+
+                <div style={{ border: "1.5px solid #90C8FF55", borderRadius: 14, padding: 12, display: "grid", gap: 8 }}>
+                  <span className="field-label" style={{ color: "#90C8FF" }}>CHOOSE YOUR STARTING ROUTINE</span>
+                  {TRAINING_PLAN_OPTIONS.map(option => {
+                    const selected = signupDraft.trainingPlan === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className="dark-btn"
+                        onClick={() => setSignupDraft(prev => ({ ...prev, trainingPlan: option.value }))}
+                        style={{ textAlign: "left", boxShadow: selected ? "0 0 0 2px #90C8FF" : "none" }}
+                      >
+                        <span style={{ display: "block", fontWeight: 800 }}>{option.label}</span>
+                        <span style={{ display: "block", fontSize: 12, color: "#888", marginTop: 3, fontWeight: 500 }}>
+                          {option.value === "atlas"
+                            ? "Pre-loaded Push / Pull / Legs split, ready to train today."
+                            : "Empty week. Add your own exercises after sign up."}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <label style={{ display: "block" }}>
+                  <span className="field-label">CURRENT WEIGHT</span>
+                  <select className="input" value={signupDraft.currentWeight} onChange={event => setSignupDraft(prev => ({ ...prev, currentWeight: event.target.value }))}>
+                    {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB</option>)}
+                  </select>
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">TARGET WEIGHT</span>
+                  <select className="input" value={signupDraft.targetWeight} onChange={event => setSignupDraft(prev => ({ ...prev, targetWeight: event.target.value }))}>
+                    {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB</option>)}
+                  </select>
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">HEIGHT</span>
+                  <select className="input" value={signupDraft.height} onChange={event => setSignupDraft(prev => ({ ...prev, height: event.target.value }))}>
+                    {HEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">START DATE</span>
+                  <input className="input" type="date" value={signupDraft.startDate} onChange={event => setSignupDraft(prev => ({ ...prev, startDate: event.target.value }))} />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">TARGET DATE</span>
+                  <input className="input" type="date" value={signupDraft.targetDate} onChange={event => setSignupDraft(prev => ({ ...prev, targetDate: event.target.value }))} />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">MAIN GOAL</span>
+                  <input className="input" value={signupDraft.focusGoal} onChange={event => setSignupDraft(prev => ({ ...prev, focusGoal: event.target.value }))} placeholder="Main goal" />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">LANGUAGE</span>
+                  <select className="input" value={signupDraft.language} onChange={event => setSignupDraft(prev => ({ ...prev, language: event.target.value }))}>
+                    {LANGUAGE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
                 <button className="primary-btn" onClick={handleSignup}>SIGN UP</button>
                 <button className="dark-btn" onClick={() => { setAuthMode("login"); setAuthError(""); }}>I already have an account</button>
               </div>
@@ -2001,7 +2143,7 @@ export default function AtlasLuthor() {
         {activeUserId && screen === "home" && (
           <div className="fade-up" style={{ padding: "20px" }}>
             <div className="feature-hero" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace" }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace" }}>
                 {activeThemeMode.toUpperCase()} MODE
               </p>
               <h2 className="feature-title">
@@ -2015,7 +2157,7 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14, borderColor: "#2A2A34" }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
                 TODAY - {displayDayShort(weeklyMetrics.today, weeklyMetrics.todayLabel)} / {weeklyMetrics.todayType}
               </p>
 
@@ -2084,7 +2226,7 @@ export default function AtlasLuthor() {
                 ATLAS SCORE
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 92, height: 92, borderRadius: "50%", border: "8px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(255,255,255,0.12)" }}>
+                <div style={{ width: 92, height: 92, borderRadius: "50%", border: `8px solid ${isLightMode ? "#101015" : "#FFFFFF"}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isLightMode ? "0 0 18px rgba(20,24,36,0.12)" : "0 0 24px rgba(255,255,255,0.12)" }}>
                   <span style={{ fontSize: 25, fontWeight: 900, fontFamily: "'Orbitron', monospace" }}>{atlasScore}</span>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -2110,26 +2252,30 @@ export default function AtlasLuthor() {
                   if (!cell) return <div key={`blank-${index}`} />;
 
                   const logged = calendarLog[cell.key];
-                  const isPast = cell.key < getDateKey();
+                  const todayKey = getDateKey();
+                  const isPast = cell.key < todayKey;
+                  const isToday = cell.key === todayKey;
                   const status = logged?.status || (isPast ? "missed" : "planned");
-                  const statusColor = {
-                    completed: "#FFFFFF",
-                    trained: "#90C8FF",
-                    missed: "#553333",
-                    rest: "#666",
-                    planned: "#24242E",
-                  }[status];
+                  const visual = getCalendarVisual(status, isLightMode);
 
                   return (
-                    <div key={cell.key} title={status} style={{ aspectRatio: "1", borderRadius: 8, border: `1px solid ${statusColor}`, background: status === "completed" ? "#FFFFFF" : "#101015", color: status === "completed" ? "#050507" : "#888", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
+                    <div key={cell.key} title={`${cell.key} - ${status}`} style={{ aspectRatio: "1", borderRadius: 8, background: visual.bg, color: visual.fg, border: isToday ? `2px solid ${isLightMode ? "#101015" : "#FFFFFF"}` : "1px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
                       {cell.dayNumber}
                     </div>
                   );
                 })}
               </div>
-              <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
-                White completed · Blue trained · Red missed
-              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {["completed", "trained", "missed", "rest"].map(status => {
+                  const visual = getCalendarVisual(status, isLightMode);
+                  return (
+                    <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
+                      <span style={{ width: 11, height: 11, borderRadius: 3, background: visual.bg, display: "inline-block" }} />
+                      {CALENDAR_STATUS[status].label}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
@@ -2184,8 +2330,8 @@ export default function AtlasLuthor() {
                       <span>{goal.label}</span>
                       <span>{goal.current} / {goal.target}</span>
                     </div>
-                    <div style={{ height: 5, background: "#1E1E26", borderRadius: 5, overflow: "hidden" }}>
-                      <div style={{ width: `${goal.pct}%`, height: "100%", background: "#FFFFFF", borderRadius: 5, transition: "width 0.3s ease" }} />
+                    <div style={{ height: 5, background: isLightMode ? "#E2E4E9" : "#1E1E26", borderRadius: 5, overflow: "hidden" }}>
+                      <div style={{ width: `${goal.pct}%`, height: "100%", background: isLightMode ? "#101015" : "#FFFFFF", borderRadius: 5, transition: "width 0.3s ease" }} />
                     </div>
                   </div>
                 ))}
@@ -2230,14 +2376,14 @@ export default function AtlasLuthor() {
               </div>
 
               {chartEntries.length > 0 && (
-                <div style={{ display: "flex", alignItems: "end", gap: 8, height: 92, marginTop: 14, padding: "10px 8px", borderRadius: 12, border: "1px solid #20202A", background: "rgba(10,10,14,0.55)" }}>
+                <div style={{ display: "flex", alignItems: "end", gap: 8, height: 92, marginTop: 14, padding: "10px 8px", borderRadius: 12, border: "1px solid #20202A", background: isLightMode ? "rgba(20,24,36,0.05)" : "rgba(10,10,14,0.55)" }}>
                   {chartEntries.map(entry => {
                     const range = Math.max(maxChartWeight - minChartWeight, 1);
                     const height = 24 + ((entry.weightNumber - minChartWeight) / range) * 48;
 
                     return (
                       <div key={`${entry.id}-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-                        <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: "linear-gradient(180deg, #FFFFFF, #777B86)", boxShadow: "0 0 22px rgba(255,255,255,0.14)" }} />
+                        <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)", boxShadow: isLightMode ? "none" : "0 0 22px rgba(255,255,255,0.14)" }} />
                         <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {entry.weight}
                         </p>
@@ -2417,7 +2563,7 @@ export default function AtlasLuthor() {
               <div style={{ display: "grid", gap: 10 }}>
                 {days.map(dayName => {
                   const currentDay = workoutData[dayName];
-                  const currentTheme = TYPE_THEME[currentDay.type];
+                  const currentTheme = themeFor(currentDay.type);
 
                   return (
                     <button
@@ -2510,7 +2656,7 @@ export default function AtlasLuthor() {
                           <p className="detail-row-main">{row.exercise.name}</p>
                           <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {row.setsDone}/{row.setsTotal} sets</p>
                         </div>
-                        <span style={{ color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
+                        <span style={{ color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
                       </div>
                     ))}
                   </div>
@@ -2567,7 +2713,7 @@ export default function AtlasLuthor() {
                           <p className="detail-row-main">{displayDayShort(row.dayName, row.label)} - {displayDay(row.dayName)}</p>
                           <p className="detail-row-sub">{row.doneDayExercises}/{row.totalDayExercises} exercises - {row.doneDaySets}/{row.totalDaySets} sets</p>
                         </div>
-                        <span style={{ color: TYPE_THEME[row.type].accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.progressPct}%</span>
+                        <span style={{ color: themeFor(row.type).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.progressPct}%</span>
                       </div>
                     ))}
                   </div>
@@ -2611,13 +2757,26 @@ export default function AtlasLuthor() {
                     {calendarCells.map((cell, index) => {
                       if (!cell) return <div key={`blank-detail-${index}`} />;
                       const logged = calendarLog[cell.key];
-                      const isPast = cell.key < getDateKey();
+                      const todayKey = getDateKey();
+                      const isPast = cell.key < todayKey;
+                      const isToday = cell.key === todayKey;
                       const status = logged?.status || (isPast ? "missed" : "planned");
-                      const statusColor = { completed: "#FFFFFF", trained: "#90C8FF", missed: "#553333", rest: "#666", planned: "#24242E" }[status];
+                      const visual = getCalendarVisual(status, isLightMode);
                       return (
-                        <div key={cell.key} title={status} style={{ aspectRatio: "1", borderRadius: 8, border: `1px solid ${statusColor}`, background: status === "completed" ? "#FFFFFF" : "#101015", color: status === "completed" ? "#050507" : "#888", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
+                        <div key={cell.key} title={`${cell.key} - ${status}`} style={{ aspectRatio: "1", borderRadius: 8, background: visual.bg, color: visual.fg, border: isToday ? `2px solid ${isLightMode ? "#101015" : "#FFFFFF"}` : "1px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
                           {cell.dayNumber}
                         </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+                    {["completed", "trained", "missed", "rest", "planned"].map(status => {
+                      const visual = getCalendarVisual(status, isLightMode);
+                      return (
+                        <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ width: 11, height: 11, borderRadius: 3, background: visual.bg, display: "inline-block" }} />
+                          {CALENDAR_STATUS[status].label}
+                        </span>
                       );
                     })}
                   </div>
@@ -2719,8 +2878,8 @@ export default function AtlasLuthor() {
                   <div key={goal.label} className="detail-card">
                     <p className="detail-label">{goal.label.toUpperCase()}</p>
                     <p className="detail-value">{goal.current} / {goal.target}</p>
-                    <div style={{ height: 6, background: "#1E1E26", borderRadius: 6, overflow: "hidden", marginTop: 10 }}>
-                      <div style={{ width: `${goal.pct}%`, height: "100%", background: "#FFFFFF", borderRadius: 6 }} />
+                    <div style={{ height: 6, background: isLightMode ? "#E2E4E9" : "#1E1E26", borderRadius: 6, overflow: "hidden", marginTop: 10 }}>
+                      <div style={{ width: `${goal.pct}%`, height: "100%", background: isLightMode ? "#101015" : "#FFFFFF", borderRadius: 6 }} />
                     </div>
                   </div>
                 ))}
@@ -2746,7 +2905,7 @@ export default function AtlasLuthor() {
                       const height = 34 + ((entry.weightNumber - minChartWeight) / range) * 66;
                       return (
                         <div key={`${entry.id}-feature-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-                          <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: "linear-gradient(180deg, #FFFFFF, #777B86)" }} />
+                          <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)" }} />
                           <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{entry.weight}</p>
                         </div>
                       );
@@ -2843,7 +3002,7 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 {days.map(dayName => {
                   const currentDay = workoutData[dayName];
-                  const currentTheme = TYPE_THEME[currentDay.type];
+                  const currentTheme = themeFor(currentDay.type);
                   const dayExercises = currentDay.sessions.reduce((sum, currentSession) => sum + currentSession.exercises.length, 0);
                   const daySets = currentDay.sessions.reduce((sum, currentSession) => sum + currentSession.exercises.reduce((setSum, exercise) => setSum + Number(exercise.sets || 0), 0), 0);
 
@@ -2883,7 +3042,7 @@ export default function AtlasLuthor() {
               <div style={{ display: "flex", gap: 6, background: "#111115", borderRadius: 14, padding: "8px 8px" }}>
                 {days.map(d => {
                   const isActive = d === activeDay;
-                  const t = TYPE_THEME[workoutData[d].type];
+                  const t = themeFor(workoutData[d].type);
 
                   return (
                     <div
@@ -2908,8 +3067,8 @@ export default function AtlasLuthor() {
             </div>
             )}
 
-            <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
+            <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div style={{ minWidth: 0 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
                   {todayOnlyMode ? "TODAY ONLY" : displayDay(activeDay).toUpperCase()}
                 </span>
@@ -2918,11 +3077,19 @@ export default function AtlasLuthor() {
                 </span>
               </div>
 
-              {total > 0 && (
-                <div style={{ fontSize: 13, color: "#666", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
-                  <span style={{ color: theme.accent, fontWeight: 700 }}>{done}</span> / {total} done
-                </div>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                {total > 0 && (
+                  <div style={{ fontSize: 13, color: "#666", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                    <span style={{ color: theme.accent, fontWeight: 700 }}>{done}</span> / {total} done
+                  </div>
+                )}
+                <button
+                  className="edit-btn"
+                  onClick={() => setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } })}
+                >
+                  Edit Day
+                </button>
+              </div>
             </div>
 
             {total > 0 && (
@@ -3145,7 +3312,7 @@ export default function AtlasLuthor() {
                     onClick={() => toggleExercise(i)}
                     style={highlightedExerciseIndex === i && !isDone ? { borderColor: theme.accent, boxShadow: `0 0 22px ${theme.accent}22` } : {}}
                   >
-                    <div className="check" style={isDone ? { background: theme.accent, borderColor: theme.accent } : {}}>
+                    <div className="check" style={isDone ? { background: theme.accent, borderColor: theme.accent, color: isLightMode ? "#FFFFFF" : "#000" } : {}}>
                       {isDone ? "✓" : ""}
                     </div>
 
@@ -3217,7 +3384,7 @@ export default function AtlasLuthor() {
                           weight: ex.weight,
                         });
                       }}
-                      style={{ padding: "6px 12px", borderRadius: 8, background: isDone ? "#111" : theme.badge, border: `1px solid ${isDone ? "#222" : theme.accent + "40"}`, cursor: "pointer" }}
+                      style={{ padding: "6px 12px", borderRadius: 8, background: isDone ? (isLightMode ? "#E2E4E9" : "#111") : theme.badge, border: `1px solid ${isDone ? (isLightMode ? "#D5D7DD" : "#222") : theme.accent + "40"}`, cursor: "pointer" }}
                     >
                       <span style={{ fontSize: 13, fontWeight: 700, color: isDone ? "#444" : theme.accent, fontFamily: "'DM Sans', sans-serif" }}>
                         {ex.weight}
@@ -3254,19 +3421,87 @@ export default function AtlasLuthor() {
       {showMenu && (
         <div className="modal-backdrop">
           <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              ATLAS MENU
-            </p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                  ATLAS MENU
+                </p>
+                <p style={{ fontSize: 12, color: "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
+                  Signed in as {userName}
+                </p>
+              </div>
+              <button className="edit-btn" onClick={() => setShowMenu(false)} style={{ padding: "8px 12px" }}>
+                Close
+              </button>
+            </div>
 
-            <div className="settings-grid">
+            <p className="menu-section-label">WORKOUT</p>
+            <div style={{ display: "grid", gap: 8, marginBottom: 18, marginTop: 6 }}>
               <button
                 className="primary-btn"
+                onClick={() => {
+                  setShowMenu(false);
+                  openWorkout(weeklyMetrics.today);
+                }}
+              >
+                START TODAY
+              </button>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  setShowMenu(false);
+                  setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } });
+                }}
+              >
+                Manage Workouts
+              </button>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <button
+                  className="dark-btn"
+                  onClick={() => {
+                    setShowMenu(false);
+                    openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true });
+                  }}
+                >
+                  Quick Today
+                </button>
+                <button
+                  className="dark-btn"
+                  onClick={() => {
+                    resetWeek();
+                    setShowMenu(false);
+                  }}
+                >
+                  Reset Week
+                </button>
+              </div>
+            </div>
+
+            <p className="menu-section-label">PAGES</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 18, marginTop: 6 }}>
+              {featurePages.map(page => (
+                <button
+                  key={page.id}
+                  className="dark-btn"
+                  onClick={() => openFeaturePage(page.id)}
+                  style={{ padding: "11px 8px", display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}
+                >
+                  <span style={{ width: 18, height: 3, borderRadius: 2, background: page.accent, display: "block" }} />
+                  <span style={{ fontWeight: 800, fontSize: 13 }}>{page.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="menu-section-label">APP</p>
+            <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+              <button
+                className="dark-btn"
                 onClick={() => {
                   setShowMenu(false);
                   setShowSettings(true);
                 }}
               >
-                SETTINGS
+                Settings
               </button>
               <button
                 className="dark-btn"
@@ -3277,30 +3512,6 @@ export default function AtlasLuthor() {
               >
                 Reminders
               </button>
-              <div className="detail-card">
-                <p className="detail-label">PAGES</p>
-                <div className="detail-grid">
-                  {featurePages.map(page => (
-                    <button
-                      key={page.id}
-                      className="dark-btn"
-                      onClick={() => openFeaturePage(page.id)}
-                      style={{ color: page.accent, padding: "10px 8px" }}
-                    >
-                      {page.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  setShowMenu(false);
-                  setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } });
-                }}
-              >
-                Edit Routine
-              </button>
               <button
                 className="dark-btn"
                 onClick={() => {
@@ -3309,24 +3520,6 @@ export default function AtlasLuthor() {
                 }}
               >
                 Backup / Sync
-              </button>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  setShowMenu(false);
-                  openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true });
-                }}
-              >
-                Quick Today
-              </button>
-              <button className="dark-btn" onClick={() => {
-                resetWeek();
-                setShowMenu(false);
-              }}>
-                Reset Week
-              </button>
-              <button className="dark-btn" onClick={() => setShowMenu(false)}>
-                Close
               </button>
             </div>
           </div>
@@ -3711,38 +3904,104 @@ export default function AtlasLuthor() {
         </div>
       )}
 
-      {editingRoutine && (
+      {editingRoutine && (() => {
+        const routineDay = workoutData[editingRoutine.dayName];
+        const safeSessionIndex = Math.min(editingRoutine.sessionIndex, routineDay.sessions.length - 1);
+        const routineSession = routineDay.sessions[safeSessionIndex];
+
+        return (
         <div className="modal-backdrop">
           <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              ROUTINE EDITOR
-            </p>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 12 }}>
-              <select
-                className="input"
-                value={editingRoutine.dayName}
-                onChange={event => setEditingRoutine(prev => ({ ...prev, dayName: event.target.value, sessionIndex: 0 }))}
-              >
-                {days.map(dayName => (
-                  <option key={dayName} value={dayName}>{dayName}</option>
-                ))}
-              </select>
-              <select
-                className="input"
-                value={editingRoutine.sessionIndex}
-                onChange={event => setEditingRoutine(prev => ({ ...prev, sessionIndex: Number(event.target.value) }))}
-              >
-                {workoutData[editingRoutine.dayName].sessions.map((currentSession, index) => (
-                  <option key={`${currentSession.name}-${index}`} value={index}>{currentSession.time} {currentSession.name}</option>
-                ))}
-              </select>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div>
+                <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                  MANAGE WORKOUTS
+                </p>
+                <p style={{ fontSize: 12, color: "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
+                  Add, edit, or remove exercises and sessions.
+                </p>
+              </div>
+              <button className="edit-btn" onClick={() => setEditingRoutine(null)} style={{ padding: "8px 12px" }}>
+                Done
+              </button>
             </div>
 
-            <div style={{ display: "grid", gap: 10 }}>
-              {workoutData[editingRoutine.dayName].sessions[editingRoutine.sessionIndex]?.exercises.map((exercise, exerciseIndex) => (
-                <div key={`${exercise.name}-${exerciseIndex}`} style={{ border: "1px solid #24242E", borderRadius: 12, padding: 10, display: "grid", gap: 8 }}>
-                  <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} />
+            <p className="menu-section-label">DAY</p>
+            <select
+              className="input"
+              style={{ marginTop: 6, marginBottom: 16 }}
+              value={editingRoutine.dayName}
+              onChange={event => setEditingRoutine(prev => ({ ...prev, dayName: event.target.value, sessionIndex: 0 }))}
+            >
+              {days.map(dayName => (
+                <option key={dayName} value={dayName}>{getDisplayDay(dayName, language)} — {workoutData[dayName].type}</option>
+              ))}
+            </select>
+
+            <p className="menu-section-label">SESSION</p>
+            <div style={{ display: "grid", gap: 8, marginTop: 6, marginBottom: 16 }}>
+              <select
+                className="input"
+                value={safeSessionIndex}
+                onChange={event => setEditingRoutine(prev => ({ ...prev, sessionIndex: Number(event.target.value) }))}
+              >
+                {routineDay.sessions.map((currentSession, index) => (
+                  <option key={`${currentSession.name}-${index}`} value={index}>{index + 1}. {currentSession.time} — {currentSession.name}</option>
+                ))}
+              </select>
+              <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 8 }}>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">SESSION NAME</span>
+                  <input
+                    className="input"
+                    value={routineSession?.name || ""}
+                    onChange={event => updateRoutineSessionMeta({ name: event.target.value })}
+                    placeholder="Session name"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">TIME</span>
+                  <select
+                    className="input"
+                    value={routineSession?.time || "AM"}
+                    onChange={event => updateRoutineSessionMeta({ time: event.target.value })}
+                  >
+                    {Array.from(new Set([routineSession?.time || "AM", "AM", "PM", "FULL"])).map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                <button className="dark-btn" onClick={addRoutineSession}>Add Session</button>
+                <button className="dark-btn" onClick={duplicateRoutineSession}>Duplicate</button>
+                <button
+                  className="dark-btn"
+                  onClick={removeRoutineSession}
+                  disabled={routineDay.sessions.length <= 1}
+                  style={routineDay.sessions.length <= 1 ? { opacity: 0.4 } : { color: "#E5604D" }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            <p className="menu-section-label">EXERCISES</p>
+            <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
+              {(routineSession?.exercises || []).length === 0 && (
+                <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: "10px 2px" }}>
+                  No exercises in this session yet. Add one below.
+                </p>
+              )}
+              {(routineSession?.exercises || []).map((exercise, exerciseIndex) => (
+                <div key={`${exercise.name}-${exerciseIndex}`} style={{ border: "1px solid #24242E", borderRadius: 12, padding: 12, display: "grid", gap: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span className="field-label" style={{ marginBottom: 0 }}>EXERCISE {exerciseIndex + 1}</span>
+                    <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)} style={{ color: "#E5604D" }}>
+                      Remove
+                    </button>
+                  </div>
+                  <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} placeholder="Exercise name" />
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                     <select className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })}>
                       {SET_OPTIONS.map(option => <option key={option} value={option}>{option} sets</option>)}
@@ -3754,14 +4013,12 @@ export default function AtlasLuthor() {
                       {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
                     </select>
                   </div>
-                  <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)}>
-                    Remove
-                  </button>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+            <p className="menu-section-label" style={{ marginTop: 16 }}>ADD EXERCISE</p>
+            <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
               <input className="input" value={editingRoutine.draft.name} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))} placeholder="New exercise name" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                 <select className="input" value={editingRoutine.draft.sets} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, sets: event.target.value } }))}>
@@ -3777,18 +4034,14 @@ export default function AtlasLuthor() {
               <button className="primary-btn" onClick={addRoutineExercise}>
                 Add Exercise
               </button>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                <button className="dark-btn" onClick={() => moveRoutineSession(-1)}>Move Prev</button>
-                <button className="dark-btn" onClick={duplicateRoutineSession}>Duplicate</button>
-                <button className="dark-btn" onClick={() => moveRoutineSession(1)}>Move Next</button>
-              </div>
               <button className="dark-btn" onClick={() => setEditingRoutine(null)}>
                 Done
               </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {editingProfile && (
         <div className="modal-backdrop">

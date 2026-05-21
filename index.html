@@ -19,10 +19,16 @@
         background: #0C0C10;
       }
 
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+
       body {
         min-height: 100vh;
         color: #FFFFFF;
         overscroll-behavior-y: none;
+        touch-action: manipulation;
       }
 
       @supports (min-height: 100dvh) {
