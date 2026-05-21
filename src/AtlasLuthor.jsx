@@ -123,6 +123,10 @@ const STORAGE_KEYS = {
   goals: "atlas-luthor-goals",
   progressLog: "atlas-luthor-progress-log",
   exerciseNotes: "atlas-luthor-exercise-notes",
+  calendarLog: "atlas-luthor-calendar-log",
+  progressPhotos: "atlas-luthor-progress-photos",
+  cloudSettings: "atlas-luthor-cloud-settings",
+  notificationSettings: "atlas-luthor-notification-settings",
 };
 
 const DEFAULT_PROFILE = {
@@ -138,6 +142,19 @@ const DEFAULT_GOALS = {
   weeklySessionsGoal: "10",
   targetDate: "2026-04-09",
   focusGoal: "Build strength and finish the protocol",
+};
+
+const DEFAULT_CLOUD_SETTINGS = {
+  endpoint: "",
+  status: "Not connected",
+};
+
+const DEFAULT_NOTIFICATION_SETTINGS = {
+  enabled: false,
+  workoutTime: "07:00",
+  restTime: "21:30",
+  lastWorkoutNotice: "",
+  lastRestNotice: "",
 };
 
 function cloneData(value) {
@@ -209,6 +226,45 @@ function getWorkoutWeekKey(date = new Date()) {
   return current.toISOString().slice(0, 10);
 }
 
+function getMonthKey(date = new Date()) {
+  return date.toISOString().slice(0, 7);
+}
+
+function getDayNameFromDate(date) {
+  const map = ["Domingo", "Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes", "SÃ¡bado"];
+  return map[date.getDay()];
+}
+
+function getMonthDays(monthKey) {
+  const [year, month] = monthKey.split("-").map(Number);
+  const first = new Date(year, month - 1, 1);
+  const totalDays = new Date(year, month, 0).getDate();
+  const leading = first.getDay();
+  const cells = Array.from({ length: leading }, () => null);
+
+  for (let dayNumber = 1; dayNumber <= totalDays; dayNumber += 1) {
+    const date = new Date(year, month - 1, dayNumber);
+    cells.push({
+      date,
+      key: date.toISOString().slice(0, 10),
+      dayNumber,
+      dayName: getDayNameFromDate(date),
+    });
+  }
+
+  return cells;
+}
+
+function getExerciseFromKey(workoutData, key) {
+  const [dayName, sessionIndexRaw, exerciseIndexRaw] = key.split("-");
+  const sessionIndex = Number(sessionIndexRaw);
+  const exerciseIndex = Number(exerciseIndexRaw);
+  const currentSession = workoutData[dayName]?.sessions?.[sessionIndex];
+  const exercise = currentSession?.exercises?.[exerciseIndex];
+
+  return { dayName, sessionIndex, exerciseIndex, currentSession, exercise };
+}
+
 export default function AtlasLuthor() {
   const [screen, setScreen] = useState("home");
   const [activeDay, setActiveDay] = useState(getTodayDayName());
@@ -225,12 +281,22 @@ export default function AtlasLuthor() {
   const [goals, setGoals] = useState(() => safeLoad(STORAGE_KEYS.goals, DEFAULT_GOALS));
   const [progressLog, setProgressLog] = useState(() => safeLoad(STORAGE_KEYS.progressLog, []));
   const [exerciseNotes, setExerciseNotes] = useState(() => safeLoad(STORAGE_KEYS.exerciseNotes, {}));
+  const [calendarLog, setCalendarLog] = useState(() => safeLoad(STORAGE_KEYS.calendarLog, {}));
+  const [progressPhotos, setProgressPhotos] = useState(() => safeLoad(STORAGE_KEYS.progressPhotos, []));
+  const [cloudSettings, setCloudSettings] = useState(() => safeLoad(STORAGE_KEYS.cloudSettings, DEFAULT_CLOUD_SETTINGS));
+  const [notificationSettings, setNotificationSettings] = useState(() =>
+    safeLoad(STORAGE_KEYS.notificationSettings, DEFAULT_NOTIFICATION_SETTINGS)
+  );
   const [editingProfile, setEditingProfile] = useState(null);
   const [editingGoals, setEditingGoals] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
+  const [editingRoutine, setEditingRoutine] = useState(null);
   const [showDataTools, setShowDataTools] = useState(false);
   const [progressSaved, setProgressSaved] = useState(false);
   const [todayOnlyMode, setTodayOnlyMode] = useState(false);
+  const [quickMode, setQuickMode] = useState(false);
+  const [highlightedExerciseIndex, setHighlightedExerciseIndex] = useState(0);
+  const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "" });
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "" });
 
   const day = workoutData[activeDay];
@@ -266,6 +332,22 @@ export default function AtlasLuthor() {
   }, [exerciseNotes]);
 
   useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.calendarLog, JSON.stringify(calendarLog));
+  }, [calendarLog]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.progressPhotos, JSON.stringify(progressPhotos));
+  }, [progressPhotos]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.cloudSettings, JSON.stringify(cloudSettings));
+  }, [cloudSettings]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.notificationSettings, JSON.stringify(notificationSettings));
+  }, [notificationSettings]);
+
+  useEffect(() => {
     if (!restTimer.running || restTimer.secondsLeft <= 0) return undefined;
 
     const timerId = window.setInterval(() => {
@@ -290,8 +372,46 @@ export default function AtlasLuthor() {
     }
   }, [lastProgressionReview]);
 
-  const toggleCheck = key => {
-    setChecked(prev => ({ ...prev, [key]: !prev[key] }));
+  const updateCalendarForToday = nextChecked => {
+    const date = getDateKey();
+    const today = getTodayDayName();
+    const todaySessions = workoutData[today].sessions;
+    const dayExercises = todaySessions.reduce((sum, currentSession) => sum + currentSession.exercises.length, 0);
+    const dayDone = todaySessions.reduce(
+      (sum, currentSession, sessionIndex) =>
+        sum + currentSession.exercises.filter((_, exerciseIndex) => nextChecked[getExerciseKey(today, sessionIndex, exerciseIndex)]).length,
+      0
+    );
+    const status = dayExercises === 0 ? "rest" : dayDone === dayExercises ? "completed" : dayDone > 0 ? "trained" : "missed";
+
+    setCalendarLog(prev => ({
+      ...prev,
+      [date]: {
+        date,
+        status,
+        completed: dayDone,
+        total: dayExercises,
+        dayName: today,
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+  };
+
+  const toggleExercise = exerciseIndex => {
+    const key = getExerciseKey(activeDay, activeSession, exerciseIndex);
+    const wasDone = !!checked[key];
+    const nextChecked = { ...checked, [key]: !wasDone };
+
+    setChecked(nextChecked);
+    updateCalendarForToday(nextChecked);
+
+    if (!wasDone) {
+      const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
+      setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
+      startRestTimer(90);
+    } else {
+      setHighlightedExerciseIndex(exerciseIndex);
+    }
   };
 
   const total = session.exercises.length;
@@ -354,6 +474,35 @@ export default function AtlasLuthor() {
       todayLabel: todayWorkout.label,
     };
   }, [checked, workoutData]);
+
+  useEffect(() => {
+    if (!notificationSettings.enabled || typeof Notification === "undefined" || Notification.permission !== "granted") {
+      return undefined;
+    }
+
+    const checkNotifications = () => {
+      const now = new Date();
+      const todayKey = getDateKey();
+      const currentTime = now.toTimeString().slice(0, 5);
+
+      if (currentTime === notificationSettings.workoutTime && notificationSettings.lastWorkoutNotice !== todayKey) {
+        new Notification("Atlas Luthor", { body: `Today is ${weeklyMetrics.today} / ${weeklyMetrics.todayType}. Protocol ready.` });
+        setNotificationSettings(prev => ({ ...prev, lastWorkoutNotice: todayKey }));
+      }
+
+      if (currentTime === notificationSettings.restTime && notificationSettings.lastRestNotice !== todayKey) {
+        new Notification("Atlas Luthor Recovery", { body: "Log progress, eat, hydrate, and recover." });
+        setNotificationSettings(prev => ({ ...prev, lastRestNotice: todayKey }));
+      }
+
+      return undefined;
+    };
+
+    checkNotifications();
+    const intervalId = window.setInterval(checkNotifications, 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, [notificationSettings, weeklyMetrics.today, weeklyMetrics.todayType]);
 
   useEffect(() => {
     const date = getDateKey();
@@ -452,6 +601,58 @@ export default function AtlasLuthor() {
   const restTimerCircumference = 2 * Math.PI * restTimerRadius;
   const restTimerProgress = restTimer.duration > 0 ? restTimer.secondsLeft / restTimer.duration : 0;
   const restTimerOffset = restTimerCircumference * (1 - restTimerProgress);
+  const currentMonthKey = getMonthKey();
+  const calendarCells = getMonthDays(currentMonthKey);
+  const prEntries = useMemo(
+    () =>
+      Object.entries(exerciseNotes)
+        .filter(([, note]) => note.pr)
+        .map(([key, note]) => {
+          const { dayName, currentSession, exercise } = getExerciseFromKey(workoutData, key);
+
+          return {
+            key,
+            dayName,
+            sessionName: currentSession?.name || "Session",
+            exerciseName: exercise?.name || "Exercise",
+            weight: exercise?.weight || "",
+            date: note.updatedAt ? note.updatedAt.slice(0, 10) : "",
+          };
+        })
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [exerciseNotes, workoutData]
+  );
+  const weeklyNoteValues = useMemo(
+    () =>
+      Object.values(exerciseNotes)
+        .filter(note => !note.updatedAt || getWorkoutWeekKey(new Date(note.updatedAt)) === currentWeekKey)
+        .map(note => ({
+          difficulty: toNumber(note.difficulty),
+          pain: toNumber(note.pain),
+          painText: String(note.pain || "").toLowerCase(),
+        })),
+    [exerciseNotes, currentWeekKey]
+  );
+  const rpeValues = weeklyNoteValues.map(note => note.difficulty).filter(value => value > 0);
+  const averageRpe = rpeValues.length ? Math.round((rpeValues.reduce((sum, value) => sum + value, 0) / rpeValues.length) * 10) / 10 : 0;
+  const highFatigueNotes = weeklyNoteValues.filter(
+    note => note.difficulty >= 9 || note.pain >= 7 || ["pain", "dolor", "sharp"].some(word => note.painText.includes(word))
+  ).length;
+  const deloadWarning = averageRpe >= 8.5 || highFatigueNotes >= 2;
+  const atlasScore = Math.min(
+    100,
+    Math.round(
+      weeklyMetrics.weeklyProgress * 0.45 +
+        Math.min(weeklyMetrics.completedSessions / weeklySessionsGoal, 1) * 25 +
+        Math.min(weeklyStreak, 4) * 5 +
+        prEntries.length * 3 +
+        (deloadWarning ? -10 : 5)
+    )
+  );
+  const quickExerciseIndex = highlightedExerciseIndex >= 0 ? highlightedExerciseIndex : 0;
+  const quickExercise = session.exercises[quickExerciseIndex] || session.exercises[0];
+  const quickExerciseKey = quickExercise ? getExerciseKey(activeDay, activeSession, quickExerciseIndex) : "";
+  const quickNote = quickExerciseKey ? exerciseNotes[quickExerciseKey] : null;
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
     setWorkoutData(prev => ({
@@ -552,6 +753,10 @@ export default function AtlasLuthor() {
         goals,
         progressLog,
         exerciseNotes,
+        calendarLog,
+        progressPhotos,
+        cloudSettings,
+        notificationSettings,
         lastProgressionReview,
       },
     };
@@ -583,6 +788,10 @@ export default function AtlasLuthor() {
         if (data.goals) setGoals(data.goals);
         if (data.progressLog) setProgressLog(data.progressLog);
         if (data.exerciseNotes) setExerciseNotes(data.exerciseNotes);
+        if (data.calendarLog) setCalendarLog(data.calendarLog);
+        if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
+        if (data.cloudSettings) setCloudSettings(data.cloudSettings);
+        if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
         if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
         setShowDataTools(false);
       } catch {
@@ -592,6 +801,209 @@ export default function AtlasLuthor() {
       }
     };
     reader.readAsText(file);
+  };
+
+  const uploadCloudSync = async () => {
+    if (!cloudSettings.endpoint) {
+      setCloudSettings(prev => ({ ...prev, status: "Add an endpoint first" }));
+      return;
+    }
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      app: "Atlas Luthor",
+      version: 1,
+      data: {
+        workoutData,
+        checked,
+        profile,
+        goals,
+        progressLog,
+        exerciseNotes,
+        calendarLog,
+        progressPhotos,
+        notificationSettings,
+        lastProgressionReview,
+      },
+    };
+
+    try {
+      const response = await fetch(cloudSettings.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      setCloudSettings(prev => ({ ...prev, status: response.ok ? "Uploaded" : `Upload failed ${response.status}` }));
+    } catch {
+      setCloudSettings(prev => ({ ...prev, status: "Upload failed" }));
+    }
+  };
+
+  const downloadCloudSync = async () => {
+    if (!cloudSettings.endpoint) {
+      setCloudSettings(prev => ({ ...prev, status: "Add an endpoint first" }));
+      return;
+    }
+
+    try {
+      const response = await fetch(cloudSettings.endpoint);
+      const parsed = await response.json();
+      const data = parsed.data || parsed;
+
+      if (data.workoutData) setWorkoutData(data.workoutData);
+      if (data.checked) setChecked(data.checked);
+      if (data.profile) setProfile(data.profile);
+      if (data.goals) setGoals(data.goals);
+      if (data.progressLog) setProgressLog(data.progressLog);
+      if (data.exerciseNotes) setExerciseNotes(data.exerciseNotes);
+      if (data.calendarLog) setCalendarLog(data.calendarLog);
+      if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
+      if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
+      if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
+      setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
+    } catch {
+      setCloudSettings(prev => ({ ...prev, status: "Download failed" }));
+    }
+  };
+
+  const saveProgressPhoto = () => {
+    if (!photoDraft.dataUrl) return;
+
+    setProgressPhotos(prev => [
+      {
+        id: `photo-${Date.now()}`,
+        date: photoDraft.date || getDateKey(),
+        weight: profile.currentWeight,
+        note: photoDraft.note,
+        dataUrl: photoDraft.dataUrl,
+      },
+      ...prev,
+    ].slice(0, 12));
+    setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "" });
+  };
+
+  const handleProgressPhoto = event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotoDraft(prev => ({ ...prev, dataUrl: String(reader.result) }));
+      event.target.value = "";
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const requestNotifications = async () => {
+    if (typeof Notification === "undefined") {
+      setNotificationSettings(prev => ({ ...prev, enabled: false }));
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationSettings(prev => ({ ...prev, enabled: permission === "granted" }));
+  };
+
+  const updateRoutineExercise = (exerciseIndex, patch) => {
+    const { dayName, sessionIndex } = editingRoutine;
+
+    setWorkoutData(prev => ({
+      ...prev,
+      [dayName]: {
+        ...prev[dayName],
+        sessions: prev[dayName].sessions.map((currentSession, currentSessionIndex) =>
+          currentSessionIndex === sessionIndex
+            ? {
+                ...currentSession,
+                exercises: currentSession.exercises.map((exercise, currentExerciseIndex) =>
+                  currentExerciseIndex === exerciseIndex ? { ...exercise, ...patch } : exercise
+                ),
+              }
+            : currentSession
+        ),
+      },
+    }));
+  };
+
+  const addRoutineExercise = () => {
+    const { dayName, sessionIndex, draft } = editingRoutine;
+    const nextExercise = {
+      name: draft.name || "New Exercise",
+      sets: Number(draft.sets || 3),
+      reps: draft.reps || 8,
+      weight: draft.weight || "0 lb",
+    };
+
+    setWorkoutData(prev => ({
+      ...prev,
+      [dayName]: {
+        ...prev[dayName],
+        sessions: prev[dayName].sessions.map((currentSession, currentSessionIndex) =>
+          currentSessionIndex === sessionIndex
+            ? { ...currentSession, exercises: [...currentSession.exercises, nextExercise] }
+            : currentSession
+        ),
+      },
+    }));
+    setEditingRoutine(prev => ({ ...prev, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } }));
+  };
+
+  const removeRoutineExercise = exerciseIndex => {
+    const { dayName, sessionIndex } = editingRoutine;
+
+    setWorkoutData(prev => ({
+      ...prev,
+      [dayName]: {
+        ...prev[dayName],
+        sessions: prev[dayName].sessions.map((currentSession, currentSessionIndex) =>
+          currentSessionIndex === sessionIndex
+            ? { ...currentSession, exercises: currentSession.exercises.filter((_, index) => index !== exerciseIndex) }
+            : currentSession
+        ),
+      },
+    }));
+  };
+
+  const duplicateRoutineSession = () => {
+    const { dayName, sessionIndex } = editingRoutine;
+
+    setWorkoutData(prev => ({
+      ...prev,
+      [dayName]: {
+        ...prev[dayName],
+        sessions: prev[dayName].sessions.flatMap((currentSession, currentSessionIndex) =>
+          currentSessionIndex === sessionIndex
+            ? [currentSession, { ...cloneData(currentSession), name: `${currentSession.name} Copy` }]
+            : [currentSession]
+        ),
+      },
+    }));
+  };
+
+  const moveRoutineSession = direction => {
+    const { dayName, sessionIndex } = editingRoutine;
+    const currentDayIndex = days.indexOf(dayName);
+    const nextDayName = days[currentDayIndex + direction];
+
+    if (!nextDayName) return;
+
+    setWorkoutData(prev => {
+      const movingSession = prev[dayName].sessions[sessionIndex];
+
+      return {
+        ...prev,
+        [dayName]: {
+          ...prev[dayName],
+          sessions: prev[dayName].sessions.filter((_, index) => index !== sessionIndex),
+        },
+        [nextDayName]: {
+          ...prev[nextDayName],
+          sessions: [...prev[nextDayName].sessions, movingSession],
+        },
+      };
+    });
+    setEditingRoutine(prev => ({ ...prev, dayName: nextDayName, sessionIndex: workoutData[nextDayName].sessions.length }));
   };
 
   const acceptProgression = () => {
@@ -623,6 +1035,8 @@ export default function AtlasLuthor() {
     setActiveDay(dayName);
     setActiveSession(0);
     setTodayOnlyMode(!!options.todayOnly);
+    setQuickMode(!!options.quick);
+    setHighlightedExerciseIndex(0);
     setScreen("workout");
   };
 
@@ -751,9 +1165,12 @@ export default function AtlasLuthor() {
                 START TODAY
               </button>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginTop: 10 }}>
                 <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true })}>
                   Today Only
+                </button>
+                <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true })}>
+                  Quick
                 </button>
                 <button className="dark-btn" onClick={resetWeek}>
                   Reset Week
@@ -794,6 +1211,85 @@ export default function AtlasLuthor() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                ATLAS SCORE
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ width: 92, height: 92, borderRadius: "50%", border: "8px solid #FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 24px rgba(255,255,255,0.12)" }}>
+                  <span style={{ fontSize: 25, fontWeight: 900, fontFamily: "'Orbitron', monospace" }}>{atlasScore}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 800 }}>
+                    {deloadWarning ? "Deload warning active" : "Protocol status stable"}
+                  </p>
+                  <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
+                    Avg RPE {averageRpe || "N/A"} · PRs {prEntries.length} · Streak {weeklyStreak}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                MONTH CALENDAR
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, marginBottom: 10 }}>
+                {["S", "M", "T", "W", "T", "F", "S"].map((label, index) => (
+                  <p key={`${label}-${index}`} style={{ color: "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
+                ))}
+                {calendarCells.map((cell, index) => {
+                  if (!cell) return <div key={`blank-${index}`} />;
+
+                  const logged = calendarLog[cell.key];
+                  const isPast = cell.key < getDateKey();
+                  const status = logged?.status || (isPast ? "missed" : "planned");
+                  const statusColor = {
+                    completed: "#FFFFFF",
+                    trained: "#90C8FF",
+                    missed: "#553333",
+                    rest: "#666",
+                    planned: "#24242E",
+                  }[status];
+
+                  return (
+                    <div key={cell.key} title={status} style={{ aspectRatio: "1", borderRadius: 8, border: `1px solid ${statusColor}`, background: status === "completed" ? "#FFFFFF" : "#101015", color: status === "completed" ? "#050507" : "#888", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
+                      {cell.dayNumber}
+                    </div>
+                  );
+                })}
+              </div>
+              <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
+                White completed · Blue trained · Red missed
+              </p>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                PR TRACKER
+              </p>
+              <div style={{ display: "grid", gap: 8 }}>
+                {(prEntries.length ? prEntries.slice(0, 5) : [{ key: "empty", exerciseName: "No PRs marked yet", sessionName: "Use Notes > Mark as PR", weight: "", date: "" }]).map(entry => (
+                  <div key={entry.key} style={{ display: "flex", justifyContent: "space-between", gap: 10, background: "#101015", border: "1px solid #24242E", borderRadius: 10, padding: 10, fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: "#FFFFFF", fontSize: 13, fontWeight: 800 }}>{entry.exerciseName}</span>
+                    <span style={{ color: "#888", fontSize: 12, fontWeight: 700 }}>{entry.weight} {entry.date}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14, borderColor: deloadWarning ? "#FFD06066" : "rgba(255,255,255,0.075)" }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: deloadWarning ? "#FFD060" : "#777", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
+                FATIGUE / DELOAD
+              </p>
+              <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 800 }}>
+                Average RPE: {averageRpe || "No RPE notes yet"}
+              </p>
+              <p style={{ color: deloadWarning ? "#FFD060" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
+                {deloadWarning ? "Consider lowering load, adding rest, or keeping sets submaximal." : "No deload signal from current notes."}
+              </p>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
@@ -933,6 +1429,78 @@ export default function AtlasLuthor() {
                   </span>
                 ))}
               </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                PROGRESS PHOTOS
+              </p>
+              <div style={{ display: "grid", gap: 10 }}>
+                <input
+                  className="input"
+                  type="date"
+                  value={photoDraft.date}
+                  onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))}
+                />
+                <input
+                  className="input"
+                  value={photoDraft.note}
+                  onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))}
+                  placeholder="Photo note"
+                />
+                <label className="dark-btn" style={{ textAlign: "center" }}>
+                  Choose Photo
+                  <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
+                </label>
+                {photoDraft.dataUrl && (
+                  <button className="primary-btn" onClick={saveProgressPhoto}>
+                    Save Photo
+                  </button>
+                )}
+              </div>
+              {progressPhotos.length > 0 && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 12 }}>
+                  {progressPhotos.slice(0, 6).map(photo => (
+                    <div key={photo.id} style={{ border: "1px solid #24242E", borderRadius: 10, overflow: "hidden", background: "#101015" }}>
+                      <img src={photo.dataUrl} alt={photo.note || "Progress"} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
+                      <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 10, padding: 6 }}>
+                        {photo.date} · {photo.weight} LB
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                SYSTEM TOOLS
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                <button className="dark-btn" onClick={() => setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } })}>
+                  Edit Routine
+                </button>
+                <button className="dark-btn" onClick={requestNotifications}>
+                  Notifications
+                </button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 10 }}>
+                <input
+                  className="input"
+                  type="time"
+                  value={notificationSettings.workoutTime}
+                  onChange={event => setNotificationSettings(prev => ({ ...prev, workoutTime: event.target.value }))}
+                />
+                <input
+                  className="input"
+                  type="time"
+                  value={notificationSettings.restTime}
+                  onChange={event => setNotificationSettings(prev => ({ ...prev, restTime: event.target.value }))}
+                />
+              </div>
+              <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12, lineHeight: 1.5, marginTop: 10 }}>
+                Notifications: {notificationSettings.enabled ? "enabled" : "not enabled"}.
+              </p>
             </div>
 
             {isProgressionDue(lastProgressionReview) && (
@@ -1159,6 +1727,56 @@ export default function AtlasLuthor() {
               </div>
             )}
 
+            {quickMode && quickExercise && (
+              <div className="fade-up" style={{ padding: "20px" }}>
+                <div className="home-card" style={{ minHeight: 360, display: "grid", alignContent: "center", gap: 16 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
+                    QUICK SESSION
+                  </p>
+                  <h2 style={{ fontSize: 26, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.1 }}>
+                    {quickExercise.name}
+                  </h2>
+                  <div className="metric-grid">
+                    <div className="stat-box">
+                      <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.weight}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>WEIGHT</p>
+                    </div>
+                    <div className="stat-box">
+                      <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.sets}x{quickExercise.reps}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>SETS</p>
+                    </div>
+                  </div>
+                  {quickNote && (
+                    <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                      {quickNote.pr ? "PR · " : ""}{quickNote.difficulty ? `RPE ${quickNote.difficulty} · ` : ""}{quickNote.technique || quickNote.pain}
+                    </p>
+                  )}
+                  <button className="primary-btn" onClick={() => toggleExercise(quickExerciseIndex)}>
+                    Mark Done
+                  </button>
+                  <button
+                    className="dark-btn"
+                    onClick={() =>
+                      setEditingNote({
+                        key: quickExerciseKey,
+                        name: quickExercise.name,
+                        pain: quickNote?.pain || "",
+                        difficulty: quickNote?.difficulty || "",
+                        pr: !!quickNote?.pr,
+                        technique: quickNote?.technique || "",
+                      })
+                    }
+                  >
+                    Notes
+                  </button>
+                  <button className="dark-btn" onClick={() => setQuickMode(false)}>
+                    Full Session
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!quickMode && (
             <div key={`${activeDay}-${activeSession}`} className="fade-up" style={{ padding: "20px 20px 0" }}>
               {session.warmup && (
                 <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, border: "1.5px solid #1E1E26", background: "#0F0F14", marginBottom: 16 }}>
@@ -1216,7 +1834,12 @@ export default function AtlasLuthor() {
                 const hasNote = note && (note.pain || note.difficulty || note.pr || note.technique);
 
                 return (
-                  <div key={i} className={`ex-card${isDone ? " done" : ""}`} onClick={() => toggleCheck(key)}>
+                  <div
+                    key={i}
+                    className={`ex-card${isDone ? " done" : ""}`}
+                    onClick={() => toggleExercise(i)}
+                    style={highlightedExerciseIndex === i && !isDone ? { borderColor: theme.accent, boxShadow: `0 0 22px ${theme.accent}22` } : {}}
+                  >
                     <div className="check" style={isDone ? { background: theme.accent, borderColor: theme.accent } : {}}>
                       {isDone ? "✓" : ""}
                     </div>
@@ -1293,6 +1916,7 @@ export default function AtlasLuthor() {
                 </div>
               )}
             </div>
+            )}
           </>
         )}
       </div>
@@ -1469,8 +2093,95 @@ export default function AtlasLuthor() {
                 />
               </label>
 
+              <input
+                className="input"
+                value={cloudSettings.endpoint}
+                onChange={event => setCloudSettings(prev => ({ ...prev, endpoint: event.target.value }))}
+                placeholder="Cloud sync endpoint URL"
+              />
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                <button className="dark-btn" onClick={uploadCloudSync}>
+                  Cloud Upload
+                </button>
+                <button className="dark-btn" onClick={downloadCloudSync}>
+                  Cloud Download
+                </button>
+              </div>
+
+              <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
+                Cloud status: {cloudSettings.status}
+              </p>
+
               <button className="dark-btn" onClick={() => setShowDataTools(false)}>
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingRoutine && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              ROUTINE EDITOR
+            </p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 12 }}>
+              <select
+                className="input"
+                value={editingRoutine.dayName}
+                onChange={event => setEditingRoutine(prev => ({ ...prev, dayName: event.target.value, sessionIndex: 0 }))}
+              >
+                {days.map(dayName => (
+                  <option key={dayName} value={dayName}>{dayName}</option>
+                ))}
+              </select>
+              <select
+                className="input"
+                value={editingRoutine.sessionIndex}
+                onChange={event => setEditingRoutine(prev => ({ ...prev, sessionIndex: Number(event.target.value) }))}
+              >
+                {workoutData[editingRoutine.dayName].sessions.map((currentSession, index) => (
+                  <option key={`${currentSession.name}-${index}`} value={index}>{currentSession.time} {currentSession.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              {workoutData[editingRoutine.dayName].sessions[editingRoutine.sessionIndex]?.exercises.map((exercise, exerciseIndex) => (
+                <div key={`${exercise.name}-${exerciseIndex}`} style={{ border: "1px solid #24242E", borderRadius: 12, padding: 10, display: "grid", gap: 8 }}>
+                  <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} />
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    <input className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })} />
+                    <input className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })} />
+                    <input className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })} />
+                  </div>
+                  <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+              <input className="input" value={editingRoutine.draft.name} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))} placeholder="New exercise name" />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                <input className="input" value={editingRoutine.draft.sets} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, sets: event.target.value } }))} placeholder="Sets" />
+                <input className="input" value={editingRoutine.draft.reps} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, reps: event.target.value } }))} placeholder="Reps" />
+                <input className="input" value={editingRoutine.draft.weight} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, weight: event.target.value } }))} placeholder="Weight" />
+              </div>
+              <button className="primary-btn" onClick={addRoutineExercise}>
+                Add Exercise
+              </button>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                <button className="dark-btn" onClick={() => moveRoutineSession(-1)}>Move Prev</button>
+                <button className="dark-btn" onClick={duplicateRoutineSession}>Duplicate</button>
+                <button className="dark-btn" onClick={() => moveRoutineSession(1)}>Move Next</button>
+              </div>
+              <button className="dark-btn" onClick={() => setEditingRoutine(null)}>
+                Done
               </button>
             </div>
           </div>
@@ -1518,6 +2229,7 @@ export default function AtlasLuthor() {
 
               <input
                 className="input"
+                type="date"
                 value={editingProfile.startDate}
                 onChange={event => setEditingProfile(prev => ({ ...prev, startDate: event.target.value }))}
                 placeholder="Start date"
@@ -1576,6 +2288,7 @@ export default function AtlasLuthor() {
 
               <input
                 className="input"
+                type="date"
                 value={editingGoals.targetDate}
                 onChange={event => setEditingGoals(prev => ({ ...prev, targetDate: event.target.value }))}
                 placeholder="Target date"
