@@ -449,18 +449,70 @@ export default function AtlasLuthor() {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: "#0C0C10", color: "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80 }}>
+    <div style={{ minHeight: "100dvh", background: "#0C0C10", color: "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
-        .page-shell { width: 100%; }
+        .ambient-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #0C0C10; }
+        .ambient-bg::before {
+          content: "";
+          position: absolute;
+          inset: -20%;
+          background:
+            repeating-linear-gradient(115deg, rgba(255,255,255,0.055) 0 1px, transparent 1px 90px),
+            linear-gradient(180deg, rgba(255,255,255,0.04), transparent 32%, rgba(144,200,255,0.035) 70%, transparent);
+          opacity: 0.7;
+          transform: translate3d(-3%, -2%, 0);
+          animation: glassDrift 18s ease-in-out infinite alternate;
+        }
+        .ambient-bg::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background:
+            linear-gradient(90deg, transparent, rgba(255,255,255,0.11), transparent),
+            linear-gradient(180deg, rgba(12,12,16,0), rgba(12,12,16,0.9));
+          width: 34%;
+          transform: skewX(-18deg) translateX(-140%);
+          filter: blur(10px);
+          opacity: 0.34;
+          animation: glassSweep 12s ease-in-out infinite;
+        }
+        .glass-panel { position: absolute; border: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.015) 48%, rgba(144,200,255,0.045)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 80px rgba(0,0,0,0.35); backdrop-filter: blur(18px); transform: rotate(-16deg); animation: panelFloat 16s ease-in-out infinite alternate; }
+        .glass-panel.one { width: 48vw; height: 38vh; left: -18vw; top: 7vh; }
+        .glass-panel.two { width: 54vw; height: 42vh; right: -24vw; bottom: 8vh; animation-delay: -5s; transform: rotate(13deg); }
+        .glass-rift { position: absolute; height: 160vh; width: 1px; top: -30vh; background: linear-gradient(180deg, transparent, rgba(255,255,255,0.22), transparent); opacity: 0.35; transform: rotate(27deg); animation: riftPulse 9s ease-in-out infinite; }
+        .glass-rift.one { left: 24%; }
+        .glass-rift.two { right: 18%; animation-delay: -3s; }
+
+        @keyframes glassDrift {
+          from { transform: translate3d(-4%, -2%, 0) scale(1); }
+          to { transform: translate3d(3%, 2%, 0) scale(1.04); }
+        }
+
+        @keyframes glassSweep {
+          0%, 18% { transform: skewX(-18deg) translateX(-150%); }
+          52%, 100% { transform: skewX(-18deg) translateX(320%); }
+        }
+
+        @keyframes panelFloat {
+          from { translate: 0 0; opacity: 0.62; }
+          to { translate: 18px -22px; opacity: 0.88; }
+        }
+
+        @keyframes riftPulse {
+          0%, 100% { opacity: 0.16; }
+          50% { opacity: 0.48; }
+        }
+
+        .page-shell { width: 100%; position: relative; z-index: 1; }
         .day-pill { cursor: pointer; flex: 1; padding: 10px 4px; border-radius: 10px; text-align: center; border: 1px solid transparent; transition: all 0.2s; }
-        .session-tab { cursor: pointer; flex: 1; padding: 12px 10px; border-radius: 10px; border: 1.5px solid #222; background: #141418; transition: all 0.2s; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #888; text-align: center; }
-        .ex-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; border: 1.5px solid #1E1E26; background: #131318; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
-        .ex-card:hover { border-color: #2E2E3E; background: #181820; }
+        .session-tab { cursor: pointer; flex: 1; padding: 12px 10px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(20,20,24,0.78); backdrop-filter: blur(16px); transition: all 0.2s; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #888; text-align: center; }
+        .ex-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.075); background: rgba(19,19,24,0.82); backdrop-filter: blur(16px); cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
+        .ex-card:hover { border-color: rgba(255,255,255,0.14); background: rgba(24,24,32,0.88); }
         .ex-card.done { opacity: 0.35; }
         .check { width: 26px; height: 26px; border-radius: 8px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; transition: all 0.2s; color: #000; font-weight: 700; }
 
@@ -470,13 +522,13 @@ export default function AtlasLuthor() {
         }
 
         .fade-up { animation: fadeUp 0.3s ease forwards; }
-        .stat-box { flex: 1; background: #141418; border: 1.5px solid #1E1E26; border-radius: 12px; padding: 14px 8px; text-align: center; }
-        .home-card { background: #131318; border: 1.5px solid #1E1E26; border-radius: 16px; padding: 16px; }
+        .stat-box { flex: 1; background: rgba(20,20,24,0.78); border: 1.5px solid rgba(255,255,255,0.075); border-radius: 12px; padding: 14px 8px; text-align: center; backdrop-filter: blur(16px); }
+        .home-card { background: rgba(19,19,24,0.82); border: 1.5px solid rgba(255,255,255,0.075); border-radius: 16px; padding: 16px; backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 16px 48px rgba(0,0,0,0.22); }
         .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
         .primary-btn { width: 100%; border: 0; border-radius: 14px; padding: 15px 16px; background: #FFFFFF; color: #050507; font-family: 'Orbitron', monospace; font-weight: 900; letter-spacing: 2px; cursor: pointer; }
-        .dark-btn { border: 1.5px solid #262633; border-radius: 12px; padding: 12px 14px; background: #141418; color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-weight: 700; cursor: pointer; }
-        .edit-btn { border: 1px solid #2B2B36; background: #0F0F14; color: #777; border-radius: 8px; padding: 6px 8px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .dark-btn { border: 1.5px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 12px 14px; background: rgba(20,20,24,0.8); backdrop-filter: blur(16px); color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-weight: 700; cursor: pointer; }
+        .edit-btn { border: 1px solid rgba(255,255,255,0.1); background: rgba(15,15,20,0.78); color: #888; border-radius: 8px; padding: 6px 8px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; }
         .input { width: 100%; border: 1.5px solid #282834; background: #0F0F14; color: #FFFFFF; border-radius: 12px; padding: 12px; font-family: 'DM Sans', sans-serif; font-weight: 700; outline: none; }
 
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 20; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
@@ -487,7 +539,24 @@ export default function AtlasLuthor() {
           .metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
           .modal-backdrop { align-items: center; }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ambient-bg::before,
+          .ambient-bg::after,
+          .glass-panel,
+          .glass-rift,
+          .fade-up {
+            animation: none;
+          }
+        }
       `}</style>
+
+      <div className="ambient-bg" aria-hidden="true">
+        <div className="glass-panel one" />
+        <div className="glass-panel two" />
+        <div className="glass-rift one" />
+        <div className="glass-rift two" />
+      </div>
 
       <div className="page-shell">
         <div style={{ padding: "36px 20px 20px", textAlign: "center", borderBottom: "1px solid #1A1A22" }}>
