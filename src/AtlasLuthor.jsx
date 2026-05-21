@@ -111,6 +111,7 @@ const TYPE_THEME = {
   PULL: { accent: "#90C8FF", sub: "#5899CC", badge: "#0d1f33" },
   LEGS: { accent: "#B8A0FF", sub: "#8060CC", badge: "#180d33" },
   OMNIMAN: { accent: "#FFD060", sub: "#CC9900", badge: "#2a1e00" },
+  CUSTOM: { accent: "#9AA0AA", sub: "#6E7480", badge: "#202025" },
 };
 
 const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
@@ -172,7 +173,7 @@ const DEFAULT_APP_SETTINGS = {
 };
 
 const DEFAULT_SIGNUP = {
-  email: "",
+  userId: "",
   password: "",
   name: "",
   currentWeight: "197",
@@ -182,6 +183,7 @@ const DEFAULT_SIGNUP = {
   targetDate: "2026-04-09",
   focusGoal: "Build strength and finish the protocol",
   language: "en",
+  trainingPlan: "blank",
 };
 
 const WEIGHT_OPTIONS = Array.from({ length: 61 }, (_, index) => `${index * 5} lb`);
@@ -203,6 +205,10 @@ const THEME_MODE_OPTIONS = [
   { value: "auto", label: "Auto" },
   { value: "dark", label: "Dark" },
   { value: "light", label: "Light" },
+];
+const TRAINING_PLAN_OPTIONS = [
+  { value: "blank", label: "Start blank routine" },
+  { value: "atlas", label: "Use Atlas protocol" },
 ];
 const UI_TEXT = {
   en: {
@@ -366,7 +372,7 @@ function getAutoTheme(hour = new Date().getHours()) {
 }
 
 function getGreetingKey(hour = new Date().getHours()) {
-  return hour < 12 ? "goodMorning" : "goodNight";
+  return hour >= 18 ? "goodNight" : "goodMorning";
 }
 
 function getDisplayDay(dayName, language = "en") {
@@ -379,6 +385,25 @@ function getDisplayDayShort(dayName, language = "en", fallback = "") {
 
 function getWeekHeaderLabels(language = "en") {
   return language === "es" ? ["D", "L", "M", "M", "J", "V", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
+}
+
+function createBlankWorkoutData() {
+  return days.reduce((acc, dayName) => {
+    acc[dayName] = {
+      label: baseWorkoutData[dayName].label,
+      type: "CUSTOM",
+      sessions: [
+        {
+          time: "AM",
+          name: "Custom Session",
+          warmup: null,
+          exercises: [],
+        },
+      ],
+    };
+
+    return acc;
+  }, {});
 }
 
 function getMonthDays(monthKey) {
@@ -446,7 +471,7 @@ export default function AtlasLuthor() {
   const [users, setUsers] = useState(() => safeLoad(STORAGE_KEYS.users, {}));
   const [activeUserId, setActiveUserId] = useState(() => safeLoad(STORAGE_KEYS.activeUser, ""));
   const [authMode, setAuthMode] = useState(() => (safeLoad(STORAGE_KEYS.activeUser, "") ? "login" : "signup"));
-  const [loginDraft, setLoginDraft] = useState({ email: "", password: "" });
+  const [loginDraft, setLoginDraft] = useState({ userId: "", password: "" });
   const [signupDraft, setSignupDraft] = useState(DEFAULT_SIGNUP);
   const [authError, setAuthError] = useState("");
   const [activeDay, setActiveDay] = useState(getTodayDayName());
@@ -1153,7 +1178,7 @@ export default function AtlasLuthor() {
     };
 
     return {
-      workoutData: cloneData(baseWorkoutData),
+      workoutData: draft.trainingPlan === "atlas" ? cloneData(baseWorkoutData) : createBlankWorkoutData(),
       checked: {},
       lastProgressionReview: null,
       profile: nextProfile,
@@ -1170,23 +1195,23 @@ export default function AtlasLuthor() {
   };
 
   const handleSignup = () => {
-    const email = signupDraft.email.trim().toLowerCase();
+    const userId = signupDraft.userId.trim().toLowerCase();
     const password = signupDraft.password.trim();
 
-    if (!email || !password || !signupDraft.name.trim()) {
-      setAuthError("Add name, email, and password.");
+    if (!userId || !password || !signupDraft.name.trim()) {
+      setAuthError("Add name, User ID, and password.");
       return;
     }
 
-    if (users[email]) {
-      setAuthError("That account already exists. Log in instead.");
+    if (users[userId]) {
+      setAuthError("That User ID already exists. Log in instead.");
       return;
     }
 
     const data = createUserDataFromSignup(signupDraft);
     const nextUser = {
-      id: email,
-      email,
+      id: userId,
+      userId,
       password,
       name: signupDraft.name.trim(),
       createdAt: new Date().toISOString(),
@@ -1194,24 +1219,24 @@ export default function AtlasLuthor() {
       data,
     };
 
-    setUsers(prev => ({ ...prev, [email]: nextUser }));
+    setUsers(prev => ({ ...prev, [userId]: nextUser }));
     applyUserData(data);
-    setActiveUserId(email);
+    setActiveUserId(userId);
     setAuthError("");
   };
 
   const handleLogin = () => {
-    const email = loginDraft.email.trim().toLowerCase();
+    const userId = loginDraft.userId.trim().toLowerCase();
     const password = loginDraft.password.trim();
-    const user = users[email];
+    const user = users[userId];
 
     if (!user || user.password !== password) {
-      setAuthError("Login not found or password is incorrect.");
+      setAuthError("User ID not found or password is incorrect.");
       return;
     }
 
     applyUserData(user.data);
-    setActiveUserId(email);
+    setActiveUserId(userId);
     setAuthError("");
   };
 
@@ -1220,7 +1245,7 @@ export default function AtlasLuthor() {
     setShowSettings(false);
     setActiveUserId("");
     loadedUserRef.current = "";
-    setLoginDraft({ email: "", password: "" });
+    setLoginDraft({ userId: "", password: "" });
     setAuthMode("login");
     setScreen("home");
   };
@@ -1469,6 +1494,10 @@ export default function AtlasLuthor() {
       ...prev,
     ].slice(0, 12));
     setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "" });
+  };
+
+  const deleteProgressPhoto = photoId => {
+    setProgressPhotos(prev => prev.filter(photo => photo.id !== photoId));
   };
 
   const handleProgressPhoto = event => {
@@ -1837,23 +1866,23 @@ export default function AtlasLuthor() {
         .light-mode .menu-button span {
           background: #101015;
         }
-        .light-mode div[style*="#101015"],
-        .light-mode div[style*="#0F0F14"],
-        .light-mode div[style*="#20202A"],
-        .light-mode div[style*="#24242E"],
-        .light-mode div[style*="rgb(16, 16, 21)"],
-        .light-mode div[style*="rgb(15, 15, 20)"],
-        .light-mode div[style*="rgb(32, 32, 42)"],
-        .light-mode div[style*="rgb(36, 36, 46)"] {
+        .light-mode [style*="#101015"],
+        .light-mode [style*="#0F0F14"],
+        .light-mode [style*="#20202A"],
+        .light-mode [style*="#24242E"],
+        .light-mode [style*="rgb(16, 16, 21)"],
+        .light-mode [style*="rgb(15, 15, 20)"],
+        .light-mode [style*="rgb(32, 32, 42)"],
+        .light-mode [style*="rgb(36, 36, 46)"] {
           background: rgba(255,255,255,0.82) !important;
           border-color: rgba(15,18,26,0.13) !important;
         }
         .light-mode img + p,
         .light-mode button span,
-        .light-mode div[style*="#101015"] p,
-        .light-mode div[style*="#101015"] span,
-        .light-mode div[style*="rgb(16, 16, 21)"] p,
-        .light-mode div[style*="rgb(16, 16, 21)"] span {
+        .light-mode [style*="#101015"] p,
+        .light-mode [style*="#101015"] span,
+        .light-mode [style*="rgb(16, 16, 21)"] p,
+        .light-mode [style*="rgb(16, 16, 21)"] span {
           color: #101015 !important;
         }
 
@@ -1934,7 +1963,7 @@ export default function AtlasLuthor() {
 
             {authMode === "login" ? (
               <div className="home-card" style={{ display: "grid", gap: 10 }}>
-                <input className="input" value={loginDraft.email} onChange={event => setLoginDraft(prev => ({ ...prev, email: event.target.value }))} placeholder="Email" />
+                <input className="input" value={loginDraft.userId} onChange={event => setLoginDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="User ID" />
                 <input className="input" type="password" value={loginDraft.password} onChange={event => setLoginDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
                 <button className="primary-btn" onClick={handleLogin}>LOGIN</button>
                 <button className="dark-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>Create new account</button>
@@ -1942,8 +1971,11 @@ export default function AtlasLuthor() {
             ) : (
               <div className="home-card" style={{ display: "grid", gap: 10 }}>
                 <input className="input" value={signupDraft.name} onChange={event => setSignupDraft(prev => ({ ...prev, name: event.target.value }))} placeholder="Name" />
-                <input className="input" value={signupDraft.email} onChange={event => setSignupDraft(prev => ({ ...prev, email: event.target.value }))} placeholder="Email" />
+                <input className="input" value={signupDraft.userId} onChange={event => setSignupDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="User ID" />
                 <input className="input" type="password" value={signupDraft.password} onChange={event => setSignupDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
+                <select className="input" value={signupDraft.trainingPlan} onChange={event => setSignupDraft(prev => ({ ...prev, trainingPlan: event.target.value }))}>
+                  {TRAINING_PLAN_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
                 <select className="input" value={signupDraft.currentWeight} onChange={event => setSignupDraft(prev => ({ ...prev, currentWeight: event.target.value }))}>
                   {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB current</option>)}
                 </select>
@@ -2775,6 +2807,9 @@ export default function AtlasLuthor() {
                       <div key={`${photo.id}-feature`} className="photo-card">
                         <img src={photo.dataUrl} alt={photo.note || "Progress"} />
                         <p className="photo-meta">{photo.date} - {photo.weight} LB{photo.note ? ` - ${photo.note}` : ""}</p>
+                        <button className="edit-btn" onClick={() => deleteProgressPhoto(photo.id)} style={{ width: "100%", borderRadius: 0, padding: 9 }}>
+                          Delete
+                        </button>
                       </div>
                     ))}
                   </div>
