@@ -139,6 +139,7 @@ const STORAGE_KEYS = {
   exerciseNotes: "atlas-luthor-exercise-notes",
   calendarLog: "atlas-luthor-calendar-log",
   progressPhotos: "atlas-luthor-progress-photos",
+  photoAlbums: "atlas-luthor-photo-albums",
   cloudSettings: "atlas-luthor-cloud-settings",
   notificationSettings: "atlas-luthor-notification-settings",
   setProgress: "atlas-luthor-set-progress",
@@ -503,6 +504,7 @@ export default function AtlasLuthor() {
   const [exerciseNotes, setExerciseNotes] = useState(() => safeLoad(STORAGE_KEYS.exerciseNotes, {}));
   const [calendarLog, setCalendarLog] = useState(() => safeLoad(STORAGE_KEYS.calendarLog, {}));
   const [progressPhotos, setProgressPhotos] = useState(() => safeLoad(STORAGE_KEYS.progressPhotos, []));
+  const [photoAlbums, setPhotoAlbums] = useState(() => safeLoad(STORAGE_KEYS.photoAlbums, []));
   const [cloudSettings, setCloudSettings] = useState(() => safeLoad(STORAGE_KEYS.cloudSettings, DEFAULT_CLOUD_SETTINGS));
   const [appSettings, setAppSettings] = useState(() => ({
     ...DEFAULT_APP_SETTINGS,
@@ -531,7 +533,10 @@ export default function AtlasLuthor() {
   const [todayOnlyMode, setTodayOnlyMode] = useState(false);
   const [quickMode, setQuickMode] = useState(false);
   const [highlightedExerciseIndex, setHighlightedExerciseIndex] = useState(0);
-  const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "" });
+  const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "", album: "" });
+  const [viewingPhoto, setViewingPhoto] = useState(null);
+  const [albumFilter, setAlbumFilter] = useState("");
+  const [albumDraft, setAlbumDraft] = useState("");
   const [reminderDraft, setReminderDraft] = useState({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
   const [clockNow, setClockNow] = useState(() => new Date());
@@ -586,6 +591,10 @@ export default function AtlasLuthor() {
   }, [progressPhotos]);
 
   useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.photoAlbums, JSON.stringify(photoAlbums));
+  }, [photoAlbums]);
+
+  useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.cloudSettings, JSON.stringify(cloudSettings));
   }, [cloudSettings]);
 
@@ -620,6 +629,7 @@ export default function AtlasLuthor() {
           exerciseNotes,
           calendarLog,
           progressPhotos,
+          photoAlbums,
           cloudSettings,
           notificationSettings,
           setProgress,
@@ -638,6 +648,7 @@ export default function AtlasLuthor() {
     exerciseNotes,
     calendarLog,
     progressPhotos,
+    photoAlbums,
     cloudSettings,
     notificationSettings,
     setProgress,
@@ -689,12 +700,6 @@ export default function AtlasLuthor() {
       document.removeEventListener("visibilitychange", syncRestTimer);
     };
   }, [restTimer.running, restTimer.endsAt, notificationSettings.sound]);
-
-  useEffect(() => {
-    if (isProgressionDue(lastProgressionReview)) {
-      setShowProgression(true);
-    }
-  }, [lastProgressionReview]);
 
   const updateCalendarForToday = nextChecked => {
     const date = getDateKey();
@@ -1162,6 +1167,7 @@ export default function AtlasLuthor() {
     setExerciseNotes(data?.exerciseNotes || {});
     setCalendarLog(data?.calendarLog || {});
     setProgressPhotos(data?.progressPhotos || []);
+    setPhotoAlbums(Array.isArray(data?.photoAlbums) ? data.photoAlbums : []);
     setCloudSettings({ ...DEFAULT_CLOUD_SETTINGS, ...(data?.cloudSettings || {}) });
     setNotificationSettings({
       ...DEFAULT_NOTIFICATION_SETTINGS,
@@ -1206,6 +1212,7 @@ export default function AtlasLuthor() {
       exerciseNotes: {},
       calendarLog: {},
       progressPhotos: [],
+      photoAlbums: [],
       cloudSettings: cloneData(DEFAULT_CLOUD_SETTINGS),
       notificationSettings: cloneData(DEFAULT_NOTIFICATION_SETTINGS),
       setProgress: {},
@@ -1379,6 +1386,7 @@ export default function AtlasLuthor() {
         exerciseNotes,
         calendarLog,
         progressPhotos,
+        photoAlbums,
         cloudSettings,
         appSettings,
         notificationSettings,
@@ -1416,6 +1424,7 @@ export default function AtlasLuthor() {
         if (data.exerciseNotes) setExerciseNotes(data.exerciseNotes);
         if (data.calendarLog) setCalendarLog(data.calendarLog);
         if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
+        if (Array.isArray(data.photoAlbums)) setPhotoAlbums(data.photoAlbums);
         if (data.cloudSettings) setCloudSettings(data.cloudSettings);
         if (data.appSettings) setAppSettings({ ...DEFAULT_APP_SETTINGS, ...data.appSettings });
         if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
@@ -1450,6 +1459,7 @@ export default function AtlasLuthor() {
         exerciseNotes,
         calendarLog,
         progressPhotos,
+        photoAlbums,
         appSettings,
         notificationSettings,
         setProgress,
@@ -1489,6 +1499,7 @@ export default function AtlasLuthor() {
       if (data.exerciseNotes) setExerciseNotes(data.exerciseNotes);
       if (data.calendarLog) setCalendarLog(data.calendarLog);
       if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
+      if (Array.isArray(data.photoAlbums)) setPhotoAlbums(data.photoAlbums);
       if (data.appSettings) setAppSettings({ ...DEFAULT_APP_SETTINGS, ...data.appSettings });
       if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
       if (data.setProgress) setSetProgress(data.setProgress);
@@ -1508,15 +1519,36 @@ export default function AtlasLuthor() {
         date: photoDraft.date || getDateKey(),
         weight: profile.currentWeight,
         note: photoDraft.note,
+        album: photoDraft.album || "",
         dataUrl: photoDraft.dataUrl,
       },
       ...prev,
-    ].slice(0, 12));
-    setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "" });
+    ].slice(0, 24));
+    setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: photoDraft.album || "" });
   };
 
   const deleteProgressPhoto = photoId => {
     setProgressPhotos(prev => prev.filter(photo => photo.id !== photoId));
+    setViewingPhoto(prev => (prev && prev.id === photoId ? null : prev));
+  };
+
+  const addPhotoAlbum = () => {
+    const name = albumDraft.trim();
+    if (!name) return;
+
+    setPhotoAlbums(prev => (prev.includes(name) ? prev : [...prev, name]));
+    setAlbumDraft("");
+  };
+
+  const removePhotoAlbum = name => {
+    setPhotoAlbums(prev => prev.filter(album => album !== name));
+    setProgressPhotos(prev => prev.map(photo => (photo.album === name ? { ...photo, album: "" } : photo)));
+    setAlbumFilter(prev => (prev === name ? "" : prev));
+  };
+
+  const updatePhotoAlbum = (photoId, album) => {
+    setProgressPhotos(prev => prev.map(photo => (photo.id === photoId ? { ...photo, album } : photo)));
+    setViewingPhoto(prev => (prev && prev.id === photoId ? { ...prev, album } : prev));
   };
 
   const handleProgressPhoto = event => {
@@ -1828,14 +1860,24 @@ export default function AtlasLuthor() {
         .dark-btn { border: 1.5px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 12px 14px; background: rgba(20,20,24,0.8); backdrop-filter: blur(16px); color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-weight: 700; cursor: pointer; }
         .edit-btn { border: 1px solid rgba(255,255,255,0.1); background: rgba(15,15,20,0.78); color: #888; border-radius: 8px; padding: 6px 8px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; }
         .input { width: 100%; min-width: 0; max-width: 100%; border: 1.5px solid #282834; background: #0F0F14; color: #FFFFFF; border-radius: 12px; padding: 12px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; outline: none; }
-        input[type="date"].input, input[type="time"].input { -webkit-appearance: none; appearance: none; display: block; min-height: 46px; }
+        input[type="date"].input, input[type="time"].input { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 46px; overflow: hidden; }
+        input[type="date"].input::-webkit-date-and-time-value, input[type="time"].input::-webkit-date-and-time-value { text-align: left; margin: 0; }
+        input[type="date"].input::-webkit-datetime-edit, input[type="time"].input::-webkit-datetime-edit { padding: 0; }
+        input[type="date"].input::-webkit-calendar-picker-indicator, input[type="time"].input::-webkit-calendar-picker-indicator { margin: 0; }
         .field-label { color: #8A8F99; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
         .menu-section-label { color: #6E7480; font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 3px; margin: 4px 2px 2px; }
         .compact-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
         .photo-strip { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
-        .photo-card { flex: 0 0 118px; min-width: 0; border: 1px solid #24242E; border-radius: 10px; overflow: hidden; background: #101015; scroll-snap-align: start; }
+        .photo-card { flex: 0 0 134px; min-width: 0; border: 1px solid #24242E; border-radius: 12px; overflow: hidden; background: #101015; scroll-snap-align: start; cursor: pointer; }
         .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
-        .photo-meta { color: #888; font-family: 'DM Sans', sans-serif; font-size: 10px; padding: 7px; line-height: 1.25; overflow-wrap: anywhere; }
+        .photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+        .photo-tile { border: 1px solid #24242E; border-radius: 12px; overflow: hidden; background: #101015; cursor: pointer; min-width: 0; }
+        .photo-tile img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+        .photo-body { padding: 8px 9px; }
+        .photo-note { color: #EDEDED; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+        .photo-sub { color: #888; font-family: 'DM Sans', sans-serif; font-size: 10px; margin-top: 3px; line-height: 1.3; overflow-wrap: anywhere; }
+        .album-chip { border: 1.5px solid rgba(255,255,255,0.12); background: rgba(20,20,24,0.8); color: #CFCFD6; border-radius: 999px; padding: 7px 12px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+        .album-chip.active { background: #FFFFFF; color: #050507; border-color: #FFFFFF; }
         .settings-grid { display: grid; gap: 10px; }
         .setting-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid #24242E; border-radius: 12px; padding: 12px; background: #101015; }
         .setting-title { color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 800; min-width: 0; overflow-wrap: anywhere; }
@@ -1872,8 +1914,10 @@ export default function AtlasLuthor() {
         .light-mode .detail-card,
         .light-mode .detail-row,
         .light-mode .setting-row,
+        .light-mode .photo-card,
+        .light-mode .photo-tile,
         .light-mode .modal {
-          background: rgba(255,255,255,0.82) !important;
+          background: rgba(255,255,255,0.92) !important;
           border-color: rgba(15,18,26,0.12) !important;
           box-shadow: 0 16px 44px rgba(20,24,36,0.08);
         }
@@ -1902,8 +1946,19 @@ export default function AtlasLuthor() {
         .light-mode .detail-label,
         .light-mode .detail-row-sub,
         .light-mode .setting-sub,
-        .light-mode .photo-meta {
+        .light-mode .photo-sub {
           color: #5A6270 !important;
+        }
+        .light-mode .photo-note { color: #101015 !important; }
+        .light-mode .album-chip {
+          background: rgba(255,255,255,0.78);
+          border-color: rgba(15,18,26,0.16);
+          color: #101015;
+        }
+        .light-mode .album-chip.active {
+          background: #101015;
+          color: #FFFFFF;
+          border-color: #101015;
         }
         .light-mode .menu-button span {
           background: #101015;
@@ -2452,7 +2507,8 @@ export default function AtlasLuthor() {
                   <img
                     src={latestPhoto.dataUrl}
                     alt={latestPhoto.note || "Latest progress"}
-                    style={{ width: "100%", minHeight: 170, maxHeight: 230, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }}
+                    onClick={() => setViewingPhoto(latestPhoto)}
+                    style={{ width: "100%", minHeight: 170, maxHeight: 230, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block", cursor: "pointer" }}
                   />
                 ) : (
                   <div style={{ minHeight: 150, borderRadius: 12, border: "1px dashed #343442", display: "flex", alignItems: "center", justifyContent: "center", color: "#777", fontFamily: "'DM Sans', sans-serif", fontWeight: 800, padding: 12, textAlign: "center" }}>
@@ -2505,12 +2561,13 @@ export default function AtlasLuthor() {
               </div>
               {progressPhotos.length > 0 && (
                 <div className="photo-strip">
-                  {progressPhotos.slice(0, 6).map(photo => (
-                    <div key={photo.id} className="photo-card">
+                  {progressPhotos.slice(0, 8).map(photo => (
+                    <div key={photo.id} className="photo-card" onClick={() => setViewingPhoto(photo)}>
                       <img src={photo.dataUrl} alt={photo.note || "Progress"} />
-                      <p className="photo-meta">
-                        {photo.date} · {photo.weight} LB
-                      </p>
+                      <div className="photo-body">
+                        <p className="photo-note">{photo.note || "No note"}</p>
+                        <p className="photo-sub">{photo.date} · {photo.weight} LB{photo.album ? ` · ${photo.album}` : ""}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2946,12 +3003,57 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-grid">
                   <div className="detail-card"><p className="detail-label">PHOTOS</p><p className="detail-value">{totalPhotoCount}</p></div>
-                  <div className="detail-card"><p className="detail-label">LATEST</p><p className="detail-value">{latestPhoto?.date || "None"}</p></div>
+                  <div className="detail-card"><p className="detail-label">ALBUMS</p><p className="detail-value">{photoAlbums.length}</p></div>
                 </div>
+
                 <div className="home-card">
-                  <div style={{ display: "grid", gap: 10 }}>
-                    <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
-                    <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder="Photo note" />
+                  <p className="detail-label">ALBUMS</p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                    <button
+                      className={`album-chip${albumFilter === "" ? " active" : ""}`}
+                      onClick={() => setAlbumFilter("")}
+                    >
+                      All ({progressPhotos.length})
+                    </button>
+                    {photoAlbums.map(album => (
+                      <button
+                        key={album}
+                        className={`album-chip${albumFilter === album ? " active" : ""}`}
+                        onClick={() => setAlbumFilter(album)}
+                      >
+                        {album} ({progressPhotos.filter(photo => photo.album === album).length})
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, marginTop: 12 }}>
+                    <input className="input" value={albumDraft} onChange={event => setAlbumDraft(event.target.value)} placeholder="New album name" />
+                    <button className="dark-btn" onClick={addPhotoAlbum}>Create</button>
+                  </div>
+                  {albumFilter && (
+                    <button className="edit-btn" onClick={() => removePhotoAlbum(albumFilter)} style={{ marginTop: 10, color: "#E5604D" }}>
+                      Delete album "{albumFilter}"
+                    </button>
+                  )}
+                </div>
+
+                <div className="home-card">
+                  <p className="detail-label">ADD PHOTO</p>
+                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                    <label style={{ display: "block" }}>
+                      <span className="field-label">DATE</span>
+                      <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
+                    </label>
+                    <label style={{ display: "block" }}>
+                      <span className="field-label">NOTE</span>
+                      <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder="What does this photo show?" />
+                    </label>
+                    <label style={{ display: "block" }}>
+                      <span className="field-label">ALBUM</span>
+                      <select className="input" value={photoDraft.album} onChange={event => setPhotoDraft(prev => ({ ...prev, album: event.target.value }))}>
+                        <option value="">No album</option>
+                        {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
+                      </select>
+                    </label>
                     <label className="dark-btn" style={{ textAlign: "center" }}>
                       Choose Photo
                       <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
@@ -2960,19 +3062,34 @@ export default function AtlasLuthor() {
                     {photoDraft.dataUrl && <button className="primary-btn" onClick={saveProgressPhoto}>SAVE PHOTO</button>}
                   </div>
                 </div>
-                {progressPhotos.length > 0 && (
-                  <div className="photo-strip">
-                    {progressPhotos.map(photo => (
-                      <div key={`${photo.id}-feature`} className="photo-card">
-                        <img src={photo.dataUrl} alt={photo.note || "Progress"} />
-                        <p className="photo-meta">{photo.date} - {photo.weight} LB{photo.note ? ` - ${photo.note}` : ""}</p>
-                        <button className="edit-btn" onClick={() => deleteProgressPhoto(photo.id)} style={{ width: "100%", borderRadius: 0, padding: 9 }}>
-                          Delete
-                        </button>
+
+                {(() => {
+                  const shownPhotos = albumFilter ? progressPhotos.filter(photo => photo.album === albumFilter) : progressPhotos;
+
+                  if (shownPhotos.length === 0) {
+                    return (
+                      <div className="home-card">
+                        <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>
+                          {albumFilter ? "No photos in this album yet." : text.noPhotos}
+                        </p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  }
+
+                  return (
+                    <div className="photo-grid">
+                      {shownPhotos.map(photo => (
+                        <div key={`${photo.id}-feature`} className="photo-tile" onClick={() => setViewingPhoto(photo)}>
+                          <img src={photo.dataUrl} alt={photo.note || "Progress"} />
+                          <div className="photo-body">
+                            <p className="photo-note">{photo.note || "No note"}</p>
+                            <p className="photo-sub">{photo.date} · {photo.weight} LB{photo.album ? ` · ${photo.album}` : ""}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -4231,6 +4348,58 @@ export default function AtlasLuthor() {
 
               <button className="dark-btn" onClick={() => setShowProgression(false)}>
                 Remind me later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingPhoto && (
+        <div className="modal-backdrop" onClick={() => setViewingPhoto(null)}>
+          <div className="modal" onClick={event => event.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                VIEW PHOTO
+              </p>
+              <button className="edit-btn" onClick={() => setViewingPhoto(null)} style={{ padding: "8px 12px" }}>
+                Close
+              </button>
+            </div>
+
+            <img
+              src={viewingPhoto.dataUrl}
+              alt={viewingPhoto.note || "Progress photo"}
+              style={{ width: "100%", maxHeight: "52vh", objectFit: "contain", borderRadius: 12, border: "1px solid #24242E", background: "#050507", display: "block" }}
+            />
+
+            <div className="detail-grid" style={{ marginTop: 12 }}>
+              <div className="detail-card"><p className="detail-label">DATE</p><p className="detail-value">{viewingPhoto.date}</p></div>
+              <div className="detail-card"><p className="detail-label">WEIGHT</p><p className="detail-value">{viewingPhoto.weight} LB</p></div>
+            </div>
+
+            <div className="detail-card" style={{ marginTop: 10 }}>
+              <p className="detail-label">NOTE</p>
+              <p className="detail-value" style={{ fontSize: 14 }}>{viewingPhoto.note || "No note"}</p>
+            </div>
+
+            <label style={{ display: "block", marginTop: 10 }}>
+              <span className="field-label">ALBUM</span>
+              <select
+                className="input"
+                value={viewingPhoto.album || ""}
+                onChange={event => updatePhotoAlbum(viewingPhoto.id, event.target.value)}
+              >
+                <option value="">No album</option>
+                {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
+              </select>
+            </label>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setViewingPhoto(null)}>
+                Close
+              </button>
+              <button className="dark-btn" style={{ flex: 1, color: "#E5604D" }} onClick={() => deleteProgressPhoto(viewingPhoto.id)}>
+                Delete Photo
               </button>
             </div>
           </div>
