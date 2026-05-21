@@ -193,6 +193,7 @@ const DEFAULT_APP_SETTINGS = {
   avatar: "",
   language: "en",
   themeMode: "auto",
+  tapFeedback: true,
 };
 
 function withNameParts(settings) {
@@ -637,6 +638,39 @@ function playReminderSound(sound = "chime") {
   });
 }
 
+// A single shared context, reused for the short tap click so rapid taps do
+// not spawn dozens of audio contexts.
+let tapAudioContext = null;
+
+function playTapTone() {
+  if (typeof window === "undefined") return;
+
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return;
+
+  try {
+    if (!tapAudioContext) tapAudioContext = new AudioContextCtor();
+    if (tapAudioContext.state === "suspended") tapAudioContext.resume();
+
+    const context = tapAudioContext;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const start = context.currentTime;
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(660, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.07, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.08);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(start + 0.09);
+  } catch {
+    // Ignore audio errors so a tap never breaks the UI.
+  }
+}
+
 export default function AtlasLuthor() {
   const [screen, setScreen] = useState("home");
   const [users, setUsers] = useState(() => safeLoad(STORAGE_KEYS.users, {}));
@@ -686,9 +720,35 @@ export default function AtlasLuthor() {
   const [clockNow, setClockNow] = useState(() => new Date());
   const notifiedTimersRef = useRef(new Set());
   const loadedUserRef = useRef("");
+  const tapFeedbackRef = useRef(true);
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
+
+  useEffect(() => {
+    tapFeedbackRef.current = appSettings.tapFeedback !== false;
+  }, [appSettings.tapFeedback]);
+
+  // Plays a short click and a light vibration when an interactive element is
+  // pressed, giving immediate confirmation that a tap registered.
+  useEffect(() => {
+    const handleTap = event => {
+      const control = event.target.closest("button, [role='button'], label.dark-btn");
+      if (!control || control.disabled || !tapFeedbackRef.current) return;
+
+      playTapTone();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(9);
+        } catch {
+          // Vibration is unsupported on some devices; ignore.
+        }
+      }
+    };
+
+    window.addEventListener("pointerdown", handleTap);
+    return () => window.removeEventListener("pointerdown", handleTap);
+  }, []);
 
   useEffect(() => {
     safeSave(STORAGE_KEYS.users, users);
@@ -2049,6 +2109,11 @@ export default function AtlasLuthor() {
         .menu-button span { width: 18px; height: 2px; border-radius: 2px; background: #FFFFFF; display: block; }
         .day-pill { cursor: pointer; flex: 1; padding: 10px 4px; border-radius: 10px; text-align: center; border: 1px solid transparent; transition: all 0.2s; background: transparent; font-family: inherit; }
         .day-pill:focus-visible, .ex-card:focus-visible, .session-tab:focus-visible, .dark-btn:focus-visible, .primary-btn:focus-visible, .edit-btn:focus-visible, .menu-button:focus-visible, .album-chip:focus-visible { outline: 2px solid #90C8FF; outline-offset: 2px; }
+        button, [role="button"], .day-pill, label.dark-btn { transition: transform 0.09s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease; }
+        button:active, [role="button"]:active, .day-pill:active, label.dark-btn:active { transform: scale(0.95); }
+        @media (prefers-reduced-motion: reduce) {
+          button:active, [role="button"]:active, .day-pill:active, label.dark-btn:active { transform: none; }
+        }
         .session-tab { cursor: pointer; flex: 1; padding: 12px 10px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(20,20,24,0.78); backdrop-filter: blur(16px); transition: all 0.2s; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #888; text-align: center; }
         .ex-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.075); background: rgba(19,19,24,0.82); backdrop-filter: blur(16px); cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
         .ex-card:hover { border-color: rgba(255,255,255,0.14); background: rgba(24,24,32,0.88); }
@@ -3994,6 +4059,20 @@ export default function AtlasLuthor() {
               <button className="dark-btn" onClick={() => playReminderSound(notificationSettings.sound)}>
                 Test Tone
               </button>
+
+              <div className="setting-row">
+                <div>
+                  <p className="setting-title">Tap feedback</p>
+                  <p className="setting-sub">Click sound and vibration when you tap a control.</p>
+                </div>
+                <button
+                  className="dark-btn"
+                  onClick={() => setAppSettings(prev => ({ ...prev, tapFeedback: prev.tapFeedback === false }))}
+                >
+                  {appSettings.tapFeedback === false ? "Off" : "On"}
+                </button>
+              </div>
+
               <button className="dark-btn" onClick={() => {
                 setShowSettings(false);
                 setShowReminders(true);
