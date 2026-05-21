@@ -460,55 +460,39 @@ export default function AtlasLuthor() {
         .ambient-bg::before {
           content: "";
           position: absolute;
-          inset: -20%;
+          inset: -42%;
           background:
-            repeating-linear-gradient(115deg, rgba(255,255,255,0.055) 0 1px, transparent 1px 90px),
-            linear-gradient(180deg, rgba(255,255,255,0.04), transparent 32%, rgba(144,200,255,0.035) 70%, transparent);
-          opacity: 0.7;
-          transform: translate3d(-3%, -2%, 0);
-          animation: glassDrift 18s ease-in-out infinite alternate;
+            conic-gradient(from 145deg at 50% 50%, #0C0C10 0deg, rgba(24,28,35,0.95) 58deg, rgba(72,76,88,0.42) 112deg, #0C0C10 176deg, rgba(9,22,34,0.78) 252deg, rgba(80,84,94,0.34) 306deg, #0C0C10 360deg);
+          filter: blur(44px);
+          opacity: 0.78;
+          transform: translate3d(-2%, -1%, 0) rotate(0deg) scale(1);
+          animation: gradientFlow 22s ease-in-out infinite alternate;
         }
         .ambient-bg::after {
           content: "";
           position: absolute;
-          inset: 0;
+          inset: -12%;
           background:
-            linear-gradient(90deg, transparent, rgba(255,255,255,0.11), transparent),
-            linear-gradient(180deg, rgba(12,12,16,0), rgba(12,12,16,0.9));
-          width: 34%;
-          transform: skewX(-18deg) translateX(-140%);
-          filter: blur(10px);
-          opacity: 0.34;
-          animation: glassSweep 12s ease-in-out infinite;
-        }
-        .glass-panel { position: absolute; border: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.015) 48%, rgba(144,200,255,0.045)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 80px rgba(0,0,0,0.35); backdrop-filter: blur(18px); transform: rotate(-16deg); animation: panelFloat 16s ease-in-out infinite alternate; }
-        .glass-panel.one { width: 48vw; height: 38vh; left: -18vw; top: 7vh; }
-        .glass-panel.two { width: 54vw; height: 42vh; right: -24vw; bottom: 8vh; animation-delay: -5s; transform: rotate(13deg); }
-        .glass-rift { position: absolute; height: 160vh; width: 1px; top: -30vh; background: linear-gradient(180deg, transparent, rgba(255,255,255,0.22), transparent); opacity: 0.35; transform: rotate(27deg); animation: riftPulse 9s ease-in-out infinite; }
-        .glass-rift.one { left: 24%; }
-        .glass-rift.two { right: 18%; animation-delay: -3s; }
-
-        @keyframes glassDrift {
-          from { transform: translate3d(-4%, -2%, 0) scale(1); }
-          to { transform: translate3d(3%, 2%, 0) scale(1.04); }
+            linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.05) 22%, transparent 39%, rgba(144,200,255,0.045) 58%, transparent 78%),
+            linear-gradient(235deg, rgba(255,255,255,0.035), transparent 34%, rgba(255,255,255,0.028) 72%, transparent);
+          background-size: 180% 180%, 160% 160%;
+          opacity: 0.58;
+          animation: gradientSheen 16s ease-in-out infinite alternate;
         }
 
-        @keyframes glassSweep {
-          0%, 18% { transform: skewX(-18deg) translateX(-150%); }
-          52%, 100% { transform: skewX(-18deg) translateX(320%); }
+        @keyframes gradientFlow {
+          from { transform: translate3d(-3%, -2%, 0) rotate(0deg) scale(1); }
+          to { transform: translate3d(3%, 2%, 0) rotate(16deg) scale(1.08); }
         }
 
-        @keyframes panelFloat {
-          from { translate: 0 0; opacity: 0.62; }
-          to { translate: 18px -22px; opacity: 0.88; }
-        }
-
-        @keyframes riftPulse {
-          0%, 100% { opacity: 0.16; }
-          50% { opacity: 0.48; }
+        @keyframes gradientSheen {
+          from { background-position: 0% 50%, 20% 30%; }
+          to { background-position: 100% 50%, 80% 70%; }
         }
 
         .page-shell { width: 100%; position: relative; z-index: 1; }
+        .app-header { padding: calc(56px + env(safe-area-inset-top)) 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .industry-mark { font-size: 10px; letter-spacing: 4px; color: #A7A7AD; font-family: 'Orbitron', monospace; margin-bottom: 18px; font-weight: 900; }
         .day-pill { cursor: pointer; flex: 1; padding: 10px 4px; border-radius: 10px; text-align: center; border: 1px solid transparent; transition: all 0.2s; }
         .session-tab { cursor: pointer; flex: 1; padding: 12px 10px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(20,20,24,0.78); backdrop-filter: blur(16px); transition: all 0.2s; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #888; text-align: center; }
         .ex-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.075); background: rgba(19,19,24,0.82); backdrop-filter: blur(16px); cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
@@ -543,23 +527,19 @@ export default function AtlasLuthor() {
         @media (prefers-reduced-motion: reduce) {
           .ambient-bg::before,
           .ambient-bg::after,
-          .glass-panel,
-          .glass-rift,
           .fade-up {
             animation: none;
           }
         }
       `}</style>
 
-      <div className="ambient-bg" aria-hidden="true">
-        <div className="glass-panel one" />
-        <div className="glass-panel two" />
-        <div className="glass-rift one" />
-        <div className="glass-rift two" />
-      </div>
+      <div className="ambient-bg" aria-hidden="true" />
 
       <div className="page-shell">
-        <div style={{ padding: "36px 20px 20px", textAlign: "center", borderBottom: "1px solid #1A1A22" }}>
+        <div className="app-header">
+          <p className="industry-mark">
+            FUENMAYOR INDUSTRIES
+          </p>
           <p style={{ fontSize: 9, letterSpacing: 5, color: "#444", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
             PROTOCOL ACTIVE
           </p>
