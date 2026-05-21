@@ -1,5 +1,5 @@
-const CACHE_NAME = "atlas-luthor-v2";
-const APP_SHELL = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "atlas-luthor-v3";
+const APP_SHELL = ["/", "/manifest.json", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(

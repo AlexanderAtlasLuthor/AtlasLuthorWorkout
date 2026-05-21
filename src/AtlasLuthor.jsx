@@ -181,7 +181,10 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
 };
 
 const DEFAULT_APP_SETTINGS = {
+  firstName: "Atlas",
+  lastName: "",
   name: "Atlas",
+  avatar: "",
   language: "en",
   themeMode: "auto",
 };
@@ -189,7 +192,8 @@ const DEFAULT_APP_SETTINGS = {
 const DEFAULT_SIGNUP = {
   userId: "",
   password: "",
-  name: "",
+  firstName: "",
+  lastName: "",
   currentWeight: "197",
   targetWeight: "185",
   height: "5'9\"",
@@ -494,7 +498,6 @@ export default function AtlasLuthor() {
   const [workoutData, setWorkoutData] = useState(() => safeLoad(STORAGE_KEYS.workout, baseWorkoutData));
   const [editingExercise, setEditingExercise] = useState(null);
   const [editingCardio, setEditingCardio] = useState(null);
-  const [showProgression, setShowProgression] = useState(false);
   const [lastProgressionReview, setLastProgressionReview] = useState(() =>
     safeLoad(STORAGE_KEYS.lastProgression, null)
   );
@@ -617,7 +620,7 @@ export default function AtlasLuthor() {
       ...prev,
       [activeUserId]: {
         ...prev[activeUserId],
-        name: appSettings.name,
+        name: `${appSettings.firstName || ""} ${appSettings.lastName || ""}`.trim() || appSettings.name || "Atlas",
         updatedAt: new Date().toISOString(),
         data: {
           workoutData,
@@ -1044,7 +1047,9 @@ export default function AtlasLuthor() {
   };
   const theme = themeFor(day.type);
   const greeting = text[getGreetingKey(clockNow.getHours())];
-  const userName = appSettings.name?.trim() || "Atlas";
+  const userName = appSettings.firstName?.trim() || appSettings.name?.trim().split(" ")[0] || "Atlas";
+  const fullName = `${appSettings.firstName || ""} ${appSettings.lastName || ""}`.trim() || appSettings.name?.trim() || "Atlas";
+  const userAvatar = appSettings.avatar || "";
   const displayDay = dayName => getDisplayDay(dayName, language);
   const displayDayShort = (dayName, fallback) => getDisplayDayShort(dayName, language, fallback);
   const weekHeaderLabels = getWeekHeaderLabels(language);
@@ -1196,9 +1201,13 @@ export default function AtlasLuthor() {
       targetDate: draft.targetDate || DEFAULT_GOALS.targetDate,
       focusGoal: draft.focusGoal || DEFAULT_GOALS.focusGoal,
     };
+    const firstName = (draft.firstName || "").trim();
+    const lastName = (draft.lastName || "").trim();
     const nextAppSettings = {
       ...DEFAULT_APP_SETTINGS,
-      name: draft.name || "Atlas",
+      firstName: firstName || "Atlas",
+      lastName,
+      name: `${firstName} ${lastName}`.trim() || "Atlas",
       language: draft.language || "en",
     };
 
@@ -1224,8 +1233,8 @@ export default function AtlasLuthor() {
     const userId = signupDraft.userId.trim().toLowerCase();
     const password = signupDraft.password.trim();
 
-    if (!userId || !password || !signupDraft.name.trim()) {
-      setAuthError("Add name, User ID, and password.");
+    if (!userId || !password || !signupDraft.firstName.trim()) {
+      setAuthError("Add your first name, a User ID, and a password.");
       return;
     }
 
@@ -1239,7 +1248,7 @@ export default function AtlasLuthor() {
       id: userId,
       userId,
       password,
-      name: signupDraft.name.trim(),
+      name: `${signupDraft.firstName.trim()} ${signupDraft.lastName.trim()}`.trim(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       data,
@@ -1551,6 +1560,18 @@ export default function AtlasLuthor() {
     setViewingPhoto(prev => (prev && prev.id === photoId ? { ...prev, album } : prev));
   };
 
+  const handleAvatarPhoto = event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAppSettings(prev => ({ ...prev, avatar: String(reader.result) }));
+      event.target.value = "";
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleProgressPhoto = event => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1773,12 +1794,10 @@ export default function AtlasLuthor() {
     });
 
     setLastProgressionReview(new Date().toISOString());
-    setShowProgression(false);
   };
 
   const rejectProgression = () => {
     setLastProgressionReview(new Date().toISOString());
-    setShowProgression(false);
   };
 
   const openWorkout = (dayName, options = {}) => {
@@ -2048,9 +2067,12 @@ export default function AtlasLuthor() {
               <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>
                 WELCOME TO ATLAS LUTHOR
               </p>
-              <h2 className="feature-title">Your Strength Command Center</h2>
+              <h2 className="feature-title">Train With Purpose</h2>
               <p className="feature-copy">
-                Atlas Luthor is a personal workout app. Plan your weekly split, track every set with rest timers, log body weight and progress photos, and let the protocol guide your gains.
+                Atlas Luthor turns your training into a clear daily mission. Follow a structured plan, log every set, and watch your strength, body, and consistency climb week after week.
+              </p>
+              <p className="feature-copy" style={{ marginTop: 8, fontWeight: 700 }}>
+                Create your free profile and start your first session today.
               </p>
             </div>
 
@@ -2116,10 +2138,16 @@ export default function AtlasLuthor() {
               </div>
             ) : (
               <div className="home-card" style={{ display: "grid", gap: 12 }}>
-                <label style={{ display: "block" }}>
-                  <span className="field-label">NAME</span>
-                  <input className="input" value={signupDraft.name} onChange={event => setSignupDraft(prev => ({ ...prev, name: event.target.value }))} placeholder="Your name" />
-                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <label style={{ display: "block" }}>
+                    <span className="field-label">FIRST NAME</span>
+                    <input className="input" value={signupDraft.firstName} onChange={event => setSignupDraft(prev => ({ ...prev, firstName: event.target.value }))} placeholder="First name" />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <span className="field-label">LAST NAME</span>
+                    <input className="input" value={signupDraft.lastName} onChange={event => setSignupDraft(prev => ({ ...prev, lastName: event.target.value }))} placeholder="Last name" />
+                  </label>
+                </div>
                 <label style={{ display: "block" }}>
                   <span className="field-label">USER ID</span>
                   <input className="input" value={signupDraft.userId} onChange={event => setSignupDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="Choose a User ID" />
@@ -2198,12 +2226,24 @@ export default function AtlasLuthor() {
         {activeUserId && screen === "home" && (
           <div className="fade-up" style={{ padding: "20px" }}>
             <div className="feature-hero" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace" }}>
-                {activeThemeMode.toUpperCase()} MODE
-              </p>
-              <h2 className="feature-title">
-                {greeting}, {userName}
-              </h2>
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                <div
+                  onClick={() => { setShowMenu(false); setShowSettings(true); }}
+                  style={{ width: 58, height: 58, borderRadius: 999, overflow: "hidden", border: `2px solid ${themeFor(weeklyMetrics.todayType).accent}`, background: isLightMode ? "#E9EAEE" : "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                >
+                  {userAvatar
+                    ? <img src={userAvatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 22, color: "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace" }}>
+                    {activeThemeMode.toUpperCase()} MODE
+                  </p>
+                  <h2 className="feature-title" style={{ marginTop: 4 }}>
+                    {greeting}, {userName}
+                  </h2>
+                </div>
+              </div>
               <p className="feature-copy">
                 {language === "es"
                   ? `Hoy es ${todayDisplayName}. Tu protocolo ${weeklyMetrics.todayType} está listo con ${weeklyMetrics.weeklyProgress}% de progreso semanal.`
@@ -2574,19 +2614,24 @@ export default function AtlasLuthor() {
               )}
             </div>
 
-            {isProgressionDue(lastProgressionReview) && (
+            {isProgressionDue(lastProgressionReview) && progressionItems.length > 0 && (
               <div className="home-card" style={{ marginBottom: 14, borderColor: "#FFD06055", background: "#151207" }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
-                  2-WEEK UPGRADE READY
+                  2-WEEK UPGRADE
                 </p>
 
                 <p style={{ color: "#BFA45E", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
-                  The app can suggest +5 lb for every exercise, but it will ask before changing anything.
+                  Two weeks in. You can add +5 lb to all {progressionItems.length} exercises, or keep your current weights. Nothing changes unless you pick one.
                 </p>
 
-                <button className="dark-btn" style={{ width: "100%", color: "#FFD060" }} onClick={() => setShowProgression(true)}>
-                  Review +5 lb Proposal
-                </button>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <button className="dark-btn" onClick={rejectProgression}>
+                    Keep current
+                  </button>
+                  <button className="primary-btn" onClick={acceptProgression}>
+                    Apply +5 lb
+                  </button>
+                </div>
               </div>
             )}
 
@@ -3651,12 +3696,44 @@ export default function AtlasLuthor() {
             </p>
 
             <div className="settings-grid">
-              <input
-                className="input"
-                value={appSettings.name}
-                onChange={event => setAppSettings(prev => ({ ...prev, name: event.target.value }))}
-                placeholder={text.profileName}
-              />
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <div style={{ width: 66, height: 66, borderRadius: 999, overflow: "hidden", border: "1.5px solid #2A2A34", background: "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {appSettings.avatar
+                    ? <img src={appSettings.avatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 24, color: "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
+                </div>
+                <div style={{ display: "grid", gap: 8, flex: 1, minWidth: 0 }}>
+                  <label className="dark-btn" style={{ textAlign: "center" }}>
+                    {appSettings.avatar ? "Change Profile Photo" : "Add Profile Photo"}
+                    <input type="file" accept="image/*" onChange={handleAvatarPhoto} style={{ display: "none" }} />
+                  </label>
+                  {appSettings.avatar && (
+                    <button className="edit-btn" onClick={() => setAppSettings(prev => ({ ...prev, avatar: "" }))}>
+                      Remove Photo
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">FIRST NAME</span>
+                  <input
+                    className="input"
+                    value={appSettings.firstName}
+                    onChange={event => setAppSettings(prev => ({ ...prev, firstName: event.target.value }))}
+                    placeholder="First name"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">LAST NAME</span>
+                  <input
+                    className="input"
+                    value={appSettings.lastName}
+                    onChange={event => setAppSettings(prev => ({ ...prev, lastName: event.target.value }))}
+                    placeholder="Last name"
+                  />
+                </label>
+              </div>
               <select
                 className="input"
                 value={appSettings.language}
@@ -4293,61 +4370,6 @@ export default function AtlasLuthor() {
                 }}
               >
                 Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showProgression && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              2-WEEK PROGRESSION CHECK
-            </p>
-
-            <h3 style={{ fontFamily: "'DM Sans', sans-serif", marginBottom: 8 }}>
-              Add +5 lb?
-            </h3>
-
-            <p style={{ color: "#777", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
-              Nothing changes unless you accept. Review the proposal below.
-            </p>
-
-            <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
-              {progressionItems.slice(0, 18).map(item => (
-                <div
-                  key={`${item.dayName}-${item.sessionIndex}-${item.exerciseIndex}`}
-                  style={{ background: "#15151B", border: "1px solid #24242E", borderRadius: 12, padding: 12, fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  <p style={{ color: "#FFFFFF", fontWeight: 700, fontSize: 13 }}>{item.name}</p>
-                  <p style={{ color: "#666", fontSize: 12, marginTop: 3 }}>
-                    {item.dayName} / {item.sessionName}
-                  </p>
-                  <p style={{ color: "#FFD060", fontWeight: 800, marginTop: 4 }}>
-                    {item.oldWeight} -&gt; {item.newWeight}
-                  </p>
-                </div>
-              ))}
-
-              {progressionItems.length > 18 && (
-                <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
-                  + {progressionItems.length - 18} more exercises included.
-                </p>
-              )}
-            </div>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <button className="primary-btn" onClick={acceptProgression}>
-                ACCEPT +5 LB
-              </button>
-
-              <button className="dark-btn" onClick={rejectProgression}>
-                Not now / Keep current weights
-              </button>
-
-              <button className="dark-btn" onClick={() => setShowProgression(false)}>
-                Remind me later
               </button>
             </div>
           </div>
