@@ -119,6 +119,24 @@ const STORAGE_KEYS = {
   workout: "atlas-luthor-workout-data",
   checked: "atlas-luthor-checked",
   lastProgression: "atlas-luthor-last-progression-review",
+  profile: "atlas-luthor-profile",
+  goals: "atlas-luthor-goals",
+  progressLog: "atlas-luthor-progress-log",
+};
+
+const DEFAULT_PROFILE = {
+  currentWeight: "197",
+  startWeight: "197",
+  targetWeight: "185",
+  height: "5'9\"",
+  startDate: "2026-03-23",
+};
+
+const DEFAULT_GOALS = {
+  weeklyProgressGoal: "90",
+  weeklySessionsGoal: "10",
+  targetDate: "2026-04-09",
+  focusGoal: "Build strength and finish the protocol",
 };
 
 function cloneData(value) {
@@ -158,6 +176,20 @@ function isProgressionDue(lastDate) {
   return diffDays >= 14;
 }
 
+function getDateKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function toNumber(value) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function signedNumber(value) {
+  if (value > 0) return `+${value}`;
+  return String(value);
+}
+
 export default function AtlasLuthor() {
   const [screen, setScreen] = useState("home");
   const [activeDay, setActiveDay] = useState(getTodayDayName());
@@ -170,6 +202,12 @@ export default function AtlasLuthor() {
   const [lastProgressionReview, setLastProgressionReview] = useState(() =>
     safeLoad(STORAGE_KEYS.lastProgression, null)
   );
+  const [profile, setProfile] = useState(() => safeLoad(STORAGE_KEYS.profile, DEFAULT_PROFILE));
+  const [goals, setGoals] = useState(() => safeLoad(STORAGE_KEYS.goals, DEFAULT_GOALS));
+  const [progressLog, setProgressLog] = useState(() => safeLoad(STORAGE_KEYS.progressLog, []));
+  const [editingProfile, setEditingProfile] = useState(null);
+  const [editingGoals, setEditingGoals] = useState(null);
+  const [progressSaved, setProgressSaved] = useState(false);
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
@@ -186,6 +224,18 @@ export default function AtlasLuthor() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.lastProgression, JSON.stringify(lastProgressionReview));
   }, [lastProgressionReview]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.goals, JSON.stringify(goals));
+  }, [goals]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.progressLog, JSON.stringify(progressLog));
+  }, [progressLog]);
 
   useEffect(() => {
     if (isProgressionDue(lastProgressionReview)) {
@@ -247,6 +297,33 @@ export default function AtlasLuthor() {
     };
   }, [checked, workoutData]);
 
+  useEffect(() => {
+    const date = getDateKey();
+
+    setProgressLog(prev => {
+      const autoRecord = {
+        id: `auto-${date}`,
+        type: "auto",
+        date,
+        recordedAt: new Date().toISOString(),
+        weight: profile.currentWeight,
+        targetWeight: profile.targetWeight,
+        weeklyProgress: weeklyMetrics.weeklyProgress,
+        completedExercises: weeklyMetrics.completedExercises,
+        completedSessions: weeklyMetrics.completedSessions,
+      };
+      const withoutTodayAuto = prev.filter(item => item.id !== autoRecord.id);
+
+      return [autoRecord, ...withoutTodayAuto].slice(0, 60);
+    });
+  }, [
+    profile.currentWeight,
+    profile.targetWeight,
+    weeklyMetrics.completedExercises,
+    weeklyMetrics.completedSessions,
+    weeklyMetrics.weeklyProgress,
+  ]);
+
   const progressionItems = useMemo(() => {
     const items = [];
 
@@ -268,6 +345,24 @@ export default function AtlasLuthor() {
 
     return items;
   }, [workoutData]);
+
+  const progressEntries = useMemo(
+    () =>
+      [...progressLog].sort(
+        (a, b) => new Date(b.recordedAt || b.date).getTime() - new Date(a.recordedAt || a.date).getTime()
+      ),
+    [progressLog]
+  );
+  const latestProgress = progressEntries[0];
+  const currentWeight = toNumber(profile.currentWeight);
+  const startWeight = toNumber(profile.startWeight);
+  const targetWeight = toNumber(profile.targetWeight);
+  const weightChange = Math.round((currentWeight - startWeight) * 10) / 10;
+  const weightToGoal = Math.round((currentWeight - targetWeight) * 10) / 10;
+  const weeklyProgressGoal = Math.max(toNumber(goals.weeklyProgressGoal), 1);
+  const weeklySessionsGoal = Math.max(toNumber(goals.weeklySessionsGoal), 1);
+  const weeklyGoalPct = Math.min(100, Math.round((weeklyMetrics.weeklyProgress / weeklyProgressGoal) * 100));
+  const sessionsGoalPct = Math.min(100, Math.round((weeklyMetrics.completedSessions / weeklySessionsGoal) * 100));
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
     setWorkoutData(prev => ({
@@ -298,6 +393,28 @@ export default function AtlasLuthor() {
         ),
       },
     }));
+  };
+
+  const rememberProgress = () => {
+    const date = getDateKey();
+
+    setProgressLog(prev => [
+      {
+        id: `manual-${Date.now()}`,
+        type: "manual",
+        date,
+        recordedAt: new Date().toISOString(),
+        weight: profile.currentWeight,
+        targetWeight: profile.targetWeight,
+        weeklyProgress: weeklyMetrics.weeklyProgress,
+        completedExercises: weeklyMetrics.completedExercises,
+        completedSessions: weeklyMetrics.completedSessions,
+      },
+      ...prev,
+    ].slice(0, 60));
+
+    setProgressSaved(true);
+    window.setTimeout(() => setProgressSaved(false), 1600);
   };
 
   const acceptProgression = () => {
@@ -384,7 +501,7 @@ export default function AtlasLuthor() {
             LUTHOR
           </h1>
           <p style={{ fontSize: 11, color: "#444", marginTop: 8, fontFamily: "'DM Sans', sans-serif", letterSpacing: 1 }}>
-            03.23 - 04.09.2026 · 197 LB · 5&apos;9&quot;
+            {profile.startDate} - {goals.targetDate} · {profile.currentWeight} LB · {profile.height}
           </p>
         </div>
 
@@ -406,6 +523,113 @@ export default function AtlasLuthor() {
               <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
                 START TODAY
               </button>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    BODY STATUS
+                  </p>
+                  <p style={{ fontSize: 28, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
+                    {profile.currentWeight} LB
+                  </p>
+                </div>
+
+                <button className="edit-btn" onClick={() => setEditingProfile({ ...profile })}>
+                  Edit
+                </button>
+              </div>
+
+              <div className="metric-grid">
+                {[
+                  { label: "START", val: `${profile.startWeight} LB` },
+                  { label: "TARGET", val: `${profile.targetWeight} LB` },
+                  { label: "CHANGE", val: `${signedNumber(weightChange)} LB` },
+                  { label: "TO GOAL", val: `${signedNumber(weightToGoal)} LB` },
+                ].map(metric => (
+                  <div key={metric.label} className="stat-box">
+                    <p style={{ fontSize: 17, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                      {metric.val}
+                    </p>
+                    <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                      {metric.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    MY GOALS
+                  </p>
+                  <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 700 }}>
+                    {goals.focusGoal}
+                  </p>
+                </div>
+
+                <button className="edit-btn" onClick={() => setEditingGoals({ ...goals })}>
+                  Set
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gap: 12 }}>
+                {[
+                  { label: "Weekly protocol", current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct },
+                  { label: "Completed sessions", current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct },
+                ].map(goal => (
+                  <div key={goal.label}>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "#777", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
+                      <span>{goal.label}</span>
+                      <span>{goal.current} / {goal.target}</span>
+                    </div>
+                    <div style={{ height: 5, background: "#1E1E26", borderRadius: 5, overflow: "hidden" }}>
+                      <div style={{ width: `${goal.pct}%`, height: "100%", background: "#FFFFFF", borderRadius: 5, transition: "width 0.3s ease" }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    PROGRESS MEMORY
+                  </p>
+                  <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                    {latestProgress
+                      ? `Last saved ${latestProgress.date}: ${latestProgress.weight} LB, ${latestProgress.weeklyProgress}% weekly.`
+                      : "No progress saved yet."}
+                  </p>
+                </div>
+
+                <button className="edit-btn" onClick={rememberProgress}>
+                  Save
+                </button>
+              </div>
+
+              {progressSaved && (
+                <p style={{ color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, marginBottom: 10 }}>
+                  Progress saved.
+                </p>
+              )}
+
+              <div style={{ display: "grid", gap: 8 }}>
+                {progressEntries.slice(0, 3).map(entry => (
+                  <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, background: "#101015", border: "1px solid #20202A", borderRadius: 10, padding: 10, fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: "#888", fontSize: 12, fontWeight: 700 }}>
+                      {entry.date} {entry.type === "manual" ? "SAVED" : "AUTO"}
+                    </span>
+                    <span style={{ color: "#FFFFFF", fontSize: 12, fontWeight: 800 }}>
+                      {entry.weight} LB · {entry.completedExercises} exercises
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {isProgressionDue(lastProgressionReview) && (
@@ -750,6 +974,130 @@ export default function AtlasLuthor() {
                     },
                   });
                   setEditingCardio(null);
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingProfile && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              EDIT BODY STATUS
+            </p>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <input
+                className="input"
+                value={editingProfile.currentWeight}
+                onChange={event => setEditingProfile(prev => ({ ...prev, currentWeight: event.target.value }))}
+                placeholder="Current weight"
+                inputMode="decimal"
+              />
+
+              <input
+                className="input"
+                value={editingProfile.startWeight}
+                onChange={event => setEditingProfile(prev => ({ ...prev, startWeight: event.target.value }))}
+                placeholder="Start weight"
+                inputMode="decimal"
+              />
+
+              <input
+                className="input"
+                value={editingProfile.targetWeight}
+                onChange={event => setEditingProfile(prev => ({ ...prev, targetWeight: event.target.value }))}
+                placeholder="Target weight"
+                inputMode="decimal"
+              />
+
+              <input
+                className="input"
+                value={editingProfile.height}
+                onChange={event => setEditingProfile(prev => ({ ...prev, height: event.target.value }))}
+                placeholder="Height"
+              />
+
+              <input
+                className="input"
+                value={editingProfile.startDate}
+                onChange={event => setEditingProfile(prev => ({ ...prev, startDate: event.target.value }))}
+                placeholder="Start date"
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingProfile(null)}>
+                Cancel
+              </button>
+              <button
+                className="primary-btn"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setProfile(editingProfile);
+                  setEditingProfile(null);
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingGoals && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              SET MY GOALS
+            </p>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <input
+                className="input"
+                value={editingGoals.focusGoal}
+                onChange={event => setEditingGoals(prev => ({ ...prev, focusGoal: event.target.value }))}
+                placeholder="Main goal"
+              />
+
+              <input
+                className="input"
+                value={editingGoals.weeklyProgressGoal}
+                onChange={event => setEditingGoals(prev => ({ ...prev, weeklyProgressGoal: event.target.value }))}
+                placeholder="Weekly progress goal %"
+                inputMode="numeric"
+              />
+
+              <input
+                className="input"
+                value={editingGoals.weeklySessionsGoal}
+                onChange={event => setEditingGoals(prev => ({ ...prev, weeklySessionsGoal: event.target.value }))}
+                placeholder="Weekly sessions goal"
+                inputMode="numeric"
+              />
+
+              <input
+                className="input"
+                value={editingGoals.targetDate}
+                onChange={event => setEditingGoals(prev => ({ ...prev, targetDate: event.target.value }))}
+                placeholder="Target date"
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingGoals(null)}>
+                Cancel
+              </button>
+              <button
+                className="primary-btn"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setGoals(editingGoals);
+                  setEditingGoals(null);
                 }}
               >
                 Save
