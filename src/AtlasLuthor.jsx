@@ -349,6 +349,7 @@ export default function AtlasLuthor() {
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showReminders, setShowReminders] = useState(false);
+  const [activeFeaturePage, setActiveFeaturePage] = useState("today");
   const [progressSaved, setProgressSaved] = useState(false);
   const [todayOnlyMode, setTodayOnlyMode] = useState(false);
   const [quickMode, setQuickMode] = useState(false);
@@ -787,6 +788,37 @@ export default function AtlasLuthor() {
   const quickSetsDone = Number(setProgress[quickExerciseKey] || 0);
   const quickTotalSets = Number(quickExercise?.sets || 0);
   const quickSetsLeft = Math.max(quickTotalSets - quickSetsDone, 0);
+  const featurePages = [
+    { id: "today", title: "Today Command", label: "Today", accent: TYPE_THEME[weeklyMetrics.todayType].accent },
+    { id: "body", title: "Body Status", label: "Body", accent: "#FFFFFF" },
+    { id: "score", title: "Atlas Score", label: "Score", accent: "#FFFFFF" },
+    { id: "calendar", title: "Month Calendar", label: "Calendar", accent: "#90C8FF" },
+    { id: "prs", title: "PR Tracker", label: "PRs", accent: "#FFD060" },
+    { id: "fatigue", title: "Fatigue / Deload", label: "Fatigue", accent: deloadWarning ? "#FFD060" : "#FFFFFF" },
+    { id: "goals", title: "My Goals", label: "Goals", accent: "#FFFFFF" },
+    { id: "progress", title: "Progress Memory", label: "Progress", accent: "#90C8FF" },
+    { id: "badges", title: "Streak / Badges", label: "Badges", accent: "#B8A0FF" },
+    { id: "photos", title: "Progress Photos", label: "Photos", accent: "#FFFFFF" },
+    { id: "metrics", title: "Weekly Metrics", label: "Metrics", accent: "#FFFFFF" },
+    { id: "week", title: "Week Plan", label: "Week", accent: "#FFFFFF" },
+  ];
+  const activeFeature = featurePages.find(page => page.id === activeFeaturePage) || featurePages[0];
+  const weeklySetProgress = days.reduce((sum, dayName) => (
+    sum + workoutData[dayName].sessions.reduce((sessionSum, currentSession, sessionIndex) => (
+      sessionSum + currentSession.exercises.reduce((exerciseSum, exercise, exerciseIndex) => {
+        const key = getExerciseKey(dayName, sessionIndex, exerciseIndex);
+        return exerciseSum + Math.min(Number(setProgress[key] || 0), Number(exercise.sets || 0));
+      }, 0)
+    ), 0)
+  ), 0);
+  const totalPhotoCount = progressPhotos.length;
+  const latestPhoto = progressPhotos[0];
+
+  const openFeaturePage = id => {
+    setActiveFeaturePage(id);
+    setShowMenu(false);
+    setScreen("feature");
+  };
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
     setWorkoutData(prev => ({
@@ -1321,6 +1353,18 @@ export default function AtlasLuthor() {
         .setting-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid #24242E; border-radius: 12px; padding: 12px; background: #101015; }
         .setting-title { color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 800; min-width: 0; overflow-wrap: anywhere; }
         .setting-sub { color: #777; font-family: 'DM Sans', sans-serif; font-size: 12px; line-height: 1.4; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
+        .feature-page { padding: 20px; }
+        .feature-hero { background: rgba(19,19,24,0.86); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; backdrop-filter: blur(18px); margin-bottom: 14px; }
+        .feature-title { font-size: 25px; color: #FFFFFF; font-weight: 900; font-family: 'Orbitron', monospace; letter-spacing: 2px; line-height: 1.05; margin-top: 8px; }
+        .feature-copy { color: #777; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.55; margin-top: 10px; }
+        .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .detail-card { border: 1px solid #24242E; background: #101015; border-radius: 12px; padding: 12px; min-width: 0; }
+        .detail-label { color: #666; font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2px; margin-bottom: 5px; }
+        .detail-value { color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 900; overflow-wrap: anywhere; }
+        .detail-list { display: grid; gap: 10px; }
+        .detail-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid #24242E; background: #101015; border-radius: 12px; padding: 12px; font-family: 'DM Sans', sans-serif; min-width: 0; }
+        .detail-row-main { color: #FFFFFF; font-size: 14px; font-weight: 900; min-width: 0; overflow-wrap: anywhere; }
+        .detail-row-sub { color: #777; font-size: 12px; line-height: 1.35; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
 
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 20; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
         .modal { width: 100%; max-width: 520px; max-height: 82vh; overflow: auto; background: #101015; border: 1.5px solid #2A2A34; border-radius: 22px; padding: 18px; box-shadow: 0 20px 80px rgba(0,0,0,0.4); }
@@ -1337,6 +1381,9 @@ export default function AtlasLuthor() {
           .home-card { padding: 14px; }
           .modal { border-radius: 18px; padding: 16px; }
           .setting-row { grid-template-columns: 1fr; }
+          .feature-page { padding: 16px; }
+          .detail-grid { grid-template-columns: 1fr; }
+          .detail-row { align-items: flex-start; flex-direction: column; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1782,6 +1829,320 @@ export default function AtlasLuthor() {
           </div>
         )}
 
+        {screen === "feature" && (
+          <div className="fade-up feature-page">
+            <button className="dark-btn" onClick={() => setScreen("home")} style={{ marginBottom: 14 }}>
+              Back Home
+            </button>
+
+            <div className="feature-hero" style={{ borderColor: `${activeFeature.accent}40` }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: activeFeature.accent, fontFamily: "'Orbitron', monospace" }}>
+                ATLAS MODULE
+              </p>
+              <h2 className="feature-title">{activeFeature.title}</h2>
+              <p className="feature-copy">
+                {activeFeaturePage === "today" && "The command center for the current day: start the session, jump into quick mode, and keep the week's protocol moving."}
+                {activeFeaturePage === "body" && "Tracks current body weight against the starting point and target so the protocol has a visible physical direction."}
+                {activeFeaturePage === "score" && "Combines weekly completion, sessions, streak, PRs, and fatigue into one performance signal."}
+                {activeFeaturePage === "calendar" && "Shows the month as training status: completed, trained, missed, rest, or planned."}
+                {activeFeaturePage === "prs" && "Collects every exercise marked as a PR from notes, then pairs it with the current programmed weight and date."}
+                {activeFeaturePage === "fatigue" && "Uses RPE and pain notes to show weekly strain and warn when the protocol may need a lighter day."}
+                {activeFeaturePage === "goals" && "Keeps weekly targets and the main focus goal visible, with progress against each target."}
+                {activeFeaturePage === "progress" && "Stores body-weight and weekly-performance snapshots so progress survives beyond today's checkboxes."}
+                {activeFeaturePage === "badges" && "Turns consistency into simple streaks and badges without making the app feel noisy."}
+                {activeFeaturePage === "photos" && "Keeps local progress photos by date, weight, and note for visual comparison."}
+                {activeFeaturePage === "metrics" && "Breaks down the full weekly workload: exercises, sets, sessions, cardio, completion, and set progress."}
+                {activeFeaturePage === "week" && "Shows the full seven-day split and gives fast access to every programmed workout day."}
+              </p>
+            </div>
+
+            {activeFeaturePage === "today" && (
+              <div className="detail-list">
+                <div className="detail-grid">
+                  <div className="detail-card">
+                    <p className="detail-label">DAY</p>
+                    <p className="detail-value">{weeklyMetrics.today} - {weeklyMetrics.todayType}</p>
+                  </div>
+                  <div className="detail-card">
+                    <p className="detail-label">WEEKLY</p>
+                    <p className="detail-value">{weeklyMetrics.weeklyProgress}%</p>
+                  </div>
+                  <div className="detail-card">
+                    <p className="detail-label">DONE</p>
+                    <p className="detail-value">{weeklyMetrics.completedExercises}/{weeklyMetrics.totalExercises}</p>
+                  </div>
+                  <div className="detail-card">
+                    <p className="detail-label">SESSIONS</p>
+                    <p className="detail-value">{weeklyMetrics.completedSessions}/{weeklyMetrics.workoutSessions}</p>
+                  </div>
+                </div>
+                <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
+                  START TODAY
+                </button>
+                <div className="compact-actions">
+                  <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true })}>Today Only</button>
+                  <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true })}>Quick Mode</button>
+                  <button className="dark-btn" onClick={resetWeek}>Reset Week</button>
+                </div>
+              </div>
+            )}
+
+            {activeFeaturePage === "body" && (
+              <div className="detail-list">
+                <div className="detail-grid">
+                  {[
+                    { label: "CURRENT", val: `${profile.currentWeight} LB` },
+                    { label: "START", val: `${profile.startWeight} LB` },
+                    { label: "TARGET", val: `${profile.targetWeight} LB` },
+                    { label: "CHANGE", val: `${signedNumber(weightChange)} LB` },
+                    { label: "TO GOAL", val: `${signedNumber(weightToGoal)} LB` },
+                    { label: "HEIGHT", val: profile.height },
+                  ].map(metric => (
+                    <div key={metric.label} className="detail-card">
+                      <p className="detail-label">{metric.label}</p>
+                      <p className="detail-value">{metric.val}</p>
+                    </div>
+                  ))}
+                </div>
+                <button className="primary-btn" onClick={() => setEditingProfile({ ...profile })}>
+                  EDIT BODY STATUS
+                </button>
+              </div>
+            )}
+
+            {activeFeaturePage === "score" && (
+              <div className="detail-list">
+                <div className="detail-card" style={{ textAlign: "center", padding: 20 }}>
+                  <p style={{ color: "#FFFFFF", fontSize: 54, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{atlasScore}</p>
+                  <p className="detail-row-sub">{deloadWarning ? "Deload pressure is active" : "Protocol status stable"}</p>
+                </div>
+                <div className="detail-grid">
+                  <div className="detail-card"><p className="detail-label">WEEKLY</p><p className="detail-value">{weeklyMetrics.weeklyProgress}%</p></div>
+                  <div className="detail-card"><p className="detail-label">SESSIONS</p><p className="detail-value">{weeklyMetrics.completedSessions}/{weeklySessionsGoal}</p></div>
+                  <div className="detail-card"><p className="detail-label">STREAK</p><p className="detail-value">{weeklyStreak}</p></div>
+                  <div className="detail-card"><p className="detail-label">PRS</p><p className="detail-value">{prEntries.length}</p></div>
+                  <div className="detail-card"><p className="detail-label">AVG RPE</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
+                  <div className="detail-card"><p className="detail-label">DELOAD</p><p className="detail-value">{deloadWarning ? "-10" : "+5"}</p></div>
+                </div>
+              </div>
+            )}
+
+            {activeFeaturePage === "calendar" && (
+              <div className="detail-list">
+                <div className="home-card">
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6 }}>
+                    {["S", "M", "T", "W", "T", "F", "S"].map((label, index) => (
+                      <p key={`${label}-${index}`} style={{ color: "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
+                    ))}
+                    {calendarCells.map((cell, index) => {
+                      if (!cell) return <div key={`blank-detail-${index}`} />;
+                      const logged = calendarLog[cell.key];
+                      const isPast = cell.key < getDateKey();
+                      const status = logged?.status || (isPast ? "missed" : "planned");
+                      const statusColor = { completed: "#FFFFFF", trained: "#90C8FF", missed: "#553333", rest: "#666", planned: "#24242E" }[status];
+                      return (
+                        <div key={cell.key} title={status} style={{ aspectRatio: "1", borderRadius: 8, border: `1px solid ${statusColor}`, background: status === "completed" ? "#FFFFFF" : "#101015", color: status === "completed" ? "#050507" : "#888", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
+                          {cell.dayNumber}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {calendarCells.filter(Boolean).slice(-10).map(cell => {
+                  const logged = calendarLog[cell.key];
+                  const isPast = cell.key < getDateKey();
+                  const status = logged?.status || (isPast ? "missed" : "planned");
+                  return (
+                    <div key={`${cell.key}-row`} className="detail-row">
+                      <div>
+                        <p className="detail-row-main">{cell.key} - {cell.dayName}</p>
+                        <p className="detail-row-sub">{logged ? `${logged.completed}/${logged.total} exercises logged` : "No entry saved yet"}</p>
+                      </div>
+                      <span style={{ color: "#FFFFFF", fontFamily: "'Orbitron', monospace", fontSize: 10 }}>{status.toUpperCase()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeFeaturePage === "prs" && (
+              <div className="detail-list">
+                {(prEntries.length ? prEntries : [{ key: "empty-pr", exerciseName: "No PRs marked yet", sessionName: "Open Notes on an exercise and mark PR", weight: "", date: "" }]).map(entry => (
+                  <div key={entry.key} className="detail-row">
+                    <div>
+                      <p className="detail-row-main">{entry.exerciseName}</p>
+                      <p className="detail-row-sub">{entry.dayName || "PR"} - {entry.sessionName}</p>
+                    </div>
+                    <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} {entry.date}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeFeaturePage === "fatigue" && (
+              <div className="detail-list">
+                <div className="detail-grid">
+                  <div className="detail-card"><p className="detail-label">AVG RPE</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
+                  <div className="detail-card"><p className="detail-label">HIGH NOTES</p><p className="detail-value">{highFatigueNotes}</p></div>
+                  <div className="detail-card"><p className="detail-label">DELOAD</p><p className="detail-value">{deloadWarning ? "ACTIVE" : "CLEAR"}</p></div>
+                  <div className="detail-card"><p className="detail-label">THIS WEEK</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
+                </div>
+                <div className="home-card" style={{ borderColor: deloadWarning ? "#FFD06066" : "rgba(255,255,255,0.075)" }}>
+                  <p className="detail-row-main">{deloadWarning ? "Lower load, reduce intensity, or add recovery." : "No fatigue warning from the current notes."}</p>
+                  <p className="detail-row-sub">Pain marked Sharp/Stop or RPE 9-10 raises the warning signal.</p>
+                </div>
+              </div>
+            )}
+
+            {activeFeaturePage === "goals" && (
+              <div className="detail-list">
+                <div className="home-card">
+                  <p className="detail-label">MAIN FOCUS</p>
+                  <p className="detail-row-main">{goals.focusGoal}</p>
+                  <p className="detail-row-sub">Target date: {goals.targetDate}</p>
+                </div>
+                {[{ label: "Weekly protocol", current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct }, { label: "Completed sessions", current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct }].map(goal => (
+                  <div key={goal.label} className="detail-card">
+                    <p className="detail-label">{goal.label.toUpperCase()}</p>
+                    <p className="detail-value">{goal.current} / {goal.target}</p>
+                    <div style={{ height: 6, background: "#1E1E26", borderRadius: 6, overflow: "hidden", marginTop: 10 }}>
+                      <div style={{ width: `${goal.pct}%`, height: "100%", background: "#FFFFFF", borderRadius: 6 }} />
+                    </div>
+                  </div>
+                ))}
+                <button className="primary-btn" onClick={() => setEditingGoals({ ...goals })}>SET MY GOALS</button>
+              </div>
+            )}
+
+            {activeFeaturePage === "progress" && (
+              <div className="detail-list">
+                <div className="compact-actions">
+                  <button className="primary-btn" onClick={rememberProgress}>SAVE PROGRESS</button>
+                  <button className="dark-btn" onClick={() => setShowDataTools(true)}>Backup</button>
+                  <button className="dark-btn" onClick={resetWeek}>Reset Week</button>
+                </div>
+                {chartEntries.length > 0 && (
+                  <div className="home-card" style={{ display: "flex", alignItems: "end", gap: 8, height: 130 }}>
+                    {chartEntries.map(entry => {
+                      const range = Math.max(maxChartWeight - minChartWeight, 1);
+                      const height = 34 + ((entry.weightNumber - minChartWeight) / range) * 66;
+                      return (
+                        <div key={`${entry.id}-feature-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+                          <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: "linear-gradient(180deg, #FFFFFF, #777B86)" }} />
+                          <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{entry.weight}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {progressEntries.slice(0, 12).map(entry => (
+                  <div key={`${entry.id}-feature`} className="detail-row">
+                    <div>
+                      <p className="detail-row-main">{entry.date} - {entry.type === "manual" ? "Manual save" : "Auto snapshot"}</p>
+                      <p className="detail-row-sub">{entry.completedExercises} exercises - {entry.completedSessions} sessions - week {entry.weekKey}</p>
+                    </div>
+                    <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} LB</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeFeaturePage === "badges" && (
+              <div className="detail-list">
+                <div className="detail-grid">
+                  <div className="detail-card"><p className="detail-label">WEEK STREAK</p><p className="detail-value">{weeklyStreak}</p></div>
+                  <div className="detail-card"><p className="detail-label">DAYS CLEAR</p><p className="detail-value">{weeklyMetrics.completedDays}/7</p></div>
+                  <div className="detail-card"><p className="detail-label">WEEK OF</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
+                  <div className="detail-card"><p className="detail-label">BADGES</p><p className="detail-value">{earnedBadges.length || 1}</p></div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {(earnedBadges.length ? earnedBadges : ["Protocol Started"]).map(badge => (
+                    <span key={badge} style={{ color: "#D8D8D8", background: "#101015", border: "1px solid #2A2A34", borderRadius: 999, padding: "9px 12px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 900 }}>
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeFeaturePage === "photos" && (
+              <div className="detail-list">
+                <div className="detail-grid">
+                  <div className="detail-card"><p className="detail-label">PHOTOS</p><p className="detail-value">{totalPhotoCount}</p></div>
+                  <div className="detail-card"><p className="detail-label">LATEST</p><p className="detail-value">{latestPhoto?.date || "None"}</p></div>
+                </div>
+                <div className="home-card">
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
+                    <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder="Photo note" />
+                    <label className="dark-btn" style={{ textAlign: "center" }}>
+                      Choose Photo
+                      <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
+                    </label>
+                    {photoDraft.dataUrl && <img src={photoDraft.dataUrl} alt="Progress preview" style={{ width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }} />}
+                    {photoDraft.dataUrl && <button className="primary-btn" onClick={saveProgressPhoto}>SAVE PHOTO</button>}
+                  </div>
+                </div>
+                {progressPhotos.length > 0 && (
+                  <div className="photo-strip">
+                    {progressPhotos.map(photo => (
+                      <div key={`${photo.id}-feature`} className="photo-card">
+                        <img src={photo.dataUrl} alt={photo.note || "Progress"} />
+                        <p className="photo-meta">{photo.date} - {photo.weight} LB{photo.note ? ` - ${photo.note}` : ""}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeFeaturePage === "metrics" && (
+              <div className="detail-list">
+                <div className="detail-grid">
+                  {[
+                    { label: "WEEKLY", val: `${weeklyMetrics.weeklyProgress}%` },
+                    { label: "DONE", val: weeklyMetrics.completedExercises },
+                    { label: "EXERCISES", val: weeklyMetrics.totalExercises },
+                    { label: "SETS", val: weeklyMetrics.totalSets },
+                    { label: "SET PROGRESS", val: `${weeklySetProgress}/${weeklyMetrics.totalSets}` },
+                    { label: "SESSIONS", val: weeklyMetrics.workoutSessions },
+                    { label: "COMPLETED", val: weeklyMetrics.completedSessions },
+                    { label: "CARDIO", val: weeklyMetrics.cardioSessions },
+                  ].map(metric => (
+                    <div key={metric.label} className="detail-card">
+                      <p className="detail-label">{metric.label}</p>
+                      <p className="detail-value">{metric.val}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeFeaturePage === "week" && (
+              <div className="detail-list">
+                {days.map(dayName => {
+                  const currentDay = workoutData[dayName];
+                  const currentTheme = TYPE_THEME[currentDay.type];
+                  const dayExercises = currentDay.sessions.reduce((sum, currentSession) => sum + currentSession.exercises.length, 0);
+                  const daySets = currentDay.sessions.reduce((sum, currentSession) => sum + currentSession.exercises.reduce((setSum, exercise) => setSum + Number(exercise.sets || 0), 0), 0);
+
+                  return (
+                    <div key={`${dayName}-feature`} className="detail-row">
+                      <div>
+                        <p className="detail-row-main">{currentDay.label} - {dayName}</p>
+                        <p className="detail-row-sub">{currentDay.sessions.map(item => item.name).join(" / ")} - {dayExercises} exercises - {daySets} sets</p>
+                      </div>
+                      <button className="edit-btn" onClick={() => openWorkout(dayName)} style={{ color: currentTheme.accent }}>
+                        {currentDay.type}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {screen === "workout" && (
           <>
             <div style={{ padding: "14px 20px 0" }}>
@@ -2195,6 +2556,21 @@ export default function AtlasLuthor() {
               >
                 Reminders
               </button>
+              <div className="detail-card">
+                <p className="detail-label">PAGES</p>
+                <div className="detail-grid">
+                  {featurePages.map(page => (
+                    <button
+                      key={page.id}
+                      className="dark-btn"
+                      onClick={() => openFeaturePage(page.id)}
+                      style={{ color: page.accent, padding: "10px 8px" }}
+                    >
+                      {page.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
                 className="dark-btn"
                 onClick={() => {
