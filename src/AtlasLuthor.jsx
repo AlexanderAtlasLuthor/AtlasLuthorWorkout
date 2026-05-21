@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const pushSessions = [
   {
@@ -154,6 +154,10 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   enabled: false,
   workoutTime: "07:00",
   restTime: "21:30",
+  workoutMessage: "Protocol ready.",
+  restMessage: "Log progress, eat, hydrate, and recover.",
+  sound: "chime",
+  customReminders: [],
   lastWorkoutNotice: "",
   lastRestNotice: "",
 };
@@ -168,6 +172,7 @@ const PAIN_OPTIONS = ["", "None", "Tight", "Mild", "Moderate", "Sharp", "Stop"];
 const PROGRESS_GOAL_OPTIONS = ["70", "75", "80", "85", "90", "95", "100"];
 const SESSION_GOAL_OPTIONS = ["3", "4", "5", "6", "7", "8", "9", "10", "11"];
 const CARDIO_OPTIONS = ["", "10 min", "15 min", "20 min", "Run 1 mile", "Stairs Level 5", "Row Machine 15 min"];
+const SOUND_OPTIONS = ["silent", "chime", "pulse", "bell"];
 
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
@@ -277,6 +282,36 @@ function getExerciseFromKey(workoutData, key) {
   return { dayName, sessionIndex, exerciseIndex, currentSession, exercise };
 }
 
+function playReminderSound(sound = "chime") {
+  if (sound === "silent" || typeof window === "undefined") return;
+
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  const context = new AudioContext();
+  const frequencies = {
+    chime: [660, 880],
+    pulse: [440, 440, 440],
+    bell: [784, 988, 1175],
+  }[sound] || [660];
+
+  frequencies.forEach((frequency, index) => {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const start = context.currentTime + index * 0.18;
+
+    oscillator.frequency.value = frequency;
+    oscillator.type = "sine";
+    gain.gain.setValueAtTime(0.001, start);
+    gain.gain.exponentialRampToValueAtTime(0.18, start + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.16);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(start + 0.18);
+  });
+}
+
 export default function AtlasLuthor() {
   const [screen, setScreen] = useState("home");
   const [activeDay, setActiveDay] = useState(getTodayDayName());
@@ -296,21 +331,32 @@ export default function AtlasLuthor() {
   const [calendarLog, setCalendarLog] = useState(() => safeLoad(STORAGE_KEYS.calendarLog, {}));
   const [progressPhotos, setProgressPhotos] = useState(() => safeLoad(STORAGE_KEYS.progressPhotos, []));
   const [cloudSettings, setCloudSettings] = useState(() => safeLoad(STORAGE_KEYS.cloudSettings, DEFAULT_CLOUD_SETTINGS));
-  const [notificationSettings, setNotificationSettings] = useState(() =>
-    safeLoad(STORAGE_KEYS.notificationSettings, DEFAULT_NOTIFICATION_SETTINGS)
-  );
+  const [notificationSettings, setNotificationSettings] = useState(() => {
+    const saved = safeLoad(STORAGE_KEYS.notificationSettings, DEFAULT_NOTIFICATION_SETTINGS);
+
+    return {
+      ...DEFAULT_NOTIFICATION_SETTINGS,
+      ...saved,
+      customReminders: Array.isArray(saved.customReminders) ? saved.customReminders : [],
+    };
+  });
   const [setProgress, setSetProgress] = useState(() => safeLoad(STORAGE_KEYS.setProgress, {}));
   const [editingProfile, setEditingProfile] = useState(null);
   const [editingGoals, setEditingGoals] = useState(null);
   const [editingNote, setEditingNote] = useState(null);
   const [editingRoutine, setEditingRoutine] = useState(null);
   const [showDataTools, setShowDataTools] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showReminders, setShowReminders] = useState(false);
   const [progressSaved, setProgressSaved] = useState(false);
   const [todayOnlyMode, setTodayOnlyMode] = useState(false);
   const [quickMode, setQuickMode] = useState(false);
   const [highlightedExerciseIndex, setHighlightedExerciseIndex] = useState(0);
   const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "" });
-  const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "" });
+  const [reminderDraft, setReminderDraft] = useState({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
+  const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
+  const notifiedTimersRef = useRef(new Set());
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
@@ -365,23 +411,44 @@ export default function AtlasLuthor() {
   }, [setProgress]);
 
   useEffect(() => {
-    if (!restTimer.running || restTimer.secondsLeft <= 0) return undefined;
+    if (!restTimer.running || !restTimer.endsAt) return undefined;
 
-    const timerId = window.setInterval(() => {
+    const syncRestTimer = () => {
       setRestTimer(prev => {
-        if (!prev.running) return prev;
-        const nextSeconds = Math.max(prev.secondsLeft - 1, 0);
+        if (!prev.running || !prev.endsAt) return prev;
 
-        return {
-          ...prev,
-          secondsLeft: nextSeconds,
-          running: nextSeconds > 0,
-        };
+        const nextSeconds = Math.max(Math.ceil((prev.endsAt - Date.now()) / 1000), 0);
+
+        if (nextSeconds > 0) {
+          return prev.secondsLeft === nextSeconds ? prev : { ...prev, secondsLeft: nextSeconds };
+        }
+
+        const notificationKey = String(prev.endsAt);
+
+        if (!notifiedTimersRef.current.has(notificationKey)) {
+          notifiedTimersRef.current.add(notificationKey);
+          sendAtlasNotification(
+            "Atlas Rest Complete",
+            `${prev.label || "Rest timer"} is done. Next set is ready.`,
+            notificationSettings.sound
+          );
+        }
+
+        return { ...prev, secondsLeft: 0, running: false, notified: true };
       });
-    }, 1000);
+    };
 
-    return () => window.clearInterval(timerId);
-  }, [restTimer.running, restTimer.secondsLeft]);
+    syncRestTimer();
+    const timerId = window.setInterval(syncRestTimer, 500);
+    window.addEventListener("focus", syncRestTimer);
+    document.addEventListener("visibilitychange", syncRestTimer);
+
+    return () => {
+      window.clearInterval(timerId);
+      window.removeEventListener("focus", syncRestTimer);
+      document.removeEventListener("visibilitychange", syncRestTimer);
+    };
+  }, [restTimer.running, restTimer.endsAt, notificationSettings.sound]);
 
   useEffect(() => {
     if (isProgressionDue(lastProgressionReview)) {
@@ -530,14 +597,34 @@ export default function AtlasLuthor() {
       const currentTime = now.toTimeString().slice(0, 5);
 
       if (currentTime === notificationSettings.workoutTime && notificationSettings.lastWorkoutNotice !== todayKey) {
-        new Notification("Atlas Luthor", { body: `Today is ${weeklyMetrics.today} / ${weeklyMetrics.todayType}. Protocol ready.` });
+        sendAtlasNotification(
+          "Atlas Luthor",
+          notificationSettings.workoutMessage || `Today is ${weeklyMetrics.today} / ${weeklyMetrics.todayType}. Protocol ready.`,
+          notificationSettings.sound
+        );
         setNotificationSettings(prev => ({ ...prev, lastWorkoutNotice: todayKey }));
       }
 
       if (currentTime === notificationSettings.restTime && notificationSettings.lastRestNotice !== todayKey) {
-        new Notification("Atlas Luthor Recovery", { body: "Log progress, eat, hydrate, and recover." });
+        sendAtlasNotification(
+          "Atlas Luthor Recovery",
+          notificationSettings.restMessage || "Log progress, eat, hydrate, and recover.",
+          notificationSettings.sound
+        );
         setNotificationSettings(prev => ({ ...prev, lastRestNotice: todayKey }));
       }
+
+      (notificationSettings.customReminders || []).forEach(reminder => {
+        if (!reminder.enabled || reminder.time !== currentTime || reminder.lastNotice === todayKey) return;
+
+        sendAtlasNotification(reminder.label || "Atlas Reminder", reminder.message || "Stay on protocol.", reminder.sound || notificationSettings.sound);
+        setNotificationSettings(prev => ({
+          ...prev,
+          customReminders: (prev.customReminders || []).map(item =>
+            item.id === reminder.id ? { ...item, lastNotice: todayKey } : item
+          ),
+        }));
+      });
 
       return undefined;
     };
@@ -767,11 +854,13 @@ export default function AtlasLuthor() {
       duration: seconds,
       running: true,
       label: session.name,
+      endsAt: Date.now() + seconds * 1000,
+      notified: false,
     });
   };
 
   const stopRestTimer = () => {
-    setRestTimer(prev => ({ ...prev, secondsLeft: 0, running: false }));
+    setRestTimer(prev => ({ ...prev, secondsLeft: 0, running: false, endsAt: null, notified: false }));
   };
 
   const saveExerciseNote = note => {
@@ -946,6 +1035,35 @@ export default function AtlasLuthor() {
     reader.readAsDataURL(file);
   };
 
+  async function sendAtlasNotification(title, body, sound = "chime") {
+    playReminderSound(sound);
+
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+
+    const options = {
+      body,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: `atlas-${title.toLowerCase().replace(/\s+/g, "-")}`,
+    };
+
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification(title, options);
+        return;
+      }
+    } catch {
+      // Fall back to the page Notification API when the service worker is not ready.
+    }
+
+    try {
+      new Notification(title, options);
+    } catch {
+      // Browsers can reject page notifications in limited PWA contexts.
+    }
+  }
+
   const requestNotifications = async () => {
     if (typeof Notification === "undefined") {
       setNotificationSettings(prev => ({ ...prev, enabled: false }));
@@ -954,6 +1072,41 @@ export default function AtlasLuthor() {
 
     const permission = await Notification.requestPermission();
     setNotificationSettings(prev => ({ ...prev, enabled: permission === "granted" }));
+  };
+
+  const addCustomReminder = () => {
+    setNotificationSettings(prev => ({
+      ...prev,
+      customReminders: [
+        ...(prev.customReminders || []),
+        {
+          id: `reminder-${Date.now()}`,
+          label: reminderDraft.label || "Atlas Reminder",
+          time: reminderDraft.time || "12:00",
+          message: reminderDraft.message || "Stay on protocol.",
+          sound: reminderDraft.sound || prev.sound || "chime",
+          enabled: true,
+          lastNotice: "",
+        },
+      ],
+    }));
+    setReminderDraft({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
+  };
+
+  const updateCustomReminder = (id, patch) => {
+    setNotificationSettings(prev => ({
+      ...prev,
+      customReminders: (prev.customReminders || []).map(reminder =>
+        reminder.id === id ? { ...reminder, ...patch, lastNotice: patch.time ? "" : reminder.lastNotice } : reminder
+      ),
+    }));
+  };
+
+  const removeCustomReminder = id => {
+    setNotificationSettings(prev => ({
+      ...prev,
+      customReminders: (prev.customReminders || []).filter(reminder => reminder.id !== id),
+    }));
   };
 
   const updateRoutineExercise = (exerciseIndex, patch) => {
@@ -1134,8 +1287,10 @@ export default function AtlasLuthor() {
         }
 
         .page-shell { width: 100%; position: relative; z-index: 1; }
-        .app-header { padding: calc(56px + env(safe-area-inset-top)) 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .app-header { position: relative; padding: calc(56px + env(safe-area-inset-top)) 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
         .industry-mark { font-size: 10px; letter-spacing: 4px; color: #A7A7AD; font-family: 'Orbitron', monospace; margin-bottom: 18px; font-weight: 900; }
+        .menu-button { position: absolute; top: calc(16px + env(safe-area-inset-top)); right: 16px; width: 44px; height: 44px; border-radius: 13px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(12,12,16,0.72); backdrop-filter: blur(18px); display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex-direction: column; cursor: pointer; }
+        .menu-button span { width: 18px; height: 2px; border-radius: 2px; background: #FFFFFF; display: block; }
         .day-pill { cursor: pointer; flex: 1; padding: 10px 4px; border-radius: 10px; text-align: center; border: 1px solid transparent; transition: all 0.2s; }
         .session-tab { cursor: pointer; flex: 1; padding: 12px 10px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.08); background: rgba(20,20,24,0.78); backdrop-filter: blur(16px); transition: all 0.2s; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #888; text-align: center; }
         .ex-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.075); background: rgba(19,19,24,0.82); backdrop-filter: blur(16px); cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
@@ -1157,6 +1312,15 @@ export default function AtlasLuthor() {
         .dark-btn { border: 1.5px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 12px 14px; background: rgba(20,20,24,0.8); backdrop-filter: blur(16px); color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-weight: 700; cursor: pointer; }
         .edit-btn { border: 1px solid rgba(255,255,255,0.1); background: rgba(15,15,20,0.78); color: #888; border-radius: 8px; padding: 6px 8px; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; }
         .input { width: 100%; border: 1.5px solid #282834; background: #0F0F14; color: #FFFFFF; border-radius: 12px; padding: 12px; font-family: 'DM Sans', sans-serif; font-weight: 700; outline: none; }
+        .compact-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+        .photo-strip { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x mandatory; }
+        .photo-card { flex: 0 0 118px; min-width: 0; border: 1px solid #24242E; border-radius: 10px; overflow: hidden; background: #101015; scroll-snap-align: start; }
+        .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+        .photo-meta { color: #888; font-family: 'DM Sans', sans-serif; font-size: 10px; padding: 7px; line-height: 1.25; overflow-wrap: anywhere; }
+        .settings-grid { display: grid; gap: 10px; }
+        .setting-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid #24242E; border-radius: 12px; padding: 12px; background: #101015; }
+        .setting-title { color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 800; min-width: 0; overflow-wrap: anywhere; }
+        .setting-sub { color: #777; font-family: 'DM Sans', sans-serif; font-size: 12px; line-height: 1.4; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
 
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 20; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
         .modal { width: 100%; max-width: 520px; max-height: 82vh; overflow: auto; background: #101015; border: 1.5px solid #2A2A34; border-radius: 22px; padding: 18px; box-shadow: 0 20px 80px rgba(0,0,0,0.4); }
@@ -1165,6 +1329,14 @@ export default function AtlasLuthor() {
           .page-shell { max-width: 720px; margin: 0 auto; }
           .metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
           .modal-backdrop { align-items: center; }
+        }
+
+        @media (max-width: 430px) {
+          .app-header { padding-left: 16px; padding-right: 16px; }
+          .compact-actions { grid-template-columns: 1fr; }
+          .home-card { padding: 14px; }
+          .modal { border-radius: 18px; padding: 16px; }
+          .setting-row { grid-template-columns: 1fr; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1180,6 +1352,11 @@ export default function AtlasLuthor() {
 
       <div className="page-shell">
         <div className="app-header">
+          <button className="menu-button" type="button" aria-label="Open settings menu" onClick={() => setShowMenu(true)}>
+            <span />
+            <span />
+            <span />
+          </button>
           <p className="industry-mark">
             FUENMAYOR INDUSTRIES
           </p>
@@ -1216,7 +1393,7 @@ export default function AtlasLuthor() {
                 START TODAY
               </button>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginTop: 10 }}>
+              <div className="compact-actions">
                 <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true })}>
                   Today Only
                 </button>
@@ -1504,54 +1681,30 @@ export default function AtlasLuthor() {
                   <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
                 </label>
                 {photoDraft.dataUrl && (
+                  <img
+                    src={photoDraft.dataUrl}
+                    alt="Progress preview"
+                    style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }}
+                  />
+                )}
+                {photoDraft.dataUrl && (
                   <button className="primary-btn" onClick={saveProgressPhoto}>
                     Save Photo
                   </button>
                 )}
               </div>
               {progressPhotos.length > 0 && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 12 }}>
+                <div className="photo-strip">
                   {progressPhotos.slice(0, 6).map(photo => (
-                    <div key={photo.id} style={{ border: "1px solid #24242E", borderRadius: 10, overflow: "hidden", background: "#101015" }}>
-                      <img src={photo.dataUrl} alt={photo.note || "Progress"} style={{ width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" }} />
-                      <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 10, padding: 6 }}>
+                    <div key={photo.id} className="photo-card">
+                      <img src={photo.dataUrl} alt={photo.note || "Progress"} />
+                      <p className="photo-meta">
                         {photo.date} · {photo.weight} LB
                       </p>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-
-            <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                SYSTEM TOOLS
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-                <button className="dark-btn" onClick={() => setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } })}>
-                  Edit Routine
-                </button>
-                <button className="dark-btn" onClick={requestNotifications}>
-                  Notifications
-                </button>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 10 }}>
-                <input
-                  className="input"
-                  type="time"
-                  value={notificationSettings.workoutTime}
-                  onChange={event => setNotificationSettings(prev => ({ ...prev, workoutTime: event.target.value }))}
-                />
-                <input
-                  className="input"
-                  type="time"
-                  value={notificationSettings.restTime}
-                  onChange={event => setNotificationSettings(prev => ({ ...prev, restTime: event.target.value }))}
-                />
-              </div>
-              <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12, lineHeight: 1.5, marginTop: 10 }}>
-                Notifications: {notificationSettings.enabled ? "enabled" : "not enabled"}.
-              </p>
             </div>
 
             {isProgressionDue(lastProgressionReview) && (
@@ -2015,6 +2168,211 @@ export default function AtlasLuthor() {
           </>
         )}
       </div>
+
+      {showMenu && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              ATLAS MENU
+            </p>
+
+            <div className="settings-grid">
+              <button
+                className="primary-btn"
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowSettings(true);
+                }}
+              >
+                SETTINGS
+              </button>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowReminders(true);
+                }}
+              >
+                Reminders
+              </button>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  setShowMenu(false);
+                  setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } });
+                }}
+              >
+                Edit Routine
+              </button>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowDataTools(true);
+                }}
+              >
+                Backup / Sync
+              </button>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  setShowMenu(false);
+                  openWorkout(weeklyMetrics.today, { todayOnly: true, quick: true });
+                }}
+              >
+                Quick Today
+              </button>
+              <button className="dark-btn" onClick={() => {
+                resetWeek();
+                setShowMenu(false);
+              }}>
+                Reset Week
+              </button>
+              <button className="dark-btn" onClick={() => setShowMenu(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSettings && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              SETTINGS
+            </p>
+
+            <div className="settings-grid">
+              <div className="setting-row">
+                <div>
+                  <p className="setting-title">Notifications</p>
+                  <p className="setting-sub">{notificationSettings.enabled ? "Enabled" : "Permission not enabled"}</p>
+                </div>
+                <button className="dark-btn" onClick={requestNotifications}>
+                  Enable
+                </button>
+              </div>
+
+              <input
+                className="input"
+                type="time"
+                value={notificationSettings.workoutTime}
+                onChange={event => setNotificationSettings(prev => ({ ...prev, workoutTime: event.target.value, lastWorkoutNotice: "" }))}
+              />
+              <input
+                className="input"
+                value={notificationSettings.workoutMessage}
+                onChange={event => setNotificationSettings(prev => ({ ...prev, workoutMessage: event.target.value }))}
+                placeholder="Workout notification message"
+              />
+              <input
+                className="input"
+                type="time"
+                value={notificationSettings.restTime}
+                onChange={event => setNotificationSettings(prev => ({ ...prev, restTime: event.target.value, lastRestNotice: "" }))}
+              />
+              <input
+                className="input"
+                value={notificationSettings.restMessage}
+                onChange={event => setNotificationSettings(prev => ({ ...prev, restMessage: event.target.value }))}
+                placeholder="Recovery notification message"
+              />
+              <select
+                className="input"
+                value={notificationSettings.sound}
+                onChange={event => setNotificationSettings(prev => ({ ...prev, sound: event.target.value }))}
+              >
+                {SOUND_OPTIONS.map(option => (
+                  <option key={option} value={option}>{option} tone</option>
+                ))}
+              </select>
+
+              <button className="dark-btn" onClick={() => playReminderSound(notificationSettings.sound)}>
+                Test Tone
+              </button>
+              <button className="dark-btn" onClick={() => {
+                setShowSettings(false);
+                setShowReminders(true);
+              }}>
+                Custom Reminders
+              </button>
+              <button className="dark-btn" onClick={() => {
+                setShowSettings(false);
+                setShowDataTools(true);
+              }}>
+                Backup / Cloud Sync
+              </button>
+              <button className="dark-btn" onClick={() => setShowSettings(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReminders && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              CUSTOM REMINDERS
+            </p>
+
+            <div className="settings-grid">
+              {(notificationSettings.customReminders || []).map(reminder => (
+                <div key={reminder.id} className="setting-row">
+                  <div>
+                    <p className="setting-title">{reminder.label}</p>
+                    <p className="setting-sub">{reminder.time} - {reminder.message} - {reminder.sound}</p>
+                  </div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <button className="edit-btn" onClick={() => updateCustomReminder(reminder.id, { enabled: !reminder.enabled })}>
+                      {reminder.enabled ? "On" : "Off"}
+                    </button>
+                    <button className="edit-btn" onClick={() => removeCustomReminder(reminder.id)}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <input
+                className="input"
+                value={reminderDraft.label}
+                onChange={event => setReminderDraft(prev => ({ ...prev, label: event.target.value }))}
+                placeholder="Reminder title"
+              />
+              <input
+                className="input"
+                type="time"
+                value={reminderDraft.time}
+                onChange={event => setReminderDraft(prev => ({ ...prev, time: event.target.value }))}
+              />
+              <input
+                className="input"
+                value={reminderDraft.message}
+                onChange={event => setReminderDraft(prev => ({ ...prev, message: event.target.value }))}
+                placeholder="Reminder message"
+              />
+              <select
+                className="input"
+                value={reminderDraft.sound}
+                onChange={event => setReminderDraft(prev => ({ ...prev, sound: event.target.value }))}
+              >
+                {SOUND_OPTIONS.map(option => (
+                  <option key={option} value={option}>{option} tone</option>
+                ))}
+              </select>
+              <button className="primary-btn" onClick={addCustomReminder}>
+                ADD REMINDER
+              </button>
+              <button className="dark-btn" onClick={() => setShowReminders(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editingExercise && (
         <div className="modal-backdrop">

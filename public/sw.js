@@ -1,4 +1,4 @@
-const CACHE_NAME = "atlas-luthor-v1";
+const CACHE_NAME = "atlas-luthor-v2";
 const APP_SHELL = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -30,6 +30,20 @@ self.addEventListener("fetch", event => {
           return response;
         })
         .catch(() => caches.match("/"));
+    })
+  );
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clients => {
+      if (clients.length > 0) {
+        return clients[0].focus();
+      }
+
+      return self.clients.openWindow("/");
     })
   );
 });
