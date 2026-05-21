@@ -129,6 +129,8 @@ const STORAGE_KEYS = {
   notificationSettings: "atlas-luthor-notification-settings",
   setProgress: "atlas-luthor-set-progress",
   appSettings: "atlas-luthor-app-settings",
+  users: "atlas-luthor-users",
+  activeUser: "atlas-luthor-active-user",
 };
 
 const DEFAULT_PROFILE = {
@@ -167,6 +169,19 @@ const DEFAULT_APP_SETTINGS = {
   name: "Atlas",
   language: "en",
   themeMode: "auto",
+};
+
+const DEFAULT_SIGNUP = {
+  email: "",
+  password: "",
+  name: "",
+  currentWeight: "197",
+  targetWeight: "185",
+  height: "5'9\"",
+  startDate: getDateKey(),
+  targetDate: "2026-04-09",
+  focusGoal: "Build strength and finish the protocol",
+  language: "en",
 };
 
 const WEIGHT_OPTIONS = Array.from({ length: 61 }, (_, index) => `${index * 5} lb`);
@@ -240,6 +255,32 @@ const UI_TEXT = {
     openFullPhotos: "Abrir página de fotos",
     noPhotos: "Aún no hay fotos de progreso.",
   },
+};
+
+const DAY_TRANSLATIONS = {
+  en: {
+    Lunes: "Monday",
+    Martes: "Tuesday",
+    Miércoles: "Wednesday",
+    Jueves: "Thursday",
+    Viernes: "Friday",
+    Sábado: "Saturday",
+    Domingo: "Sunday",
+  },
+  es: {
+    Lunes: "Lunes",
+    Martes: "Martes",
+    Miércoles: "Miércoles",
+    Jueves: "Jueves",
+    Viernes: "Viernes",
+    Sábado: "Sábado",
+    Domingo: "Domingo",
+  },
+};
+
+const DAY_SHORT_TRANSLATIONS = {
+  en: { Lunes: "MON", Martes: "TUE", Miércoles: "WED", Jueves: "THU", Viernes: "FRI", Sábado: "SAT", Domingo: "SUN" },
+  es: { Lunes: "LUN", Martes: "MAR", Miércoles: "MIE", Jueves: "JUE", Viernes: "VIE", Sábado: "SAB", Domingo: "DOM" },
 };
 
 function cloneData(value) {
@@ -328,6 +369,18 @@ function getGreetingKey(hour = new Date().getHours()) {
   return hour < 12 ? "goodMorning" : "goodNight";
 }
 
+function getDisplayDay(dayName, language = "en") {
+  return DAY_TRANSLATIONS[language]?.[dayName] || dayName;
+}
+
+function getDisplayDayShort(dayName, language = "en", fallback = "") {
+  return DAY_SHORT_TRANSLATIONS[language]?.[dayName] || fallback || dayName.slice(0, 3).toUpperCase();
+}
+
+function getWeekHeaderLabels(language = "en") {
+  return language === "es" ? ["D", "L", "M", "M", "J", "V", "S"] : ["S", "M", "T", "W", "T", "F", "S"];
+}
+
 function getMonthDays(monthKey) {
   const [year, month] = monthKey.split("-").map(Number);
   const first = new Date(year, month - 1, 1);
@@ -390,6 +443,12 @@ function playReminderSound(sound = "chime") {
 
 export default function AtlasLuthor() {
   const [screen, setScreen] = useState("home");
+  const [users, setUsers] = useState(() => safeLoad(STORAGE_KEYS.users, {}));
+  const [activeUserId, setActiveUserId] = useState(() => safeLoad(STORAGE_KEYS.activeUser, ""));
+  const [authMode, setAuthMode] = useState(() => (safeLoad(STORAGE_KEYS.activeUser, "") ? "login" : "signup"));
+  const [loginDraft, setLoginDraft] = useState({ email: "", password: "" });
+  const [signupDraft, setSignupDraft] = useState(DEFAULT_SIGNUP);
+  const [authError, setAuthError] = useState("");
   const [activeDay, setActiveDay] = useState(getTodayDayName());
   const [activeSession, setActiveSession] = useState(0);
   const [checked, setChecked] = useState(() => safeLoad(STORAGE_KEYS.checked, {}));
@@ -439,10 +498,19 @@ export default function AtlasLuthor() {
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
   const [clockNow, setClockNow] = useState(() => new Date());
   const notifiedTimersRef = useRef(new Set());
+  const loadedUserRef = useRef("");
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
   const theme = TYPE_THEME[day.type];
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.users, JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.activeUser, JSON.stringify(activeUserId));
+  }, [activeUserId]);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.workout, JSON.stringify(workoutData));
@@ -495,6 +563,49 @@ export default function AtlasLuthor() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEYS.setProgress, JSON.stringify(setProgress));
   }, [setProgress]);
+
+  useEffect(() => {
+    if (!activeUserId || !users[activeUserId]) return;
+
+    setUsers(prev => ({
+      ...prev,
+      [activeUserId]: {
+        ...prev[activeUserId],
+        name: appSettings.name,
+        updatedAt: new Date().toISOString(),
+        data: {
+          workoutData,
+          checked,
+          lastProgressionReview,
+          profile,
+          goals,
+          progressLog,
+          exerciseNotes,
+          calendarLog,
+          progressPhotos,
+          cloudSettings,
+          notificationSettings,
+          setProgress,
+          appSettings,
+        },
+      },
+    }));
+  }, [
+    activeUserId,
+    workoutData,
+    checked,
+    lastProgressionReview,
+    profile,
+    goals,
+    progressLog,
+    exerciseNotes,
+    calendarLog,
+    progressPhotos,
+    cloudSettings,
+    notificationSettings,
+    setProgress,
+    appSettings,
+  ]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setClockNow(new Date()), 60000);
@@ -691,7 +802,7 @@ export default function AtlasLuthor() {
       if (currentTime === notificationSettings.workoutTime && notificationSettings.lastWorkoutNotice !== todayKey) {
         sendAtlasNotification(
           "Atlas Luthor",
-          notificationSettings.workoutMessage || `Today is ${weeklyMetrics.today} / ${weeklyMetrics.todayType}. Protocol ready.`,
+          notificationSettings.workoutMessage || `Today is ${todayDisplayName} / ${weeklyMetrics.todayType}. Protocol ready.`,
           notificationSettings.sound
         );
         setNotificationSettings(prev => ({ ...prev, lastWorkoutNotice: todayKey }));
@@ -885,6 +996,10 @@ export default function AtlasLuthor() {
   const isLightMode = activeThemeMode === "light";
   const greeting = text[getGreetingKey(clockNow.getHours())];
   const userName = appSettings.name?.trim() || "Atlas";
+  const displayDay = dayName => getDisplayDay(dayName, language);
+  const displayDayShort = (dayName, fallback) => getDisplayDayShort(dayName, language, fallback);
+  const weekHeaderLabels = getWeekHeaderLabels(language);
+  const todayDisplayName = displayDay(weeklyMetrics.today);
   const featurePages = [
     { id: "today", title: text.todayCommand, label: "Today", accent: TYPE_THEME[weeklyMetrics.todayType].accent },
     { id: "body", title: text.bodyStatus, label: "Body", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
@@ -987,6 +1102,135 @@ export default function AtlasLuthor() {
     setShowMenu(false);
     setScreen("feature");
   };
+
+  const applyUserData = data => {
+    const nextWorkoutData = data?.workoutData || cloneData(baseWorkoutData);
+    const nextProfile = { ...DEFAULT_PROFILE, ...(data?.profile || {}) };
+    const nextGoals = { ...DEFAULT_GOALS, ...(data?.goals || {}) };
+    const nextAppSettings = { ...DEFAULT_APP_SETTINGS, ...(data?.appSettings || {}) };
+
+    setWorkoutData(nextWorkoutData);
+    setChecked(data?.checked || {});
+    setLastProgressionReview(data?.lastProgressionReview ?? null);
+    setProfile(nextProfile);
+    setGoals(nextGoals);
+    setProgressLog(data?.progressLog || []);
+    setExerciseNotes(data?.exerciseNotes || {});
+    setCalendarLog(data?.calendarLog || {});
+    setProgressPhotos(data?.progressPhotos || []);
+    setCloudSettings({ ...DEFAULT_CLOUD_SETTINGS, ...(data?.cloudSettings || {}) });
+    setNotificationSettings({
+      ...DEFAULT_NOTIFICATION_SETTINGS,
+      ...(data?.notificationSettings || {}),
+      customReminders: Array.isArray(data?.notificationSettings?.customReminders) ? data.notificationSettings.customReminders : [],
+    });
+    setSetProgress(data?.setProgress || {});
+    setAppSettings(nextAppSettings);
+    setActiveDay(getTodayDayName());
+    setActiveSession(0);
+    setActiveFeaturePage("today");
+    setScreen("home");
+  };
+
+  const createUserDataFromSignup = draft => {
+    const nextProfile = {
+      ...DEFAULT_PROFILE,
+      currentWeight: draft.currentWeight,
+      startWeight: draft.currentWeight,
+      targetWeight: draft.targetWeight,
+      height: draft.height,
+      startDate: draft.startDate || getDateKey(),
+    };
+    const nextGoals = {
+      ...DEFAULT_GOALS,
+      targetDate: draft.targetDate || DEFAULT_GOALS.targetDate,
+      focusGoal: draft.focusGoal || DEFAULT_GOALS.focusGoal,
+    };
+    const nextAppSettings = {
+      ...DEFAULT_APP_SETTINGS,
+      name: draft.name || "Atlas",
+      language: draft.language || "en",
+    };
+
+    return {
+      workoutData: cloneData(baseWorkoutData),
+      checked: {},
+      lastProgressionReview: null,
+      profile: nextProfile,
+      goals: nextGoals,
+      progressLog: [],
+      exerciseNotes: {},
+      calendarLog: {},
+      progressPhotos: [],
+      cloudSettings: cloneData(DEFAULT_CLOUD_SETTINGS),
+      notificationSettings: cloneData(DEFAULT_NOTIFICATION_SETTINGS),
+      setProgress: {},
+      appSettings: nextAppSettings,
+    };
+  };
+
+  const handleSignup = () => {
+    const email = signupDraft.email.trim().toLowerCase();
+    const password = signupDraft.password.trim();
+
+    if (!email || !password || !signupDraft.name.trim()) {
+      setAuthError("Add name, email, and password.");
+      return;
+    }
+
+    if (users[email]) {
+      setAuthError("That account already exists. Log in instead.");
+      return;
+    }
+
+    const data = createUserDataFromSignup(signupDraft);
+    const nextUser = {
+      id: email,
+      email,
+      password,
+      name: signupDraft.name.trim(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      data,
+    };
+
+    setUsers(prev => ({ ...prev, [email]: nextUser }));
+    applyUserData(data);
+    setActiveUserId(email);
+    setAuthError("");
+  };
+
+  const handleLogin = () => {
+    const email = loginDraft.email.trim().toLowerCase();
+    const password = loginDraft.password.trim();
+    const user = users[email];
+
+    if (!user || user.password !== password) {
+      setAuthError("Login not found or password is incorrect.");
+      return;
+    }
+
+    applyUserData(user.data);
+    setActiveUserId(email);
+    setAuthError("");
+  };
+
+  const handleLogout = () => {
+    setShowMenu(false);
+    setShowSettings(false);
+    setActiveUserId("");
+    loadedUserRef.current = "";
+    setLoginDraft({ email: "", password: "" });
+    setAuthMode("login");
+    setScreen("home");
+  };
+
+  useEffect(() => {
+    if (!activeUserId || !users[activeUserId] || loadedUserRef.current === activeUserId) return;
+
+    loadedUserRef.current = activeUserId;
+    applyUserData(users[activeUserId].data);
+  }, [activeUserId, users]);
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
     setWorkoutData(prev => ({
@@ -1593,6 +1837,25 @@ export default function AtlasLuthor() {
         .light-mode .menu-button span {
           background: #101015;
         }
+        .light-mode div[style*="#101015"],
+        .light-mode div[style*="#0F0F14"],
+        .light-mode div[style*="#20202A"],
+        .light-mode div[style*="#24242E"],
+        .light-mode div[style*="rgb(16, 16, 21)"],
+        .light-mode div[style*="rgb(15, 15, 20)"],
+        .light-mode div[style*="rgb(32, 32, 42)"],
+        .light-mode div[style*="rgb(36, 36, 46)"] {
+          background: rgba(255,255,255,0.82) !important;
+          border-color: rgba(15,18,26,0.13) !important;
+        }
+        .light-mode img + p,
+        .light-mode button span,
+        .light-mode div[style*="#101015"] p,
+        .light-mode div[style*="#101015"] span,
+        .light-mode div[style*="rgb(16, 16, 21)"] p,
+        .light-mode div[style*="rgb(16, 16, 21)"] span {
+          color: #101015 !important;
+        }
 
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 20; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
         .modal { width: 100%; max-width: 520px; max-height: 82vh; overflow: auto; background: #101015; border: 1.5px solid #2A2A34; border-radius: 22px; padding: 18px; box-shadow: 0 20px 80px rgba(0,0,0,0.4); }
@@ -1627,7 +1890,7 @@ export default function AtlasLuthor() {
 
       <div className="page-shell">
         <div className="app-header">
-          <button className="menu-button" type="button" aria-label="Open settings menu" onClick={() => setShowMenu(true)}>
+          <button className="menu-button" type="button" aria-label="Open settings menu" onClick={() => setShowMenu(true)} style={!activeUserId ? { display: "none" } : {}}>
             <span />
             <span />
             <span />
@@ -1649,7 +1912,61 @@ export default function AtlasLuthor() {
           </p>
         </div>
 
-        {screen === "home" && (
+        {!activeUserId && (
+          <div className="fade-up feature-page">
+            <div className="feature-hero">
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>
+                {authMode === "signup" ? "CREATE PROFILE" : "WELCOME BACK"}
+              </p>
+              <h2 className="feature-title">{authMode === "signup" ? "Sign Up" : "Login"}</h2>
+              <p className="feature-copy">
+                {authMode === "signup"
+                  ? "Create a local Atlas profile so your workout data, goals, body status, photos, notes, language, and theme stay tied to you."
+                  : "Log back into your local Atlas profile and continue from your own protocol state."}
+              </p>
+            </div>
+
+            {authError && (
+              <div className="home-card" style={{ marginBottom: 14, borderColor: "#FFD06066" }}>
+                <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800 }}>{authError}</p>
+              </div>
+            )}
+
+            {authMode === "login" ? (
+              <div className="home-card" style={{ display: "grid", gap: 10 }}>
+                <input className="input" value={loginDraft.email} onChange={event => setLoginDraft(prev => ({ ...prev, email: event.target.value }))} placeholder="Email" />
+                <input className="input" type="password" value={loginDraft.password} onChange={event => setLoginDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
+                <button className="primary-btn" onClick={handleLogin}>LOGIN</button>
+                <button className="dark-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>Create new account</button>
+              </div>
+            ) : (
+              <div className="home-card" style={{ display: "grid", gap: 10 }}>
+                <input className="input" value={signupDraft.name} onChange={event => setSignupDraft(prev => ({ ...prev, name: event.target.value }))} placeholder="Name" />
+                <input className="input" value={signupDraft.email} onChange={event => setSignupDraft(prev => ({ ...prev, email: event.target.value }))} placeholder="Email" />
+                <input className="input" type="password" value={signupDraft.password} onChange={event => setSignupDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
+                <select className="input" value={signupDraft.currentWeight} onChange={event => setSignupDraft(prev => ({ ...prev, currentWeight: event.target.value }))}>
+                  {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB current</option>)}
+                </select>
+                <select className="input" value={signupDraft.targetWeight} onChange={event => setSignupDraft(prev => ({ ...prev, targetWeight: event.target.value }))}>
+                  {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB target</option>)}
+                </select>
+                <select className="input" value={signupDraft.height} onChange={event => setSignupDraft(prev => ({ ...prev, height: event.target.value }))}>
+                  {HEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                </select>
+                <input className="input" type="date" value={signupDraft.startDate} onChange={event => setSignupDraft(prev => ({ ...prev, startDate: event.target.value }))} />
+                <input className="input" type="date" value={signupDraft.targetDate} onChange={event => setSignupDraft(prev => ({ ...prev, targetDate: event.target.value }))} />
+                <input className="input" value={signupDraft.focusGoal} onChange={event => setSignupDraft(prev => ({ ...prev, focusGoal: event.target.value }))} placeholder="Main goal" />
+                <select className="input" value={signupDraft.language} onChange={event => setSignupDraft(prev => ({ ...prev, language: event.target.value }))}>
+                  {LANGUAGE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <button className="primary-btn" onClick={handleSignup}>SIGN UP</button>
+                <button className="dark-btn" onClick={() => { setAuthMode("login"); setAuthError(""); }}>I already have an account</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeUserId && screen === "home" && (
           <div className="fade-up" style={{ padding: "20px" }}>
             <div className="feature-hero" style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace" }}>
@@ -1660,18 +1977,18 @@ export default function AtlasLuthor() {
               </h2>
               <p className="feature-copy">
                 {language === "es"
-                  ? `Hoy es ${weeklyMetrics.today}. Tu protocolo ${weeklyMetrics.todayType} está listo con ${weeklyMetrics.weeklyProgress}% de progreso semanal.`
-                  : `Today is ${weeklyMetrics.today}. Your ${weeklyMetrics.todayType} protocol is ready with ${weeklyMetrics.weeklyProgress}% weekly progress.`}
+                  ? `Hoy es ${todayDisplayName}. Tu protocolo ${weeklyMetrics.todayType} está listo con ${weeklyMetrics.weeklyProgress}% de progreso semanal.`
+                  : `Today is ${todayDisplayName}. Your ${weeklyMetrics.todayType} protocol is ready with ${weeklyMetrics.weeklyProgress}% weekly progress.`}
               </p>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14, borderColor: "#2A2A34" }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
-                TODAY - {weeklyMetrics.todayLabel} / {weeklyMetrics.todayType}
+                TODAY - {displayDayShort(weeklyMetrics.today, weeklyMetrics.todayLabel)} / {weeklyMetrics.todayType}
               </p>
 
               <h2 style={{ fontSize: 25, fontFamily: "'Orbitron', monospace", letterSpacing: 2, marginBottom: 8 }}>
-                {weeklyMetrics.today}
+                {todayDisplayName}
               </h2>
 
               <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
@@ -1754,7 +2071,7 @@ export default function AtlasLuthor() {
                 MONTH CALENDAR
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, marginBottom: 10 }}>
-                {["S", "M", "T", "W", "T", "F", "S"].map((label, index) => (
+                {weekHeaderLabels.map((label, index) => (
                   <p key={`${label}-${index}`} style={{ color: "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
                 ))}
                 {calendarCells.map((cell, index) => {
@@ -2079,7 +2396,7 @@ export default function AtlasLuthor() {
                     >
                       <span>
                         <span style={{ display: "block", fontFamily: "'Orbitron', monospace", letterSpacing: 1 }}>
-                          {currentDay.label} - {dayName}
+                          {displayDayShort(dayName, currentDay.label)} - {displayDay(dayName)}
                         </span>
                         <span style={{ display: "block", color: "#666", fontSize: 12, marginTop: 3 }}>
                           {currentDay.sessions.map(s => s.name).join(" / ")}
@@ -2097,7 +2414,7 @@ export default function AtlasLuthor() {
           </div>
         )}
 
-        {screen === "feature" && (
+        {activeUserId && screen === "feature" && (
           <div className="fade-up feature-page">
             <button className="dark-btn" onClick={() => setScreen("home")} style={{ marginBottom: 14 }}>
               Back Home
@@ -2129,7 +2446,7 @@ export default function AtlasLuthor() {
                 <div className="detail-grid">
                   <div className="detail-card">
                     <p className="detail-label">DAY</p>
-                    <p className="detail-value">{weeklyMetrics.today} - {weeklyMetrics.todayType}</p>
+                    <p className="detail-value">{todayDisplayName} - {weeklyMetrics.todayType}</p>
                   </div>
                   <div className="detail-card">
                     <p className="detail-label">WEEKLY</p>
@@ -2159,7 +2476,7 @@ export default function AtlasLuthor() {
                       <div key={`${row.key}-today-priority`} className="detail-row">
                         <div>
                           <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{row.dayName} - {row.sessionName} - {row.setsDone}/{row.setsTotal} sets</p>
+                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {row.setsDone}/{row.setsTotal} sets</p>
                         </div>
                         <span style={{ color: TYPE_THEME[weeklyMetrics.todayType].accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
                       </div>
@@ -2215,7 +2532,7 @@ export default function AtlasLuthor() {
                     {dayBreakdowns.map(row => (
                       <div key={`${row.dayName}-metric-detail`} className="detail-row">
                         <div>
-                          <p className="detail-row-main">{row.label} - {row.dayName}</p>
+                          <p className="detail-row-main">{displayDayShort(row.dayName, row.label)} - {displayDay(row.dayName)}</p>
                           <p className="detail-row-sub">{row.doneDayExercises}/{row.totalDayExercises} exercises - {row.doneDaySets}/{row.totalDaySets} sets</p>
                         </div>
                         <span style={{ color: TYPE_THEME[row.type].accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.progressPct}%</span>
@@ -2256,7 +2573,7 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="home-card">
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6 }}>
-                    {["S", "M", "T", "W", "T", "F", "S"].map((label, index) => (
+                    {weekHeaderLabels.map((label, index) => (
                       <p key={`${label}-${index}`} style={{ color: "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
                     ))}
                     {calendarCells.map((cell, index) => {
@@ -2288,7 +2605,7 @@ export default function AtlasLuthor() {
                   return (
                     <div key={`${cell.key}-row`} className="detail-row">
                       <div>
-                        <p className="detail-row-main">{cell.key} - {cell.dayName}</p>
+                        <p className="detail-row-main">{cell.key} - {displayDay(cell.dayName)}</p>
                         <p className="detail-row-sub">{logged ? `${logged.completed}/${logged.total} exercises logged` : "No entry saved yet"}</p>
                       </div>
                       <span style={{ color: "#FFFFFF", fontFamily: "'Orbitron', monospace", fontSize: 10 }}>{status.toUpperCase()}</span>
@@ -2308,7 +2625,7 @@ export default function AtlasLuthor() {
                   <div key={entry.key} className="detail-row">
                     <div>
                       <p className="detail-row-main">{entry.exerciseName}</p>
-                      <p className="detail-row-sub">{entry.dayName || "PR"} - {entry.sessionName}</p>
+                      <p className="detail-row-sub">{entry.dayName ? displayDay(entry.dayName) : "PR"} - {entry.sessionName}</p>
                     </div>
                     <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} {entry.date}</span>
                   </div>
@@ -2320,7 +2637,7 @@ export default function AtlasLuthor() {
                       <div key={`${row.key}-heavy`} className="detail-row">
                         <div>
                           <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{row.dayName} - {row.sessionName}</p>
+                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName}</p>
                         </div>
                         <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
                       </div>
@@ -2349,7 +2666,7 @@ export default function AtlasLuthor() {
                       <div key={`${row.key}-fatigue-note`} className="detail-row">
                         <div>
                           <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{row.dayName} - {row.sessionName} - Pain {row.note?.pain || "N/A"} - RPE {row.note?.difficulty || "N/A"}</p>
+                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - Pain {row.note?.pain || "N/A"} - RPE {row.note?.difficulty || "N/A"}</p>
                         </div>
                         <span style={{ color: row.note?.pr ? "#FFD060" : "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.note?.pr ? "PR" : "NOTE"}</span>
                       </div>
@@ -2498,7 +2815,7 @@ export default function AtlasLuthor() {
                   return (
                     <div key={`${dayName}-feature`} className="detail-row">
                       <div>
-                        <p className="detail-row-main">{currentDay.label} - {dayName}</p>
+                        <p className="detail-row-main">{displayDayShort(dayName, currentDay.label)} - {displayDay(dayName)}</p>
                         <p className="detail-row-sub">{currentDay.sessions.map(item => item.name).join(" / ")} - {dayExercises} exercises - {daySets} sets</p>
                       </div>
                       <button className="edit-btn" onClick={() => openWorkout(dayName)} style={{ color: currentTheme.accent }}>
@@ -2512,7 +2829,7 @@ export default function AtlasLuthor() {
           </div>
         )}
 
-        {screen === "workout" && (
+        {activeUserId && screen === "workout" && (
           <>
             <div style={{ padding: "14px 20px 0" }}>
               <button
@@ -2544,7 +2861,7 @@ export default function AtlasLuthor() {
                       }}
                     >
                       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: isActive ? t.accent : "#555", fontFamily: "'Orbitron', monospace" }}>
-                        {workoutData[d].label}
+                        {displayDayShort(d, workoutData[d].label)}
                       </div>
                       <div style={{ fontSize: 8, color: isActive ? t.sub : "#333", marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                         {workoutData[d].type.slice(0, 3)}
@@ -2559,7 +2876,7 @@ export default function AtlasLuthor() {
             <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
-                  {todayOnlyMode ? "TODAY ONLY" : activeDay.toUpperCase()}
+                  {todayOnlyMode ? "TODAY ONLY" : displayDay(activeDay).toUpperCase()}
                 </span>
                 <span style={{ fontSize: 11, letterSpacing: 2, color: "#444", fontFamily: "'Orbitron', monospace" }}>
                   {" "}- {day.type}
@@ -3073,6 +3390,9 @@ export default function AtlasLuthor() {
                 setShowDataTools(true);
               }}>
                 Backup / Cloud Sync
+              </button>
+              <button className="dark-btn" onClick={handleLogout}>
+                Logout
               </button>
               <button className="dark-btn" onClick={() => setShowSettings(false)}>
                 Close
