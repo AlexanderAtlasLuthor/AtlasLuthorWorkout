@@ -122,6 +122,7 @@ const STORAGE_KEYS = {
   profile: "atlas-luthor-profile",
   goals: "atlas-luthor-goals",
   progressLog: "atlas-luthor-progress-log",
+  exerciseNotes: "atlas-luthor-exercise-notes",
 };
 
 const DEFAULT_PROFILE = {
@@ -190,6 +191,24 @@ function signedNumber(value) {
   return String(value);
 }
 
+function formatTimer(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function getExerciseKey(dayName, sessionIndex, exerciseIndex) {
+  return `${dayName}-${sessionIndex}-${exerciseIndex}`;
+}
+
+function getWorkoutWeekKey(date = new Date()) {
+  const current = new Date(date);
+  const dayIndex = current.getDay();
+  const mondayOffset = dayIndex === 0 ? -6 : 1 - dayIndex;
+  current.setDate(current.getDate() + mondayOffset);
+  return current.toISOString().slice(0, 10);
+}
+
 export default function AtlasLuthor() {
   const [screen, setScreen] = useState("home");
   const [activeDay, setActiveDay] = useState(getTodayDayName());
@@ -205,9 +224,14 @@ export default function AtlasLuthor() {
   const [profile, setProfile] = useState(() => safeLoad(STORAGE_KEYS.profile, DEFAULT_PROFILE));
   const [goals, setGoals] = useState(() => safeLoad(STORAGE_KEYS.goals, DEFAULT_GOALS));
   const [progressLog, setProgressLog] = useState(() => safeLoad(STORAGE_KEYS.progressLog, []));
+  const [exerciseNotes, setExerciseNotes] = useState(() => safeLoad(STORAGE_KEYS.exerciseNotes, {}));
   const [editingProfile, setEditingProfile] = useState(null);
   const [editingGoals, setEditingGoals] = useState(null);
+  const [editingNote, setEditingNote] = useState(null);
+  const [showDataTools, setShowDataTools] = useState(false);
   const [progressSaved, setProgressSaved] = useState(false);
+  const [todayOnlyMode, setTodayOnlyMode] = useState(false);
+  const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "" });
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
@@ -238,6 +262,29 @@ export default function AtlasLuthor() {
   }, [progressLog]);
 
   useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEYS.exerciseNotes, JSON.stringify(exerciseNotes));
+  }, [exerciseNotes]);
+
+  useEffect(() => {
+    if (!restTimer.running || restTimer.secondsLeft <= 0) return undefined;
+
+    const timerId = window.setInterval(() => {
+      setRestTimer(prev => {
+        if (!prev.running) return prev;
+        const nextSeconds = Math.max(prev.secondsLeft - 1, 0);
+
+        return {
+          ...prev,
+          secondsLeft: nextSeconds,
+          running: nextSeconds > 0,
+        };
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [restTimer.running, restTimer.secondsLeft]);
+
+  useEffect(() => {
     if (isProgressionDue(lastProgressionReview)) {
       setShowProgression(true);
     }
@@ -258,13 +305,18 @@ export default function AtlasLuthor() {
     let cardioSessions = 0;
     let workoutSessions = 0;
     let completedSessions = 0;
+    let completedDays = 0;
 
     days.forEach(dayName => {
+      let dayExercises = 0;
+      let dayDone = 0;
+
       workoutData[dayName].sessions.forEach((currentSession, sessionIndex) => {
         if (!currentSession.rest) workoutSessions += 1;
         if (currentSession.warmup) cardioSessions += 1;
 
         totalExercises += currentSession.exercises.length;
+        dayExercises += currentSession.exercises.length;
         totalSets += currentSession.exercises.reduce((sum, ex) => sum + Number(ex.sets || 0), 0);
 
         const sessionDone = currentSession.exercises.filter(
@@ -272,11 +324,16 @@ export default function AtlasLuthor() {
         ).length;
 
         completedExercises += sessionDone;
+        dayDone += sessionDone;
 
         if (currentSession.exercises.length > 0 && sessionDone === currentSession.exercises.length) {
           completedSessions += 1;
         }
       });
+
+      if (dayExercises > 0 && dayDone === dayExercises) {
+        completedDays += 1;
+      }
     });
 
     const weeklyProgress = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
@@ -291,6 +348,7 @@ export default function AtlasLuthor() {
       cardioSessions,
       workoutSessions,
       completedSessions,
+      completedDays,
       today,
       todayType: todayWorkout.type,
       todayLabel: todayWorkout.label,
@@ -311,6 +369,8 @@ export default function AtlasLuthor() {
         weeklyProgress: weeklyMetrics.weeklyProgress,
         completedExercises: weeklyMetrics.completedExercises,
         completedSessions: weeklyMetrics.completedSessions,
+        completedDays: weeklyMetrics.completedDays,
+        weekKey: getWorkoutWeekKey(),
       };
       const withoutTodayAuto = prev.filter(item => item.id !== autoRecord.id);
 
@@ -320,6 +380,7 @@ export default function AtlasLuthor() {
     profile.currentWeight,
     profile.targetWeight,
     weeklyMetrics.completedExercises,
+    weeklyMetrics.completedDays,
     weeklyMetrics.completedSessions,
     weeklyMetrics.weeklyProgress,
   ]);
@@ -363,6 +424,30 @@ export default function AtlasLuthor() {
   const weeklySessionsGoal = Math.max(toNumber(goals.weeklySessionsGoal), 1);
   const weeklyGoalPct = Math.min(100, Math.round((weeklyMetrics.weeklyProgress / weeklyProgressGoal) * 100));
   const sessionsGoalPct = Math.min(100, Math.round((weeklyMetrics.completedSessions / weeklySessionsGoal) * 100));
+  const chartEntries = useMemo(() => {
+    const manualEntries = progressEntries.filter(entry => entry.type === "manual");
+    const entries = manualEntries.length ? manualEntries : progressEntries;
+
+    return entries
+      .slice(0, 8)
+      .reverse()
+      .map(entry => ({ ...entry, weightNumber: toNumber(entry.weight) }));
+  }, [progressEntries]);
+  const chartWeights = chartEntries.map(entry => entry.weightNumber).filter(Boolean);
+  const minChartWeight = chartWeights.length ? Math.min(...chartWeights) : 0;
+  const maxChartWeight = chartWeights.length ? Math.max(...chartWeights) : 0;
+  const currentWeekKey = getWorkoutWeekKey();
+  const completedWeekKeys = useMemo(
+    () => [...new Set(progressEntries.filter(entry => Number(entry.completedDays || 0) >= 3).map(entry => entry.weekKey || entry.date))],
+    [progressEntries]
+  );
+  const weeklyStreak = completedWeekKeys.length;
+  const earnedBadges = [
+    weeklyMetrics.weeklyProgress >= 100 ? "Protocol Clear" : null,
+    weeklyMetrics.completedSessions >= weeklySessionsGoal ? "Session Hunter" : null,
+    weeklyStreak >= 2 ? `${weeklyStreak} Week Streak` : null,
+    progressEntries.some(entry => entry.type === "manual") ? "Progress Logged" : null,
+  ].filter(Boolean);
 
   const updateExerciseWeight = ({ dayName, sessionIndex, exerciseIndex, weight }) => {
     setWorkoutData(prev => ({
@@ -409,12 +494,100 @@ export default function AtlasLuthor() {
         weeklyProgress: weeklyMetrics.weeklyProgress,
         completedExercises: weeklyMetrics.completedExercises,
         completedSessions: weeklyMetrics.completedSessions,
+        completedDays: weeklyMetrics.completedDays,
+        weekKey: getWorkoutWeekKey(),
       },
       ...prev,
     ].slice(0, 60));
 
     setProgressSaved(true);
     window.setTimeout(() => setProgressSaved(false), 1600);
+  };
+
+  const resetWeek = () => {
+    rememberProgress();
+    setChecked({});
+  };
+
+  const startRestTimer = seconds => {
+    setRestTimer({
+      secondsLeft: seconds,
+      duration: seconds,
+      running: true,
+      label: session.name,
+    });
+  };
+
+  const stopRestTimer = () => {
+    setRestTimer(prev => ({ ...prev, secondsLeft: 0, running: false }));
+  };
+
+  const saveExerciseNote = note => {
+    setExerciseNotes(prev => ({
+      ...prev,
+      [note.key]: {
+        pain: note.pain,
+        difficulty: note.difficulty,
+        pr: note.pr,
+        technique: note.technique,
+        updatedAt: new Date().toISOString(),
+      },
+    }));
+    setEditingNote(null);
+  };
+
+  const exportData = () => {
+    const backup = {
+      exportedAt: new Date().toISOString(),
+      app: "Atlas Luthor",
+      version: 1,
+      data: {
+        workoutData,
+        checked,
+        profile,
+        goals,
+        progressLog,
+        exerciseNotes,
+        lastProgressionReview,
+      },
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `atlas-luthor-backup-${getDateKey()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const importDataFile = event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result));
+        const data = parsed.data || parsed;
+
+        if (data.workoutData) setWorkoutData(data.workoutData);
+        if (data.checked) setChecked(data.checked);
+        if (data.profile) setProfile(data.profile);
+        if (data.goals) setGoals(data.goals);
+        if (data.progressLog) setProgressLog(data.progressLog);
+        if (data.exerciseNotes) setExerciseNotes(data.exerciseNotes);
+        if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
+        setShowDataTools(false);
+      } catch {
+        window.alert("That backup file could not be imported.");
+      } finally {
+        event.target.value = "";
+      }
+    };
+    reader.readAsText(file);
   };
 
   const acceptProgression = () => {
@@ -442,9 +615,10 @@ export default function AtlasLuthor() {
     setShowProgression(false);
   };
 
-  const openWorkout = dayName => {
+  const openWorkout = (dayName, options = {}) => {
     setActiveDay(dayName);
     setActiveSession(0);
+    setTodayOnlyMode(!!options.todayOnly);
     setScreen("workout");
   };
 
@@ -572,6 +746,15 @@ export default function AtlasLuthor() {
               <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
                 START TODAY
               </button>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 10 }}>
+                <button className="dark-btn" onClick={() => openWorkout(weeklyMetrics.today, { todayOnly: true })}>
+                  Today Only
+                </button>
+                <button className="dark-btn" onClick={resetWeek}>
+                  Reset Week
+                </button>
+              </div>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
@@ -679,6 +862,73 @@ export default function AtlasLuthor() {
                   </div>
                 ))}
               </div>
+
+              {chartEntries.length > 0 && (
+                <div style={{ display: "flex", alignItems: "end", gap: 8, height: 92, marginTop: 14, padding: "10px 8px", borderRadius: 12, border: "1px solid #20202A", background: "rgba(10,10,14,0.55)" }}>
+                  {chartEntries.map(entry => {
+                    const range = Math.max(maxChartWeight - minChartWeight, 1);
+                    const height = 24 + ((entry.weightNumber - minChartWeight) / range) * 48;
+
+                    return (
+                      <div key={`${entry.id}-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+                        <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: "linear-gradient(180deg, #FFFFFF, #777B86)", boxShadow: "0 0 22px rgba(255,255,255,0.14)" }} />
+                        <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {entry.weight}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 12 }}>
+                <button className="dark-btn" onClick={() => setShowDataTools(true)}>
+                  Backup
+                </button>
+                <button className="dark-btn" onClick={resetWeek}>
+                  Reset Week
+                </button>
+              </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                STREAK / BADGES
+              </p>
+              <div className="metric-grid" style={{ marginBottom: 12 }}>
+                <div className="stat-box">
+                  <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                    {weeklyStreak}
+                  </p>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                    WEEK STREAK
+                  </p>
+                </div>
+                <div className="stat-box">
+                  <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                    {weeklyMetrics.completedDays}/7
+                  </p>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                    DAYS CLEAR
+                  </p>
+                </div>
+                <div className="stat-box">
+                  <p style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                    {currentWeekKey.slice(5)}
+                  </p>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                    WEEK OF
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {(earnedBadges.length ? earnedBadges : ["Protocol Started"]).map(badge => (
+                  <span key={badge} style={{ color: "#D8D8D8", background: "#101015", border: "1px solid #2A2A34", borderRadius: 999, padding: "7px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800 }}>
+                    {badge}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {isProgressionDue(lastProgressionReview) && (
@@ -759,11 +1009,18 @@ export default function AtlasLuthor() {
         {screen === "workout" && (
           <>
             <div style={{ padding: "14px 20px 0" }}>
-              <button className="dark-btn" onClick={() => setScreen("home")}>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  setTodayOnlyMode(false);
+                  setScreen("home");
+                }}
+              >
                 Back Home
               </button>
             </div>
 
+            {!todayOnlyMode && (
             <div style={{ padding: "16px 16px 0" }}>
               <div style={{ display: "flex", gap: 6, background: "#111115", borderRadius: 14, padding: "8px 8px" }}>
                 {days.map(d => {
@@ -791,11 +1048,12 @@ export default function AtlasLuthor() {
                 })}
               </div>
             </div>
+            )}
 
             <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
-                  {activeDay.toUpperCase()}
+                  {todayOnlyMode ? "TODAY ONLY" : activeDay.toUpperCase()}
                 </span>
                 <span style={{ fontSize: 11, letterSpacing: 2, color: "#444", fontFamily: "'Orbitron', monospace" }}>
                   {" "}- {day.type}
@@ -813,6 +1071,37 @@ export default function AtlasLuthor() {
               <div style={{ padding: "10px 20px 0" }}>
                 <div style={{ height: 4, background: "#1E1E26", borderRadius: 4, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${pct}%`, background: theme.accent, borderRadius: 4, transition: "width 0.4s ease" }} />
+                </div>
+              </div>
+            )}
+
+            {total > 0 && (
+              <div style={{ padding: "16px 20px 0" }}>
+                <div className="home-card" style={{ padding: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                    <div>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
+                        REST TIMER
+                      </p>
+                      <p style={{ fontSize: 26, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
+                        {formatTimer(restTimer.secondsLeft)}
+                      </p>
+                    </div>
+
+                    {restTimer.secondsLeft > 0 && (
+                      <button className="edit-btn" onClick={stopRestTimer}>
+                        Stop
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    {[60, 90, 120].map(seconds => (
+                      <button key={seconds} className="dark-btn" onClick={() => startRestTimer(seconds)} style={{ padding: "10px 8px" }}>
+                        {seconds}s
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -886,6 +1175,8 @@ export default function AtlasLuthor() {
               {session.exercises.map((ex, i) => {
                 const key = `${activeDay}-${activeSession}-${i}`;
                 const isDone = !!checked[key];
+                const note = exerciseNotes[key];
+                const hasNote = note && (note.pain || note.difficulty || note.pr || note.technique);
 
                 return (
                   <div key={i} className={`ex-card${isDone ? " done" : ""}`} onClick={() => toggleCheck(key)}>
@@ -900,7 +1191,30 @@ export default function AtlasLuthor() {
                       <p style={{ fontSize: 12, color: isDone ? "#383838" : "#666", marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
                         {ex.sets} sets x {ex.reps} reps
                       </p>
+                      {hasNote && (
+                        <p style={{ fontSize: 11, color: isDone ? "#444" : theme.accent, marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {note.pr ? "PR · " : ""}{note.difficulty ? `RPE ${note.difficulty} · ` : ""}{note.technique || note.pain || "Notes saved"}
+                        </p>
+                      )}
                     </div>
+
+                    <button
+                      className="edit-btn"
+                      onClick={event => {
+                        event.stopPropagation();
+                        setEditingNote({
+                          key,
+                          name: ex.name,
+                          pain: note?.pain || "",
+                          difficulty: note?.difficulty || "",
+                          pr: !!note?.pr,
+                          technique: note?.technique || "",
+                        });
+                      }}
+                      style={{ color: hasNote ? theme.accent : "#777" }}
+                    >
+                      Notes
+                    </button>
 
                     <button
                       onClick={event => {
@@ -1026,6 +1340,100 @@ export default function AtlasLuthor() {
                 }}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingNote && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              EXERCISE NOTES
+            </p>
+
+            <h3 style={{ fontFamily: "'DM Sans', sans-serif", marginBottom: 14 }}>
+              {editingNote.name}
+            </h3>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <input
+                className="input"
+                value={editingNote.pain}
+                onChange={event => setEditingNote(prev => ({ ...prev, pain: event.target.value }))}
+                placeholder="Pain / discomfort"
+              />
+
+              <input
+                className="input"
+                value={editingNote.difficulty}
+                onChange={event => setEditingNote(prev => ({ ...prev, difficulty: event.target.value }))}
+                placeholder="Difficulty 1-10"
+                inputMode="numeric"
+              />
+
+              <input
+                className="input"
+                value={editingNote.technique}
+                onChange={event => setEditingNote(prev => ({ ...prev, technique: event.target.value }))}
+                placeholder="Technique notes"
+              />
+
+              <label style={{ display: "flex", alignItems: "center", gap: 10, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
+                <input
+                  type="checkbox"
+                  checked={editingNote.pr}
+                  onChange={event => setEditingNote(prev => ({ ...prev, pr: event.target.checked }))}
+                />
+                Mark as PR
+              </label>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingNote(null)}>
+                Cancel
+              </button>
+              <button
+                className="primary-btn"
+                style={{ flex: 1 }}
+                onClick={() => saveExerciseNote(editingNote)}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDataTools && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              BACKUP / RESTORE
+            </p>
+
+            <p style={{ color: "#777", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
+              Export your weights, goals, checks, notes, and progress history to a JSON file. Import restores data from a previous backup.
+            </p>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <button className="primary-btn" onClick={exportData}>
+                Export Progress
+              </button>
+
+              <label className="dark-btn" style={{ textAlign: "center" }}>
+                Import Backup
+                <input
+                  type="file"
+                  accept="application/json"
+                  onChange={importDataFile}
+                  style={{ display: "none" }}
+                />
+              </label>
+
+              <button className="dark-btn" onClick={() => setShowDataTools(false)}>
+                Close
               </button>
             </div>
           </div>
