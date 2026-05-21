@@ -181,13 +181,25 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
 };
 
 const DEFAULT_APP_SETTINGS = {
-  firstName: "Atlas",
+  firstName: "",
   lastName: "",
   name: "Atlas",
   avatar: "",
   language: "en",
   themeMode: "auto",
 };
+
+function withNameParts(settings) {
+  const next = { ...DEFAULT_APP_SETTINGS, ...(settings || {}) };
+
+  if (!next.firstName && !next.lastName && next.name) {
+    const parts = next.name.trim().split(/\s+/);
+    next.firstName = parts[0] || "";
+    next.lastName = parts.slice(1).join(" ");
+  }
+
+  return next;
+}
 
 const DEFAULT_SIGNUP = {
   userId: "",
@@ -509,10 +521,7 @@ export default function AtlasLuthor() {
   const [progressPhotos, setProgressPhotos] = useState(() => safeLoad(STORAGE_KEYS.progressPhotos, []));
   const [photoAlbums, setPhotoAlbums] = useState(() => safeLoad(STORAGE_KEYS.photoAlbums, []));
   const [cloudSettings, setCloudSettings] = useState(() => safeLoad(STORAGE_KEYS.cloudSettings, DEFAULT_CLOUD_SETTINGS));
-  const [appSettings, setAppSettings] = useState(() => ({
-    ...DEFAULT_APP_SETTINGS,
-    ...safeLoad(STORAGE_KEYS.appSettings, DEFAULT_APP_SETTINGS),
-  }));
+  const [appSettings, setAppSettings] = useState(() => withNameParts(safeLoad(STORAGE_KEYS.appSettings, DEFAULT_APP_SETTINGS)));
   const [notificationSettings, setNotificationSettings] = useState(() => {
     const saved = safeLoad(STORAGE_KEYS.notificationSettings, DEFAULT_NOTIFICATION_SETTINGS);
 
@@ -1161,7 +1170,7 @@ export default function AtlasLuthor() {
     const nextWorkoutData = data?.workoutData || cloneData(baseWorkoutData);
     const nextProfile = { ...DEFAULT_PROFILE, ...(data?.profile || {}) };
     const nextGoals = { ...DEFAULT_GOALS, ...(data?.goals || {}) };
-    const nextAppSettings = { ...DEFAULT_APP_SETTINGS, ...(data?.appSettings || {}) };
+    const nextAppSettings = withNameParts(data?.appSettings);
 
     setWorkoutData(nextWorkoutData);
     setChecked(data?.checked || {});
@@ -1435,7 +1444,7 @@ export default function AtlasLuthor() {
         if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
         if (Array.isArray(data.photoAlbums)) setPhotoAlbums(data.photoAlbums);
         if (data.cloudSettings) setCloudSettings(data.cloudSettings);
-        if (data.appSettings) setAppSettings({ ...DEFAULT_APP_SETTINGS, ...data.appSettings });
+        if (data.appSettings) setAppSettings(withNameParts(data.appSettings));
         if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
         if (data.setProgress) setSetProgress(data.setProgress);
         if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
@@ -1509,7 +1518,7 @@ export default function AtlasLuthor() {
       if (data.calendarLog) setCalendarLog(data.calendarLog);
       if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
       if (Array.isArray(data.photoAlbums)) setPhotoAlbums(data.photoAlbums);
-      if (data.appSettings) setAppSettings({ ...DEFAULT_APP_SETTINGS, ...data.appSettings });
+      if (data.appSettings) setAppSettings(withNameParts(data.appSettings));
       if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
       if (data.setProgress) setSetProgress(data.setProgress);
       if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
