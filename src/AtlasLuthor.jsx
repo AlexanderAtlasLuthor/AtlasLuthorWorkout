@@ -687,6 +687,15 @@ const UI_TEXT = {
     challengeDays: "Days",
     challengeDone: "Challenge complete!",
     challengeTitle: "Challenge name",
+    beforeAfter: "Before / After",
+    photoBefore: "Before",
+    photoAfter: "After",
+    dragToCompare: "Drag the slider to compare",
+    comparePhotos: "Compare Photos",
+    photoPrev: "Previous",
+    photoNext: "Next",
+    addFirstPhoto: "Tap to add your first progress photo",
+    photoCount: "photos",
   },
   es: {
     goodMorning: "Buenos días",
@@ -1014,6 +1023,15 @@ const UI_TEXT = {
     challengeDays: "Días",
     challengeDone: "¡Reto completado!",
     challengeTitle: "Nombre del reto",
+    beforeAfter: "Antes / Después",
+    photoBefore: "Antes",
+    photoAfter: "Después",
+    dragToCompare: "Desliza para comparar",
+    comparePhotos: "Comparar Fotos",
+    photoPrev: "Anterior",
+    photoNext: "Siguiente",
+    addFirstPhoto: "Toca para agregar tu primera foto de progreso",
+    photoCount: "fotos",
   },
 };
 
@@ -1503,6 +1521,9 @@ export default function AtlasLuthor() {
   const [highlightedExerciseIndex, setHighlightedExerciseIndex] = useState(0);
   const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "", album: "" });
   const [viewingPhoto, setViewingPhoto] = useState(null);
+  const [comparePos, setComparePos] = useState(50);
+  const [compareAId, setCompareAId] = useState("");
+  const [compareBId, setCompareBId] = useState("");
   const [albumFilter, setAlbumFilter] = useState("");
   const [albumDraft, setAlbumDraft] = useState("");
   const [reminderDraft, setReminderDraft] = useState({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
@@ -4297,79 +4318,72 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                {text.progressPhotos.toUpperCase()}
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: latestPhoto ? "1.15fr 0.85fr" : "1fr", gap: 12, alignItems: "stretch", marginBottom: 12 }}>
-                {latestPhoto ? (
-                  <img
-                    src={latestPhoto.dataUrl}
-                    alt={latestPhoto.note || "Latest progress"}
-                    onClick={() => setViewingPhoto(latestPhoto)}
-                    style={{ width: "100%", minHeight: 170, maxHeight: 230, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block", cursor: "pointer" }}
-                  />
-                ) : (
-                  <div style={{ minHeight: 150, borderRadius: 12, border: "1px dashed #343442", display: "flex", alignItems: "center", justifyContent: "center", color: "#777", fontFamily: "'DM Sans', sans-serif", fontWeight: 800, padding: 12, textAlign: "center" }}>
-                    {text.noPhotos}
-                  </div>
-                )}
-                <div style={{ display: "grid", gap: 10 }}>
-                  <div className="detail-card">
-                    <p className="detail-label">{text.total}</p>
-                    <p className="detail-value">{totalPhotoCount}</p>
-                  </div>
-                  <div className="detail-card">
-                    <p className="detail-label">{text.latest}</p>
-                    <p className="detail-value">{latestPhoto?.date || "--"}</p>
-                  </div>
-                  <button className="dark-btn" onClick={() => openFeaturePage("photos")}>
-                    {text.openFullPhotos}
-                  </button>
-                </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                  {text.progressPhotos.toUpperCase()}
+                </p>
+                <button className="edit-btn" onClick={() => openFeaturePage("photos")} style={{ color: "#90C8FF" }}>
+                  {language === "es" ? "Ver todo" : "View all"}
+                </button>
               </div>
-              <div style={{ display: "grid", gap: 10 }}>
-                <input
-                  className="input"
-                  type="date"
-                  value={photoDraft.date}
-                  onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))}
-                />
-                <input
-                  className="input"
-                  value={photoDraft.note}
-                  onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))}
-                  placeholder={text.photoNote}
-                />
-                <label className="dark-btn" style={{ textAlign: "center" }}>
-                  {text.choosePhoto}
+
+              {latestPhoto ? (
+                <div
+                  onClick={() => setViewingPhoto(latestPhoto)}
+                  style={{ position: "relative", borderRadius: 14, overflow: "hidden", cursor: "pointer", border: "1px solid #24242E" }}
+                >
+                  <img src={latestPhoto.dataUrl} alt={latestPhoto.note || "Latest progress"} style={{ width: "100%", height: 250, objectFit: "cover", display: "block" }} />
+                  <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,8,12,0.72)", color: "#FFFFFF", borderRadius: 999, padding: "5px 11px", fontFamily: "'Orbitron', monospace", fontSize: 10, fontWeight: 900, letterSpacing: 1, backdropFilter: "blur(6px)" }}>
+                    {totalPhotoCount} {text.photoCount}
+                  </span>
+                  <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "36px 14px 13px", background: "linear-gradient(transparent, rgba(6,6,10,0.92))" }}>
+                    <p style={{ fontSize: 9, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.latest.toUpperCase()}</p>
+                    <p style={{ fontSize: 17, fontWeight: 900, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                      {latestPhoto.date} · {fmtW(latestPhoto.weight)}
+                    </p>
+                    {latestPhoto.note && (
+                      <p style={{ fontSize: 12, color: "#C8D0DC", fontFamily: "'DM Sans', sans-serif", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{latestPhoto.note}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 190, borderRadius: 14, border: `1.5px dashed ${isLightMode ? "rgba(0,0,0,0.18)" : "#3A3A46"}`, cursor: "pointer", textAlign: "center", padding: 20 }}>
+                  <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={isLightMode ? "#9AA0AC" : "#5A5F6A"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L19 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z" />
+                    <circle cx="13" cy="13" r="4" />
+                  </svg>
+                  <p style={{ color: isLightMode ? "#5A6270" : "#9CA1AC", fontFamily: "'DM Sans', sans-serif", fontWeight: 800, fontSize: 14 }}>{text.addFirstPhoto}</p>
                   <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
                 </label>
-                {photoDraft.dataUrl && (
-                  <img
-                    src={photoDraft.dataUrl}
-                    alt="Progress preview"
-                    style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }}
-                  />
-                )}
-                {photoDraft.dataUrl && (
-                  <button className="primary-btn" onClick={saveProgressPhoto}>
-                    {text.savePhoto}
-                  </button>
-                )}
-              </div>
-              {progressPhotos.length > 0 && (
+              )}
+
+              {progressPhotos.length > 1 && (
                 <div className="photo-strip">
-                  {progressPhotos.slice(0, 8).map(photo => (
-                    <div key={photo.id} className="photo-card" onClick={() => setViewingPhoto(photo)}>
-                      <img src={photo.dataUrl} alt={photo.note || "Progress"} />
-                      <div className="photo-body">
-                        <p className="photo-note">{photo.note || text.noNote}</p>
-                        <p className="photo-sub">{photo.date} · {fmtW(photo.weight)}{photo.album ? ` · ${photo.album}` : ""}</p>
-                      </div>
+                  {progressPhotos.slice(0, 10).map(photo => (
+                    <div key={photo.id} onClick={() => setViewingPhoto(photo)} style={{ flex: "0 0 76px", cursor: "pointer", scrollSnapAlign: "start" }}>
+                      <img src={photo.dataUrl} alt={photo.note || "Progress"} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 10, border: "1px solid #24242E", display: "block" }} />
+                      <p style={{ fontSize: 9, color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", marginTop: 4, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{photo.date?.slice(5) || ""}</p>
                     </div>
                   ))}
                 </div>
               )}
+
+              <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
+                  <label className="dark-btn" style={{ textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {photoDraft.dataUrl ? (language === "es" ? "Cambiar foto" : "Change photo") : text.choosePhoto}
+                    <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
+                  </label>
+                </div>
+                <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={text.photoNote} />
+                {photoDraft.dataUrl && (
+                  <>
+                    <img src={photoDraft.dataUrl} alt="Progress preview" style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }} />
+                    <button className="primary-btn" onClick={saveProgressPhoto}>{text.savePhoto}</button>
+                  </>
+                )}
+              </div>
             </div>
 
             {isProgressionDue(lastProgressionReview) && progressionItems.length > 0 && (
@@ -4885,12 +4899,74 @@ export default function AtlasLuthor() {
               </div>
             )}
 
-            {activeFeaturePage === "photos" && (
+            {activeFeaturePage === "photos" && (() => {
+              const photosByDate = [...progressPhotos].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+              const cmpA = progressPhotos.find(p => p.id === compareAId) || photosByDate[0];
+              const cmpB = progressPhotos.find(p => p.id === compareBId) || photosByDate[photosByDate.length - 1];
+              const cmpDelta = cmpA && cmpB ? Math.round((toNumber(cmpB.weight) - toNumber(cmpA.weight)) * 10) / 10 : 0;
+              const updateComparePos = event => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                if (!rect.width) return;
+                const pos = ((event.clientX - rect.left) / rect.width) * 100;
+                setComparePos(Math.max(0, Math.min(100, pos)));
+              };
+              return (
               <div className="detail-list">
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.photosLabel}</p><p className="detail-value">{totalPhotoCount}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.albumsLabel}</p><p className="detail-value">{photoAlbums.length}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.photosLabel}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{totalPhotoCount}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.albumsLabel}</p><p className="detail-value" style={{ color: "#B8A0FF" }}>{photoAlbums.length}</p></div>
                 </div>
+
+                {progressPhotos.length >= 2 && cmpA && cmpB && (
+                  <div className="home-card">
+                    <p className="detail-label">{text.beforeAfter.toUpperCase()}</p>
+                    <div
+                      onPointerDown={event => {
+                        try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* unsupported */ }
+                        updateComparePos(event);
+                      }}
+                      onPointerMove={event => { if (event.buttons === 1) updateComparePos(event); }}
+                      style={{ position: "relative", width: "100%", aspectRatio: "1", borderRadius: 14, overflow: "hidden", marginTop: 10, cursor: "ew-resize", touchAction: "none", userSelect: "none", border: "1px solid #24242E", background: "#050507" }}
+                    >
+                      <img src={cmpB.dataUrl} draggable={false} alt="After" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                      <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${100 - comparePos}% 0 0)` }}>
+                        <img src={cmpA.dataUrl} draggable={false} alt="Before" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                      <div style={{ position: "absolute", top: 0, bottom: 0, left: `${comparePos}%`, width: 3, background: "#FFFFFF", transform: "translateX(-50%)", boxShadow: "0 0 14px rgba(0,0,0,0.7)" }}>
+                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 36, height: 36, borderRadius: "50%", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, boxShadow: "0 2px 12px rgba(0,0,0,0.55)" }}>
+                          <div style={{ width: 2.5, height: 13, borderRadius: 2, background: "#101015" }} />
+                          <div style={{ width: 2.5, height: 13, borderRadius: 2, background: "#101015" }} />
+                        </div>
+                      </div>
+                      <span style={{ position: "absolute", top: 10, left: 10, background: "rgba(8,8,12,0.74)", color: "#90C8FF", borderRadius: 999, padding: "5px 11px", fontFamily: "'Orbitron', monospace", fontSize: 9, fontWeight: 900, letterSpacing: 2, backdropFilter: "blur(6px)" }}>{text.photoBefore.toUpperCase()}</span>
+                      <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,8,12,0.74)", color: "#3FB98A", borderRadius: 999, padding: "5px 11px", fontFamily: "'Orbitron', monospace", fontSize: 9, fontWeight: 900, letterSpacing: 2, backdropFilter: "blur(6px)" }}>{text.photoAfter.toUpperCase()}</span>
+                    </div>
+                    <p style={{ textAlign: "center", fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>{text.dragToCompare}</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 8 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>{text.photoBefore.toUpperCase()}</p>
+                        <p style={{ fontSize: 12, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{cmpA.date} · {fmtW(cmpA.weight)}</p>
+                      </div>
+                      <div style={{ minWidth: 0, textAlign: "right" }}>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#3FB98A", fontFamily: "'Orbitron', monospace" }}>{text.photoAfter.toUpperCase()}</p>
+                        <p style={{ fontSize: 12, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{cmpB.date} · {fmtW(cmpB.weight)}</p>
+                      </div>
+                    </div>
+                    {cmpDelta !== 0 && (
+                      <p style={{ textAlign: "center", marginTop: 8, fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 14, color: cmpDelta < 0 ? "#3FB98A" : "#FF9860" }}>
+                        {fmtWDelta(cmpDelta)}
+                      </p>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+                      <select className="input" value={cmpA.id} onChange={event => setCompareAId(event.target.value)}>
+                        {photosByDate.map(photo => <option key={photo.id} value={photo.id}>{photo.date}</option>)}
+                      </select>
+                      <select className="input" value={cmpB.id} onChange={event => setCompareBId(event.target.value)}>
+                        {photosByDate.map(photo => <option key={photo.id} value={photo.id}>{photo.date}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 <div className="home-card">
                   <p className="detail-label">{text.albumsLabel}</p>
@@ -4977,7 +5053,8 @@ export default function AtlasLuthor() {
                   );
                 })()}
               </div>
-            )}
+              );
+            })()}
 
             {activeFeaturePage === "metrics" && (
               <div className="detail-list">
@@ -7177,7 +7254,11 @@ export default function AtlasLuthor() {
         </div>
       )}
 
-      {viewingPhoto && (
+      {viewingPhoto && (() => {
+        const viewIndex = progressPhotos.findIndex(photo => photo.id === viewingPhoto.id);
+        const olderPhoto = viewIndex >= 0 && viewIndex < progressPhotos.length - 1 ? progressPhotos[viewIndex + 1] : null;
+        const newerPhoto = viewIndex > 0 ? progressPhotos[viewIndex - 1] : null;
+        return (
         <div className="modal-backdrop" onClick={() => setViewingPhoto(null)}>
           <div className="modal" onClick={event => event.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -7194,6 +7275,17 @@ export default function AtlasLuthor() {
               alt={viewingPhoto.note || "Progress photo"}
               style={{ width: "100%", maxHeight: "52vh", objectFit: "contain", borderRadius: 12, border: "1px solid #24242E", background: "#050507", display: "block" }}
             />
+
+            {(olderPhoto || newerPhoto) && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                <button className="dark-btn" disabled={!olderPhoto} onClick={() => olderPhoto && setViewingPhoto(olderPhoto)} style={olderPhoto ? undefined : { opacity: 0.4 }}>
+                  {text.photoPrev}
+                </button>
+                <button className="dark-btn" disabled={!newerPhoto} onClick={() => newerPhoto && setViewingPhoto(newerPhoto)} style={newerPhoto ? undefined : { opacity: 0.4 }}>
+                  {text.photoNext}
+                </button>
+              </div>
+            )}
 
             <div className="detail-grid" style={{ marginTop: 12 }}>
               <div className="detail-card"><p className="detail-label">{text.dateField}</p><p className="detail-value">{viewingPhoto.date}</p></div>
@@ -7227,7 +7319,8 @@ export default function AtlasLuthor() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
