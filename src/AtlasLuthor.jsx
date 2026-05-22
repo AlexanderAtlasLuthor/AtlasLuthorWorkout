@@ -1,4 +1,24 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  formatWeight, formatWeightDelta, formatHeight, formatExerciseWeight,
+  formatDistance, formatMeasure, parseHeightInches,
+  getBodyWeightOptions, getHeightOptions, getExerciseWeightOptions,
+  measureInputToInches, distanceInputToMiles, weightUnit, measureUnit, distanceUnit,
+} from "./lib/units.js";
+import {
+  calcBMR, calcTDEE, goalCalorieTarget, macroSplit, sumDayMacros,
+  FOOD_DB, MEALS, ACTIVITY_LEVELS,
+} from "./lib/nutrition.js";
+import {
+  CARDIO_TYPES, cardioTypeInfo, cardioTypeLabel, estimateCardioCalories, formatPace,
+} from "./lib/cardio.js";
+import { navyBodyFat, MEASUREMENT_FIELDS } from "./lib/bodyComp.js";
+import {
+  estimate1RM, estimate1RMFromExercise, parseWeightNumber, parseRepsNumber,
+  exerciseVolume, isNewPR,
+} from "./lib/strength.js";
+import { getExerciseCues } from "./lib/exerciseInfo.js";
+import { renderShareCard } from "./lib/shareCard.js";
 
 const pushSessions = [
   {
@@ -162,6 +182,7 @@ const DEFAULT_PROFILE = {
   startDate: "2026-03-23",
   sex: "male",
   age: "30",
+  activityLevel: "moderate",
 };
 
 const DEFAULT_GOALS = {
@@ -202,6 +223,7 @@ const DEFAULT_APP_SETTINGS = {
   language: getDefaultLanguage(),
   themeMode: "auto",
   tapFeedback: true,
+  unitSystem: "imperial",
 };
 
 function withNameParts(settings) {
@@ -248,6 +270,13 @@ function defaultUserData() {
     setProgress: {},
     appSettings: withNameParts(DEFAULT_APP_SETTINGS),
     waterLog: {},
+    foodLog: {},
+    customFoods: [],
+    recentFoods: [],
+    cardioLog: {},
+    measurementLog: {},
+    exercisePerformance: {},
+    challenges: [],
   };
 }
 
@@ -549,6 +578,97 @@ const UI_TEXT = {
     featDescPhotos: "Keeps local progress photos by date, weight, and note for visual comparison.",
     featDescMetrics: "Breaks down the full weekly workload: exercises, sets, sessions, cardio, completion, and set progress.",
     featDescWeek: "Shows the full seven-day split and gives fast access to every programmed workout day.",
+    featDescNutrition: "Logs meals, calories and macros against a daily target built from your body data and goal.",
+    featDescCardio: "Tracks standalone cardio sessions with distance, pace and estimated calories burned.",
+    featDescChallenges: "Personal challenges tracked locally from your training, hydration and cardio logs.",
+    unitSystem: "Units",
+    metric: "Metric (kg, cm)",
+    imperial: "Imperial (lb, in)",
+    unitSystemSub: "Switches how weight, height and distance are shown. Stored data is not changed.",
+    nutrition: "Nutrition",
+    nutritionToday: "Nutrition Today",
+    calories: "Calories",
+    caloriesLabel: "CALORIES",
+    protein: "Protein",
+    carbs: "Carbs",
+    fat: "Fat",
+    breakfast: "Breakfast",
+    lunch: "Lunch",
+    dinner: "Dinner",
+    snack: "Snack",
+    addFood: "Add Food",
+    customFood: "Custom Food",
+    recentFoods: "Recent",
+    calorieTarget: "Calorie Target",
+    dailyTarget: "Daily Target",
+    serving: "Serving",
+    quantity: "Qty",
+    bmrLabel: "BMR",
+    tdeeLabel: "TDEE",
+    macroSplit: "Macro Targets",
+    caloriesLeft: "left",
+    caloriesOver: "over",
+    searchFood: "Search foods",
+    activityLevel: "Activity Level",
+    activitySedentary: "Sedentary",
+    activityLight: "Lightly active",
+    activityModerate: "Moderately active",
+    activityActive: "Very active",
+    activityAthlete: "Athlete",
+    noFoodToday: "No food logged today.",
+    foodName: "Food name",
+    saveFood: "Save Food",
+    nutritionHistory: "Recent Days",
+    cardio: "Cardio",
+    cardioType: "Activity",
+    duration: "Duration",
+    distance: "Distance",
+    pace: "Pace",
+    caloriesBurned: "Burned",
+    addCardioSession: "Log Cardio",
+    weeklyCardio: "This Week",
+    cardioSessions: "Sessions",
+    noCardioYet: "No cardio logged yet.",
+    minutesShort: "min",
+    cardioHistory: "Cardio History",
+    measurements: "Measurements",
+    neck: "Neck",
+    chest: "Chest",
+    waist: "Waist",
+    hips: "Hips",
+    arms: "Arms",
+    thighs: "Thighs",
+    calves: "Calves",
+    addMeasurement: "Log Measurements",
+    navyBodyFat: "Body Fat (Navy)",
+    measurementHistory: "Measurement History",
+    noMeasurements: "No measurements logged yet.",
+    latestMeasure: "Latest",
+    estimatedOneRM: "Est. 1RM",
+    newPR: "NEW PERSONAL RECORD",
+    volumeTrends: "Volume Trends",
+    muscleBalance: "Muscle Group Balance",
+    formCues: "Form Cues",
+    personalBest: "Best",
+    totalVolume: "Weekly Volume",
+    viewCues: "Form cues",
+    share: "Share",
+    shareProgress: "Share Progress",
+    shareCard: "Share Image",
+    shareCopied: "Summary copied to clipboard.",
+    challenges: "Challenges",
+    newChallenge: "New Challenge",
+    challengeTarget: "Target",
+    challengeMetric: "Track",
+    challengeWorkouts: "Workout days",
+    challengeWater: "Water goal days",
+    challengeCardio: "Cardio sessions",
+    createChallenge: "Create Challenge",
+    activeChallenges: "Active Challenges",
+    noChallenges: "No challenges yet. Set one to stay accountable.",
+    challengeDays: "Days",
+    challengeDone: "Challenge complete!",
+    challengeTitle: "Challenge name",
   },
   es: {
     goodMorning: "Buenos días",
@@ -785,6 +905,97 @@ const UI_TEXT = {
     featDescPhotos: "Guarda fotos de progreso locales por fecha, peso y nota para comparación visual.",
     featDescMetrics: "Desglosa la carga semanal completa: ejercicios, series, sesiones, cardio, completados y progreso de series.",
     featDescWeek: "Muestra la división completa de siete días y da acceso rápido a cada día de entrenamiento programado.",
+    featDescNutrition: "Registra comidas, calorías y macros contra una meta diaria calculada con tus datos y tu objetivo.",
+    featDescCardio: "Registra sesiones de cardio con distancia, ritmo y calorías estimadas quemadas.",
+    featDescChallenges: "Retos personales calculados localmente desde tu entrenamiento, hidratación y cardio.",
+    unitSystem: "Unidades",
+    metric: "Métrico (kg, cm)",
+    imperial: "Imperial (lb, in)",
+    unitSystemSub: "Cambia cómo se muestran peso, altura y distancia. Los datos guardados no cambian.",
+    nutrition: "Nutrición",
+    nutritionToday: "Nutrición Hoy",
+    calories: "Calorías",
+    caloriesLabel: "CALORÍAS",
+    protein: "Proteína",
+    carbs: "Carbohidratos",
+    fat: "Grasa",
+    breakfast: "Desayuno",
+    lunch: "Almuerzo",
+    dinner: "Cena",
+    snack: "Snack",
+    addFood: "Agregar Alimento",
+    customFood: "Alimento Personalizado",
+    recentFoods: "Recientes",
+    calorieTarget: "Meta de Calorías",
+    dailyTarget: "Meta Diaria",
+    serving: "Porción",
+    quantity: "Cant.",
+    bmrLabel: "TMB",
+    tdeeLabel: "GET",
+    macroSplit: "Metas de Macros",
+    caloriesLeft: "restantes",
+    caloriesOver: "de más",
+    searchFood: "Buscar alimentos",
+    activityLevel: "Nivel de Actividad",
+    activitySedentary: "Sedentario",
+    activityLight: "Poco activo",
+    activityModerate: "Moderadamente activo",
+    activityActive: "Muy activo",
+    activityAthlete: "Atleta",
+    noFoodToday: "No has registrado comida hoy.",
+    foodName: "Nombre del alimento",
+    saveFood: "Guardar Alimento",
+    nutritionHistory: "Días Recientes",
+    cardio: "Cardio",
+    cardioType: "Actividad",
+    duration: "Duración",
+    distance: "Distancia",
+    pace: "Ritmo",
+    caloriesBurned: "Quemadas",
+    addCardioSession: "Registrar Cardio",
+    weeklyCardio: "Esta Semana",
+    cardioSessions: "Sesiones",
+    noCardioYet: "Aún no hay cardio registrado.",
+    minutesShort: "min",
+    cardioHistory: "Historial de Cardio",
+    measurements: "Medidas",
+    neck: "Cuello",
+    chest: "Pecho",
+    waist: "Cintura",
+    hips: "Cadera",
+    arms: "Brazos",
+    thighs: "Muslos",
+    calves: "Pantorrillas",
+    addMeasurement: "Registrar Medidas",
+    navyBodyFat: "Grasa Corporal (Navy)",
+    measurementHistory: "Historial de Medidas",
+    noMeasurements: "Aún no hay medidas registradas.",
+    latestMeasure: "Última",
+    estimatedOneRM: "1RM Est.",
+    newPR: "NUEVO RÉCORD PERSONAL",
+    volumeTrends: "Tendencia de Volumen",
+    muscleBalance: "Balance por Grupo Muscular",
+    formCues: "Indicaciones de Técnica",
+    personalBest: "Mejor",
+    totalVolume: "Volumen Semanal",
+    viewCues: "Técnica",
+    share: "Compartir",
+    shareProgress: "Compartir Progreso",
+    shareCard: "Compartir Imagen",
+    shareCopied: "Resumen copiado al portapapeles.",
+    challenges: "Retos",
+    newChallenge: "Nuevo Reto",
+    challengeTarget: "Meta",
+    challengeMetric: "Medir",
+    challengeWorkouts: "Días de entreno",
+    challengeWater: "Días de meta de agua",
+    challengeCardio: "Sesiones de cardio",
+    createChallenge: "Crear Reto",
+    activeChallenges: "Retos Activos",
+    noChallenges: "Aún no hay retos. Crea uno para mantener el compromiso.",
+    challengeDays: "Días",
+    challengeDone: "¡Reto completado!",
+    challengeTitle: "Nombre del reto",
   },
 };
 
@@ -1280,8 +1491,23 @@ export default function AtlasLuthor() {
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
   const [clockNow, setClockNow] = useState(() => new Date());
   const [waterLog, setWaterLog] = useState({});
+  const [foodLog, setFoodLog] = useState({});
+  const [customFoods, setCustomFoods] = useState([]);
+  const [recentFoods, setRecentFoods] = useState([]);
+  const [cardioLog, setCardioLog] = useState({});
+  const [measurementLog, setMeasurementLog] = useState({});
+  const [exercisePerformance, setExercisePerformance] = useState({});
+  const [challenges, setChallenges] = useState([]);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
   const [exerciseFilterMuscle, setExerciseFilterMuscle] = useState("All");
+  const [addFoodTarget, setAddFoodTarget] = useState(null);
+  const [foodSearch, setFoodSearch] = useState("");
+  const [customFoodDraft, setCustomFoodDraft] = useState({ name: "", kcal: "", protein: "", carbs: "", fat: "" });
+  const [cardioDraft, setCardioDraft] = useState({ type: "run", durationMin: "", distance: "", note: "" });
+  const [editingMeasurements, setEditingMeasurements] = useState(null);
+  const [challengeDraft, setChallengeDraft] = useState({ title: "", metric: "workouts", target: "12", days: "30" });
+  const [prToast, setPrToast] = useState("");
+  const [cuesExerciseIndex, setCuesExerciseIndex] = useState(null);
   const notifiedTimersRef = useRef(new Set());
   const loadedUserRef = useRef("");
   const tapFeedbackRef = useRef(true);
@@ -1350,6 +1576,13 @@ export default function AtlasLuthor() {
       setProgress,
       appSettings,
       waterLog,
+      foodLog,
+      customFoods,
+      recentFoods,
+      cardioLog,
+      measurementLog,
+      exercisePerformance,
+      challenges,
     });
 
     setStorageFull(!saved);
@@ -1371,6 +1604,13 @@ export default function AtlasLuthor() {
     setProgress,
     appSettings,
     waterLog,
+    foodLog,
+    customFoods,
+    recentFoods,
+    cardioLog,
+    measurementLog,
+    exercisePerformance,
+    challenges,
   ]);
 
   useEffect(() => {
@@ -1786,6 +2026,13 @@ export default function AtlasLuthor() {
       : base;
   };
   const theme = themeFor(day.type);
+  const unitSystem = appSettings.unitSystem === "metric" ? "metric" : "imperial";
+  const fmtW = lb => formatWeight(lb, unitSystem);
+  const fmtWDelta = lb => formatWeightDelta(lb, unitSystem);
+  const fmtH = h => formatHeight(h, unitSystem);
+  const fmtExW = w => formatExerciseWeight(w, unitSystem);
+  const fmtDist = mi => formatDistance(mi, unitSystem);
+  const fmtMeasure = inches => formatMeasure(inches, unitSystem);
   const greeting = text[getGreetingKey(clockNow.getHours())];
   const userName = appSettings.firstName?.trim() || appSettings.name?.trim().split(" ")[0] || "Atlas";
   const fullName = `${appSettings.firstName || ""} ${appSettings.lastName || ""}`.trim() || appSettings.name?.trim() || "Atlas";
@@ -1950,6 +2197,13 @@ export default function AtlasLuthor() {
     setSetProgress(data?.setProgress || {});
     setAppSettings(nextAppSettings);
     setWaterLog(data?.waterLog || {});
+    setFoodLog(data?.foodLog || {});
+    setCustomFoods(Array.isArray(data?.customFoods) ? data.customFoods : []);
+    setRecentFoods(Array.isArray(data?.recentFoods) ? data.recentFoods : []);
+    setCardioLog(data?.cardioLog || {});
+    setMeasurementLog(data?.measurementLog || {});
+    setExercisePerformance(data?.exercisePerformance || {});
+    setChallenges(Array.isArray(data?.challenges) ? data.challenges : []);
     setActiveDay(getTodayDayName());
     setActiveSession(0);
     setActiveFeaturePage("today");
@@ -1998,6 +2252,13 @@ export default function AtlasLuthor() {
       setProgress: {},
       appSettings: nextAppSettings,
       waterLog: {},
+      foodLog: {},
+      customFoods: [],
+      recentFoods: [],
+      cardioLog: {},
+      measurementLog: {},
+      exercisePerformance: {},
+      challenges: [],
     };
   };
 
@@ -2271,6 +2532,14 @@ export default function AtlasLuthor() {
         notificationSettings,
         setProgress,
         lastProgressionReview,
+        waterLog,
+        foodLog,
+        customFoods,
+        recentFoods,
+        cardioLog,
+        measurementLog,
+        exercisePerformance,
+        challenges,
       },
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -2309,6 +2578,14 @@ export default function AtlasLuthor() {
         if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
         if (data.setProgress) setSetProgress(data.setProgress);
         if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
+        if (data.waterLog) setWaterLog(data.waterLog);
+        if (data.foodLog) setFoodLog(data.foodLog);
+        if (Array.isArray(data.customFoods)) setCustomFoods(data.customFoods);
+        if (Array.isArray(data.recentFoods)) setRecentFoods(data.recentFoods);
+        if (data.cardioLog) setCardioLog(data.cardioLog);
+        if (data.measurementLog) setMeasurementLog(data.measurementLog);
+        if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
+        if (Array.isArray(data.challenges)) setChallenges(data.challenges);
         setShowDataTools(false);
       } catch {
         window.alert("That backup file could not be imported.");
@@ -2343,6 +2620,14 @@ export default function AtlasLuthor() {
         notificationSettings,
         setProgress,
         lastProgressionReview,
+        waterLog,
+        foodLog,
+        customFoods,
+        recentFoods,
+        cardioLog,
+        measurementLog,
+        exercisePerformance,
+        challenges,
       },
     };
 
@@ -2392,6 +2677,14 @@ export default function AtlasLuthor() {
       if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
       if (data.setProgress) setSetProgress(data.setProgress);
       if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
+      if (data.waterLog) setWaterLog(data.waterLog);
+      if (data.foodLog) setFoodLog(data.foodLog);
+      if (Array.isArray(data.customFoods)) setCustomFoods(data.customFoods);
+      if (Array.isArray(data.recentFoods)) setRecentFoods(data.recentFoods);
+      if (data.cardioLog) setCardioLog(data.cardioLog);
+      if (data.measurementLog) setMeasurementLog(data.measurementLog);
+      if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
+      if (Array.isArray(data.challenges)) setChallenges(data.challenges);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
     } catch {
       setCloudSettings(prev => ({ ...prev, status: "Download failed" }));
@@ -3414,7 +3707,7 @@ export default function AtlasLuthor() {
                     {text.bodyStatus.toUpperCase()}
                   </p>
                   <p style={{ fontSize: 28, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
-                    {profile.currentWeight} LB
+                    {fmtW(profile.currentWeight)}
                   </p>
                 </div>
 
@@ -3425,10 +3718,10 @@ export default function AtlasLuthor() {
 
               <div className="metric-grid">
                 {[
-                  { label: text.start, val: `${profile.startWeight} LB` },
-                  { label: text.target, val: `${profile.targetWeight} LB` },
-                  { label: text.change, val: `${signedNumber(weightChange)} LB` },
-                  { label: text.toGoal, val: `${signedNumber(weightToGoal)} LB` },
+                  { label: text.start, val: fmtW(profile.startWeight) },
+                  { label: text.target, val: fmtW(profile.targetWeight) },
+                  { label: text.change, val: fmtWDelta(weightChange) },
+                  { label: text.toGoal, val: fmtWDelta(weightToGoal) },
                 ].map(metric => (
                   <div key={metric.label} className="stat-box">
                     <p style={{ fontSize: 17, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
@@ -3505,7 +3798,7 @@ export default function AtlasLuthor() {
                 {(prEntries.length ? prEntries.slice(0, 5) : [{ key: "empty", exerciseName: text.noPrsYet, sessionName: text.markPrHint, weight: "", date: "" }]).map(entry => (
                   <div key={entry.key} style={{ display: "flex", justifyContent: "space-between", gap: 10, background: "#101015", border: "1px solid #24242E", borderRadius: 10, padding: 10, fontFamily: "'DM Sans', sans-serif" }}>
                     <span style={{ color: "#FFFFFF", fontSize: 13, fontWeight: 800 }}>{entry.exerciseName}</span>
-                    <span style={{ color: isLightMode ? "#7A8090" : "#888", fontSize: 12, fontWeight: 700 }}>{entry.weight} {entry.date}</span>
+                    <span style={{ color: isLightMode ? "#7A8090" : "#888", fontSize: 12, fontWeight: 700 }}>{fmtExW(entry.weight)} {entry.date}</span>
                   </div>
                 ))}
               </div>
@@ -3565,7 +3858,7 @@ export default function AtlasLuthor() {
                   </p>
                   <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
                     {latestProgress
-                      ? `${text.lastSaved} ${latestProgress.date}: ${latestProgress.weight} LB, ${latestProgress.weeklyProgress}%`
+                      ? `${text.lastSaved} ${latestProgress.date}: ${fmtW(latestProgress.weight)}, ${latestProgress.weeklyProgress}%`
                       : text.noProgressSaved}
                   </p>
                 </div>
@@ -3588,7 +3881,7 @@ export default function AtlasLuthor() {
                       {entry.date} {entry.type === "manual" ? text.savedTag : text.autoTag}
                     </span>
                     <span style={{ color: "#FFFFFF", fontSize: 12, fontWeight: 800 }}>
-                      {entry.weight} LB · {entry.completedExercises} {text.exercisesWord}
+                      {fmtW(entry.weight)} · {entry.completedExercises} {text.exercisesWord}
                     </span>
                   </div>
                 ))}
@@ -3602,9 +3895,9 @@ export default function AtlasLuthor() {
 
                     return (
                       <div key={`${entry.id}-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-                        <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)", boxShadow: isLightMode ? "none" : "0 0 22px rgba(255,255,255,0.14)" }} />
+                        <div title={fmtW(entry.weight)} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)", boxShadow: isLightMode ? "none" : "0 0 22px rgba(255,255,255,0.14)" }} />
                         <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {entry.weight}
+                          {fmtW(entry.weight)}
                         </p>
                       </div>
                     );
@@ -3730,7 +4023,7 @@ export default function AtlasLuthor() {
                       <img src={photo.dataUrl} alt={photo.note || "Progress"} />
                       <div className="photo-body">
                         <p className="photo-note">{photo.note || text.noNote}</p>
-                        <p className="photo-sub">{photo.date} · {photo.weight} LB{photo.album ? ` · ${photo.album}` : ""}</p>
+                        <p className="photo-sub">{photo.date} · {fmtW(photo.weight)}{photo.album ? ` · ${photo.album}` : ""}</p>
                       </div>
                     </div>
                   ))}
@@ -3882,7 +4175,7 @@ export default function AtlasLuthor() {
                           <p className="detail-row-main">{row.exercise.name}</p>
                           <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {row.setsDone}/{row.setsTotal} {text.setsWord}</p>
                         </div>
-                        <span style={{ color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
+                        <span style={{ color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtExW(row.exercise.weight)}</span>
                       </div>
                     ))}
                   </div>
@@ -3894,12 +4187,12 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-grid">
                   {[
-                    { label: text.currentLabel, val: `${profile.currentWeight} LB` },
-                    { label: text.start, val: `${profile.startWeight} LB` },
-                    { label: text.target, val: `${profile.targetWeight} LB` },
-                    { label: text.change, val: `${signedNumber(weightChange)} LB` },
-                    { label: text.toGoal, val: `${signedNumber(weightToGoal)} LB` },
-                    { label: text.heightLabel, val: profile.height },
+                    { label: text.currentLabel, val: fmtW(profile.currentWeight) },
+                    { label: text.start, val: fmtW(profile.startWeight) },
+                    { label: text.target, val: fmtW(profile.targetWeight) },
+                    { label: text.change, val: fmtWDelta(weightChange) },
+                    { label: text.toGoal, val: fmtWDelta(weightToGoal) },
+                    { label: text.heightLabel, val: fmtH(profile.height) },
                     { label: text.sexLabel.toUpperCase(), val: profileSex === "male" ? text.maleLabel : text.femaleLabel },
                     { label: text.ageLabel.toUpperCase(), val: `${profile.age || "--"} ${language === "es" ? "años" : "yrs"}` },
                   ].map(metric => (
@@ -3916,8 +4209,8 @@ export default function AtlasLuthor() {
                       {[
                         { label: text.bmiLabel, val: String(bmi) },
                         { label: text.bodyFatLabel, val: `${bodyFatPct}%` },
-                        { label: text.leanMassLabel, val: `${leanMassLb} LB` },
-                        { label: text.ibwLabel, val: `${ibwLb} LB` },
+                        { label: text.leanMassLabel, val: fmtW(leanMassLb) },
+                        { label: text.ibwLabel, val: fmtW(ibwLb) },
                       ].map(item => (
                         <div key={item.label} className="detail-card">
                           <p className="detail-label">{item.label}</p>
@@ -3937,8 +4230,8 @@ export default function AtlasLuthor() {
                   </p>
                   <p className="detail-row-sub">
                     {language === "es"
-                      ? `Fecha inicio ${profile.startDate}. Fecha meta ${goals.targetDate}. Diferencia actual a la meta: ${signedNumber(weightToGoal)} LB.`
-                      : `Start date ${profile.startDate}. Target date ${goals.targetDate}. Current gap to target is ${signedNumber(weightToGoal)} LB.`}
+                      ? `Fecha inicio ${profile.startDate}. Fecha meta ${goals.targetDate}. Diferencia actual a la meta: ${fmtWDelta(weightToGoal)}.`
+                      : `Start date ${profile.startDate}. Target date ${goals.targetDate}. Current gap to target is ${fmtWDelta(weightToGoal)}.`}
                   </p>
                 </div>
                 <div className="detail-list">
@@ -3948,7 +4241,7 @@ export default function AtlasLuthor() {
                         <p className="detail-row-main">{entry.date}</p>
                         <p className="detail-row-sub">{entry.type === "manual" ? text.manualBodyCheck : text.autoProgressCapture}</p>
                       </div>
-                      <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} LB</span>
+                      <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtW(entry.weight)}</span>
                     </div>
                   ))}
                 </div>
@@ -4054,7 +4347,7 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-grid">
                   <div className="detail-card"><p className="detail-label">{text.totalPrs}</p><p className="detail-value">{prEntries.length}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.heaviestLabel}</p><p className="detail-value">{heaviestExerciseRows[0]?.exercise.weight || "--"}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.heaviestLabel}</p><p className="detail-value">{heaviestExerciseRows[0] ? fmtExW(heaviestExerciseRows[0].exercise.weight) : "--"}</p></div>
                 </div>
                 {(prEntries.length ? prEntries : [{ key: "empty-pr", exerciseName: text.noPrsYet, sessionName: text.markPrHint, weight: "", date: "" }]).map(entry => (
                   <div key={entry.key} className="detail-row">
@@ -4062,7 +4355,7 @@ export default function AtlasLuthor() {
                       <p className="detail-row-main">{entry.exerciseName}</p>
                       <p className="detail-row-sub">{entry.dayName ? displayDay(entry.dayName) : "PR"} — {entry.sessionName}</p>
                     </div>
-                    <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} {entry.date}</span>
+                    <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtExW(entry.weight)} {entry.date}</span>
                   </div>
                 ))}
                 <div className="home-card">
@@ -4074,7 +4367,7 @@ export default function AtlasLuthor() {
                           <p className="detail-row-main">{row.exercise.name}</p>
                           <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName}</p>
                         </div>
-                        <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
+                        <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtExW(row.exercise.weight)}</span>
                       </div>
                     ))}
                   </div>
@@ -4149,8 +4442,8 @@ export default function AtlasLuthor() {
                       const height = 34 + ((entry.weightNumber - minChartWeight) / range) * 66;
                       return (
                         <div key={`${entry.id}-feature-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-                          <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)" }} />
-                          <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{entry.weight}</p>
+                          <div title={fmtW(entry.weight)} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)" }} />
+                          <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{fmtW(entry.weight)}</p>
                         </div>
                       );
                     })}
@@ -4270,7 +4563,7 @@ export default function AtlasLuthor() {
                           <img src={photo.dataUrl} alt={photo.note || "Progress"} />
                           <div className="photo-body">
                             <p className="photo-note">{photo.note || text.noNote}</p>
-                            <p className="photo-sub">{photo.date} · {photo.weight} LB{photo.album ? ` · ${photo.album}` : ""}</p>
+                            <p className="photo-sub">{photo.date} · {fmtW(photo.weight)}{photo.album ? ` · ${photo.album}` : ""}</p>
                           </div>
                         </div>
                       ))}
@@ -4489,8 +4782,8 @@ export default function AtlasLuthor() {
                     {[
                       { label: text.bmiLabel, val: bmi > 0 ? String(bmi) : "—", sub: bmiCategory?.label || "", color: bmiCategory?.color || "#8A8F99" },
                       { label: text.bodyFatLabel, val: bmi > 0 ? `${bodyFatPct}%` : "—", sub: bfCategory?.label || "", color: bfCategory?.color || "#8A8F99" },
-                      { label: text.leanMassLabel, val: bmi > 0 ? `${leanMassLb} lb` : "—", sub: language === "es" ? "MASA ACTIVA" : "ACTIVE MASS", color: "#90C8FF" },
-                      { label: text.ibwLabel, val: ibwLb > 0 ? `${ibwLb} lb` : "—", sub: language === "es" ? "FÓRMULA DEVINE" : "DEVINE FORMULA", color: "#B8A0FF" },
+                      { label: text.leanMassLabel, val: bmi > 0 ? fmtW(leanMassLb) : "—", sub: language === "es" ? "MASA ACTIVA" : "ACTIVE MASS", color: "#90C8FF" },
+                      { label: text.ibwLabel, val: ibwLb > 0 ? fmtW(ibwLb) : "—", sub: language === "es" ? "FÓRMULA DEVINE" : "DEVINE FORMULA", color: "#B8A0FF" },
                     ].map(item => (
                       <div key={item.label} className="detail-card">
                         <p className="detail-label">{item.label}</p>
@@ -4503,7 +4796,7 @@ export default function AtlasLuthor() {
                   <div className="detail-row">
                     <div>
                       <p className="detail-row-main">{profileSex === "male" ? text.maleLabel : text.femaleLabel} · {profile.age || "--"} {language === "es" ? "años" : "yrs"}</p>
-                      <p className="detail-row-sub">{profile.height} · {profile.currentWeight} lb</p>
+                      <p className="detail-row-sub">{fmtH(profile.height)} · {fmtW(profile.currentWeight)}</p>
                     </div>
                     <button className="edit-btn" onClick={() => setEditingProfile({ ...profile })}>{text.edit}</button>
                   </div>
@@ -4739,7 +5032,7 @@ export default function AtlasLuthor() {
                   </h2>
                   <div className="metric-grid">
                     <div className="stat-box">
-                      <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.weight}</p>
+                      <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{fmtExW(quickExercise.weight)}</p>
                       <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
                     </div>
                     <div className="stat-box">
@@ -4887,7 +5180,7 @@ export default function AtlasLuthor() {
 
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
                         <div style={{ padding: "12px 8px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.04)" : `${theme.accent}10`, border: `1px solid ${theme.accent}33`, textAlign: "center" }}>
-                          <p style={{ fontSize: 22, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.weight}</p>
+                          <p style={{ fontSize: 22, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{fmtExW(ex.weight)}</p>
                           <p style={{ fontSize: 8, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
                         </div>
                         <div style={{ padding: "12px 8px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.04)" : `${theme.accent}10`, border: `1px solid ${theme.accent}33`, textAlign: "center" }}>
@@ -5066,7 +5359,7 @@ export default function AtlasLuthor() {
                       style={{ padding: "6px 12px", borderRadius: 8, background: isDone ? (isLightMode ? "#E2E4E9" : "#111") : theme.badge, border: `1px solid ${isDone ? (isLightMode ? "#D5D7DD" : "#222") : theme.accent + "40"}`, cursor: "pointer" }}
                     >
                       <span style={{ fontSize: 13, fontWeight: 700, color: isDone ? "#444" : theme.accent, fontFamily: "'DM Sans', sans-serif" }}>
-                        {ex.weight}
+                        {fmtExW(ex.weight)}
                       </span>
                     </button>
                   </div>
@@ -5262,6 +5555,19 @@ export default function AtlasLuthor() {
               </select>
               <p className="setting-sub">{text.lightStarts}</p>
 
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.unitSystem.toUpperCase()}</span>
+                <select
+                  className="input"
+                  value={appSettings.unitSystem || "imperial"}
+                  onChange={event => setAppSettings(prev => ({ ...prev, unitSystem: event.target.value }))}
+                >
+                  <option value="imperial">{text.imperial}</option>
+                  <option value="metric">{text.metric}</option>
+                </select>
+              </label>
+              <p className="setting-sub">{text.unitSystemSub}</p>
+
               <div className="setting-row">
                 <div>
                   <p className="setting-title">{language === "es" ? "Notificaciones" : "Notifications"}</p>
@@ -5439,7 +5745,7 @@ export default function AtlasLuthor() {
               onChange={event => setEditingExercise(prev => ({ ...prev, weight: event.target.value }))}
             >
               {Array.from(new Set([editingExercise.weight, ...WEIGHT_OPTIONS])).map(weight => (
-                <option key={weight} value={weight}>{weight}</option>
+                <option key={weight} value={weight}>{fmtExW(weight)}</option>
               ))}
             </select>
 
@@ -5763,7 +6069,7 @@ export default function AtlasLuthor() {
                       <div>
                         <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.weightWord}</p>
                         <select className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })}>
-                          {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
+                          {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{fmtExW(option)}</option>)}
                         </select>
                       </div>
                     </div>
@@ -5812,7 +6118,7 @@ export default function AtlasLuthor() {
                   {REP_OPTIONS.map(option => <option key={option} value={option}>{option} {text.repsWord}</option>)}
                 </select>
                 <select className="input" value={editingRoutine.draft.weight} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, weight: event.target.value } }))}>
-                  {WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                  {WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{fmtExW(option)}</option>)}
                 </select>
               </div>
               <button className="primary-btn" onClick={addRoutineExercise}>
@@ -5873,7 +6179,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingProfile(prev => ({ ...prev, currentWeight: event.target.value }))}
               >
                 {Array.from(new Set([editingProfile.currentWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} LB {language === "es" ? "actual" : "current"}</option>
+                  <option key={option} value={option}>{fmtW(option)} {language === "es" ? "actual" : "current"}</option>
                 ))}
               </select>
 
@@ -5883,7 +6189,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingProfile(prev => ({ ...prev, startWeight: event.target.value }))}
               >
                 {Array.from(new Set([editingProfile.startWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} LB {language === "es" ? "inicio" : "start"}</option>
+                  <option key={option} value={option}>{fmtW(option)} {language === "es" ? "inicio" : "start"}</option>
                 ))}
               </select>
 
@@ -5893,7 +6199,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingProfile(prev => ({ ...prev, targetWeight: event.target.value }))}
               >
                 {Array.from(new Set([editingProfile.targetWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} LB {language === "es" ? "meta" : "target"}</option>
+                  <option key={option} value={option}>{fmtW(option)} {language === "es" ? "meta" : "target"}</option>
                 ))}
               </select>
 
@@ -5903,7 +6209,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingProfile(prev => ({ ...prev, height: event.target.value }))}
               >
                 {Array.from(new Set([editingProfile.height, ...HEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option}</option>
+                  <option key={option} value={option}>{fmtH(option)}</option>
                 ))}
               </select>
 
@@ -5924,8 +6230,8 @@ export default function AtlasLuthor() {
                     {[
                       { label: text.bmiLabel, val: String(editBmi) },
                       { label: text.bodyFatLabel, val: `${editBf}%` },
-                      { label: text.leanMassLabel, val: `${editLean} LB` },
-                      { label: text.ibwLabel, val: `${editIbw} LB` },
+                      { label: text.leanMassLabel, val: fmtW(editLean) },
+                      { label: text.ibwLabel, val: fmtW(editIbw) },
                     ].map(item => (
                       <div key={item.label} style={{ textAlign: "center" }}>
                         <p style={{ fontSize: 16, fontWeight: 900, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>{item.val}</p>
@@ -6057,7 +6363,7 @@ export default function AtlasLuthor() {
 
             <div className="detail-grid" style={{ marginTop: 12 }}>
               <div className="detail-card"><p className="detail-label">{text.dateField}</p><p className="detail-value">{viewingPhoto.date}</p></div>
-              <div className="detail-card"><p className="detail-label">{text.weightWord}</p><p className="detail-value">{viewingPhoto.weight} LB</p></div>
+              <div className="detail-card"><p className="detail-label">{text.weightWord}</p><p className="detail-value">{fmtW(viewingPhoto.weight)}</p></div>
             </div>
 
             <div className="detail-card" style={{ marginTop: 10 }}>
