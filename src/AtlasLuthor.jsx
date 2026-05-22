@@ -1690,10 +1690,10 @@ export default function AtlasLuthor() {
   );
   const weeklyStreak = completedWeekKeys.length;
   const earnedBadges = [
-    weeklyMetrics.weeklyProgress >= 100 ? (language === "es" ? "Protocolo Completo" : "Protocol Clear") : null,
-    weeklyMetrics.completedSessions >= weeklySessionsGoal ? (language === "es" ? "Cazador de Sesiones" : "Session Hunter") : null,
-    weeklyStreak >= 2 ? (language === "es" ? `Racha de ${weeklyStreak} Semanas` : `${weeklyStreak} Week Streak`) : null,
-    progressEntries.some(entry => entry.type === "manual") ? (language === "es" ? "Progreso Registrado" : "Progress Logged") : null,
+    weeklyMetrics.weeklyProgress >= 100 ? (appSettings.language === "es" ? "Protocolo Completo" : "Protocol Clear") : null,
+    weeklyMetrics.completedSessions >= weeklySessionsGoal ? (appSettings.language === "es" ? "Cazador de Sesiones" : "Session Hunter") : null,
+    weeklyStreak >= 2 ? (appSettings.language === "es" ? `Racha de ${weeklyStreak} Semanas` : `${weeklyStreak} Week Streak`) : null,
+    progressEntries.some(entry => entry.type === "manual") ? (appSettings.language === "es" ? "Progreso Registrado" : "Progress Logged") : null,
   ].filter(Boolean);
   const restTimerRadius = 44;
   const restTimerCircumference = 2 * Math.PI * restTimerRadius;
