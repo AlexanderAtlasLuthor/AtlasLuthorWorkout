@@ -20,6 +20,7 @@ import {
 } from "./lib/strength.js";
 import { getExerciseCues } from "./lib/exerciseInfo.js";
 import { renderShareCard } from "./lib/shareCard.js";
+import TrendChart from "./components/TrendChart.jsx";
 
 const pushSessions = [
   {
@@ -4810,6 +4811,18 @@ export default function AtlasLuthor() {
                           ))}
                         </div>
                       )}
+                      {measurementEntries.filter(entry => Number(entry.waist) > 0).length >= 2 && (
+                        <div style={{ marginTop: 12 }}>
+                          <p className="detail-label">{text.waist.toUpperCase()}</p>
+                          <div style={{ marginTop: 8 }}>
+                            <TrendChart
+                              points={[...measurementEntries].reverse().filter(entry => Number(entry.waist) > 0).slice(-24).map(entry => ({ value: Number(entry.waist) }))}
+                              color="#B8A0FF"
+                              formatValue={value => fmtMeasure(value)}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>{text.noMeasurements}</p>
@@ -4828,6 +4841,14 @@ export default function AtlasLuthor() {
                       ? `Fecha inicio ${profile.startDate}. Fecha meta ${goals.targetDate}. Diferencia actual a la meta: ${fmtWDelta(weightToGoal)}.`
                       : `Start date ${profile.startDate}. Target date ${goals.targetDate}. Current gap to target is ${fmtWDelta(weightToGoal)}.`}
                   </p>
+                  <div style={{ marginTop: 12 }}>
+                    <TrendChart
+                      points={[...progressEntries].reverse().filter(entry => Number(entry.weight) > 0).slice(-24).map(entry => ({ value: Number(entry.weight) }))}
+                      color="#90C8FF"
+                      formatValue={value => fmtW(value)}
+                      emptyLabel={language === "es" ? "Registra tu peso para ver la tendencia." : "Log your weight to see the trend."}
+                    />
+                  </div>
                 </div>
                 <div className="detail-list">
                   {progressEntries.slice(0, 5).map(entry => (
@@ -5325,6 +5346,14 @@ export default function AtlasLuthor() {
                 { key: "fat", label: text.fat, val: todayMacros.fat, target: macroTargets.fat, color: "#FF9860" },
               ];
               const foodDays = Object.entries(foodLog).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 7);
+              const calorieSeries = [];
+              for (let dayOffset = 13; dayOffset >= 0; dayOffset -= 1) {
+                const day = new Date();
+                day.setDate(day.getDate() - dayOffset);
+                const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+                calorieSeries.push({ value: sumDayMacros(foodLog[key]).kcal });
+              }
+              const hasCalorieData = calorieSeries.some(point => point.value > 0);
               return (
                 <div className="detail-list">
                   <div className="home-card" style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -5400,6 +5429,28 @@ export default function AtlasLuthor() {
                     })}
                   </div>
 
+                  <div className="home-card">
+                    <p className="detail-label">
+                      {language === "es" ? "CALORÍAS · ÚLTIMOS 14 DÍAS" : "CALORIES · LAST 14 DAYS"}
+                    </p>
+                    <div style={{ marginTop: 10 }}>
+                      {hasCalorieData ? (
+                        <TrendChart
+                          points={calorieSeries}
+                          color="#3FB98A"
+                          formatValue={value => `${Math.round(value)}`}
+                          emptyLabel=""
+                        />
+                      ) : (
+                        <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center", padding: "10px 8px" }}>
+                          {language === "es"
+                            ? "Registra comidas para ver tu tendencia de calorías."
+                            : "Log meals to see your calorie trend."}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
                   {MEALS.map(meal => {
                     const entries = todayFood[meal] || [];
                     const mealKcal = entries.reduce((sum, item) => sum + (Number(item.kcal) || 0) * (Number(item.qty) || 1), 0);
@@ -5463,6 +5514,15 @@ export default function AtlasLuthor() {
 
             {activeFeaturePage === "cardio" && (() => {
               const cardioDays = Object.entries(cardioLog).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+              const cardioMinutesSeries = [];
+              for (let dayOffset = 13; dayOffset >= 0; dayOffset -= 1) {
+                const day = new Date();
+                day.setDate(day.getDate() - dayOffset);
+                const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+                const minutes = (cardioLog[key] || []).reduce((sum, item) => sum + (Number(item.durationMin) || 0), 0);
+                cardioMinutesSeries.push({ value: minutes });
+              }
+              const hasCardioTrend = cardioMinutesSeries.some(point => point.value > 0);
               const typeInfo = cardioTypeInfo(cardioDraft.type);
               const draftDistance = distanceInputToMiles(cardioDraft.distance, unitSystem);
               const draftDuration = Number(cardioDraft.durationMin) || 0;
@@ -5503,6 +5563,21 @@ export default function AtlasLuthor() {
                       <button className="primary-btn" onClick={addCardioSession}>{text.addCardioSession}</button>
                     </div>
                   </div>
+
+                  {hasCardioTrend && (
+                    <div className="home-card">
+                      <p className="detail-label">
+                        {language === "es" ? "MINUTOS · ÚLTIMOS 14 DÍAS" : "MINUTES · LAST 14 DAYS"}
+                      </p>
+                      <div style={{ marginTop: 10 }}>
+                        <TrendChart
+                          points={cardioMinutesSeries}
+                          color="#FF9860"
+                          formatValue={value => `${Math.round(value)} ${text.minutesShort}`}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {cardioDays.length === 0 && (
                     <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>{text.noCardioYet}</p>
