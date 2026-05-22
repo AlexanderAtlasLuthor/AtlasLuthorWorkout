@@ -4,6 +4,7 @@ import {
   formatDistance, formatMeasure, parseHeightInches,
   getBodyWeightOptions, getHeightOptions, getExerciseWeightOptions,
   measureInputToInches, distanceInputToMiles, measureUnit, distanceUnit, inToCm,
+  weightUnit, kgToLb, lbToKg,
 } from "./lib/units.js";
 import {
   calcBMR, calcTDEE, goalCalorieTarget, macroSplit, sumDayMacros,
@@ -224,6 +225,7 @@ const DEFAULT_APP_SETTINGS = {
   themeMode: "auto",
   tapFeedback: true,
   unitSystem: "imperial",
+  restSeconds: 90,
 };
 
 function withNameParts(settings) {
@@ -556,6 +558,10 @@ const UI_TEXT = {
     albumField: "ALBUM",
     noAlbum: "No album",
     newAlbumPlaceholder: "New album name",
+    newAlbumBtn: "New Album",
+    newAlbumTitle: "New Album",
+    noAlbumsHint: "No albums yet. Create one to group your progress photos.",
+    restTimerSub: "Default rest started automatically after every set.",
     createBtn: "Create",
     deleteAlbumBtn: "Delete album",
     noPhotosInAlbum: "No photos in this album yet.",
@@ -892,6 +898,10 @@ const UI_TEXT = {
     albumField: "ÁLBUM",
     noAlbum: "Sin álbum",
     newAlbumPlaceholder: "Nombre del álbum",
+    newAlbumBtn: "Nuevo Álbum",
+    newAlbumTitle: "Nuevo Álbum",
+    noAlbumsHint: "Aún no tienes álbumes. Crea uno para agrupar tus fotos de progreso.",
+    restTimerSub: "Descanso por defecto que inicia automáticamente tras cada serie.",
     createBtn: "Crear",
     deleteAlbumBtn: "Eliminar álbum",
     noPhotosInAlbum: "Aún no hay fotos en este álbum.",
@@ -1128,42 +1138,107 @@ function getHomeMessage(weeklyProgress, calendarLog, daysToGoal, language, today
   return isEs ? `Es día de ${type}. Ejecuta el protocolo y sé mejor que ayer.` : `${day} is ${type} day. Execute the protocol and be better than yesterday.`;
 }
 
-function getCoachTips(sex, age, bmi, bodyFatPct, bodyTypeGoal, language) {
+// Builds the Coach recommendations as themed sections (nutrition, training,
+// cardio, recovery). Each tip uses the user's real numbers when available so
+// the advice is specific instead of generic.
+function getCoachTips({ sex, age, bmi, bodyFatPct, bodyTypeGoal, language, weightLb, tdee, calorieTarget, macros }) {
   const isEs = language === "es";
+  const t = (es, en) => (isEs ? es : en);
   const ageNum = Number(age) || 25;
-  const tips = [];
-  if (bodyTypeGoal === "lean") {
-    tips.push(isEs ? "Déficit calórico moderado de 300–500 kcal/día. Déficit mayor pierde músculo." : "Moderate caloric deficit of 300–500 kcal/day. Larger deficits burn muscle.");
-    tips.push(isEs ? "Come 0.8–1g de proteína por lb de peso corporal para proteger el músculo." : "Eat 0.8–1g of protein per lb of body weight to protect muscle mass.");
-    tips.push(isEs ? "Cardio HIIT 2–3 días/semana maximiza la quema de grasa preservando músculo." : "HIIT cardio 2–3 days/week maximizes fat loss while preserving muscle.");
-  } else if (bodyTypeGoal === "muscular") {
-    tips.push(isEs ? "Superávit calórico de 300–500 kcal/día para optimizar la ganancia de masa muscular." : "Caloric surplus of 300–500 kcal/day optimizes muscle gain without excess fat.");
-    tips.push(isEs ? "Prioriza ejercicios compuestos pesados: Squat, Bench Press, Deadlift, Row, Press." : "Prioritize heavy compound lifts: Squat, Bench Press, Deadlift, Row, Press.");
-    tips.push(isEs ? "Duerme 8 horas. El músculo se sintetiza principalmente durante el sueño." : "Sleep 8 hours. Most muscle synthesis happens during sleep.");
-  } else if (bodyTypeGoal === "athletic") {
-    tips.push(isEs ? "Recomposición: come en mantenimiento calórico con alta proteína." : "Recomposition: eat at maintenance calories with high protein intake.");
-    tips.push(isEs ? "Combina 4 días de fuerza con 2 de cardio para un físico atlético equilibrado." : "Combine 4 strength days with 2 cardio days for a balanced athletic physique.");
-    tips.push(isEs ? "La consistencia es más importante que la intensidad. El protocolo gana a largo plazo." : "Consistency beats intensity. The protocol wins long-term.");
+  const weight = Number(weightLb) || 0;
+  const goal = bodyTypeGoal || "athletic";
+  const hasNumbers = calorieTarget > 0 && macros && macros.protein > 0;
+  const sections = [];
+
+  const nutrition = [];
+  if (hasNumbers) {
+    const goalNote =
+      goal === "lean" ? t("un déficit de ~400 kcal para perder grasa sin sacrificar músculo", "a ~400 kcal deficit to lose fat without sacrificing muscle")
+      : goal === "muscular" ? t("un superávit de ~350 kcal para ganar músculo magro", "a ~350 kcal surplus to build lean muscle")
+      : goal === "athletic" ? t("un déficit ligero para recomposición corporal", "a slight deficit for body recomposition")
+      : t("calorías de mantenimiento", "maintenance calories");
+    nutrition.push(t(
+      `Tu objetivo es ~${calorieTarget.toLocaleString()} kcal/día (${goalNote}). Tu gasto diario estimado es ~${tdee.toLocaleString()} kcal.`,
+      `Your target is ~${calorieTarget.toLocaleString()} kcal/day (${goalNote}). Your estimated daily burn is ~${tdee.toLocaleString()} kcal.`
+    ));
+    nutrition.push(t(
+      `Proteína: ${macros.protein} g al día. Repártela en 4 comidas de ~${Math.round(macros.protein / 4)} g para maximizar la síntesis muscular.`,
+      `Protein: ${macros.protein} g per day. Split it across 4 meals of ~${Math.round(macros.protein / 4)} g to maximize muscle synthesis.`
+    ));
+    nutrition.push(t(
+      `Carbohidratos ${macros.carbs} g y grasas ${macros.fat} g. Concentra los carbohidratos antes y después de entrenar.`,
+      `Carbs ${macros.carbs} g and fats ${macros.fat} g. Concentrate carbs before and after training.`
+    ));
   } else {
-    tips.push(isEs ? "Mantenimiento: sé consistente con tu protocolo y mantén el balance calórico." : "Maintenance: stay consistent with your weekly protocol and caloric balance.");
-    tips.push(isEs ? "Varía la intensidad cada 4–6 semanas para evitar el estancamiento." : "Vary intensity every 4–6 weeks to prevent plateaus.");
+    nutrition.push(t(
+      "Completa peso, altura, edad y sexo en tu perfil para desbloquear tus calorías y macros exactos.",
+      "Fill in weight, height, age and sex in your profile to unlock your exact calories and macros."
+    ));
   }
+  if (weight > 0) {
+    const liters = Math.max(2, Math.round((weight * 0.5 / 33.814) * 10) / 10);
+    nutrition.push(t(
+      `Bebe ~${liters} L de agua al día. La deshidratación puede reducir tu fuerza hasta un 10%.`,
+      `Drink ~${liters} L of water a day. Dehydration can cut your strength by up to 10%.`
+    ));
+  }
+  sections.push({ title: t("NUTRICIÓN", "NUTRITION"), accent: "#3FB98A", tips: nutrition });
+
+  const training = [];
+  if (goal === "lean") {
+    training.push(t("Mantén las cargas pesadas (6–10 reps). Bajar el peso en déficit le dice al cuerpo que puede soltar músculo.", "Keep loads heavy (6–10 reps). Cutting weight in a deficit tells your body it can shed muscle."));
+    training.push(t("Descansa 60–90 s entre series para mantener alta la densidad e intensidad del entrenamiento.", "Rest 60–90 s between sets to keep training density and intensity high."));
+  } else if (goal === "muscular") {
+    training.push(t("Prioriza los compuestos pesados: Sentadilla, Press de Banca, Peso Muerto, Remo y Press Militar.", "Prioritize heavy compounds: Squat, Bench Press, Deadlift, Row and Overhead Press."));
+    training.push(t("Sobrecarga progresiva: sube peso o repeticiones cada 1–2 semanas. Sin progresión no hay crecimiento.", "Progressive overload: add weight or reps every 1–2 weeks. No progression, no growth."));
+    training.push(t("Descansa 2–3 min en los ejercicios pesados para mover la máxima carga posible.", "Rest 2–3 min on heavy lifts so you can move the most load possible."));
+  } else if (goal === "athletic") {
+    training.push(t("Combina 4 días de fuerza con 2 de cardio para un físico atlético y equilibrado.", "Combine 4 strength days with 2 cardio days for a balanced athletic build."));
+    training.push(t("Alterna semanas de fuerza (4–6 reps) e hipertrofia (8–12 reps) para ganar fuerza y tamaño.", "Alternate strength weeks (4–6 reps) and hypertrophy weeks (8–12 reps) to build both strength and size."));
+  } else {
+    training.push(t("Entrena cada grupo muscular 2 veces por semana para conservar fuerza y masa.", "Train each muscle group twice a week to preserve strength and mass."));
+    training.push(t("Varía la intensidad cada 4–6 semanas para evitar el estancamiento.", "Vary intensity every 4–6 weeks to prevent plateaus."));
+  }
+  training.push(t("Registra cada serie en la app: lo que se mide, mejora.", "Log every set in the app: what gets measured improves."));
+  sections.push({ title: t("ENTRENAMIENTO", "TRAINING"), accent: "#90C8FF", tips: training });
+
+  const cardio = [];
+  if (goal === "lean" || bmi > 27) {
+    cardio.push(t("HIIT 2–3 días/semana: quema grasa y protege el músculo mejor que el cardio largo y lento.", "HIIT 2–3 days/week: it burns fat and protects muscle better than long slow cardio."));
+    cardio.push(t("Apunta a 8–10k pasos diarios. El movimiento de baja intensidad acelera la pérdida de grasa sin afectar la recuperación.", "Aim for 8–10k daily steps. Low-intensity movement speeds fat loss without hurting recovery."));
+  } else if (goal === "muscular") {
+    cardio.push(t("Limita el cardio a 1–2 sesiones cortas/semana para no comprometer la ganancia muscular.", "Limit cardio to 1–2 short sessions/week so it doesn't compromise muscle gain."));
+    cardio.push(t("Usa cardio ligero en los días de descanso para mejorar la recuperación y la salud cardiovascular.", "Use light cardio on rest days to support recovery and heart health."));
+  } else {
+    cardio.push(t("2–3 sesiones de cardio/semana mantienen tu corazón fuerte y tu resistencia alta.", "2–3 cardio sessions/week keep your heart strong and your endurance high."));
+    cardio.push(t("Mezcla un día intenso (HIIT) y uno moderado (zona 2) para lo mejor de ambos mundos.", "Mix one intense day (HIIT) with one moderate day (zone 2) for the best of both."));
+  }
+  sections.push({ title: t("CARDIO", "CARDIO"), accent: "#FF9860", tips: cardio });
+
+  const recovery = [];
+  recovery.push(t("Duerme 7–9 h. La mayor parte de la síntesis muscular y la recuperación ocurren mientras duermes.", "Sleep 7–9 h. Most muscle synthesis and recovery happen while you sleep."));
   if (ageNum >= 40) {
-    tips.push(isEs ? "A los 40+: prioriza movilidad diaria y descanso. Las articulaciones importan tanto como el músculo." : "Age 40+: prioritize daily mobility and rest. Joints matter as much as muscle.");
-    tips.push(isEs ? "Deload cada 4–6 semanas es especialmente importante con la edad." : "Deloading every 4–6 weeks becomes increasingly important with age.");
+    recovery.push(t("A los 40+: dedica 10 min diarios a movilidad. Las articulaciones importan tanto como el músculo.", "Age 40+: spend 10 min a day on mobility. Joints matter as much as muscle."));
+    recovery.push(t("Programa una semana de descarga cada 4–5 semanas; la recuperación se hace más lenta con la edad.", "Schedule a deload week every 4–5 weeks; recovery slows down with age."));
   } else if (ageNum < 25) {
-    tips.push(isEs ? "A tu edad, la recuperación es rápida. Puedes entrenar con mayor intensidad y frecuencia." : "At your age, recovery is fast. You can train with higher intensity and frequency.");
+    recovery.push(t("Tu recuperación es rápida: puedes entrenar más seguido y fuerte, pero no descuides el sueño.", "Your recovery is fast: you can train more often and harder, but don't skip sleep."));
+    recovery.push(t("Haz una semana de descarga cada 6–8 semanas para consolidar tus ganancias.", "Take a deload week every 6–8 weeks to lock in your gains."));
+  } else {
+    recovery.push(t("Programa una semana de descarga cada 5–6 semanas para evitar el sobreentrenamiento.", "Schedule a deload week every 5–6 weeks to avoid overtraining."));
   }
   if (sex === "female") {
-    tips.push(isEs ? "El entrenamiento de fuerza es ideal: tonifica, no crea 'bulky', y quema más calorías que el cardio." : "Strength training is ideal: it tones, doesn't make you 'bulky', and burns more calories than cardio.");
+    recovery.push(t("El entrenamiento de fuerza tonifica y fortalece los huesos sin generar volumen excesivo.", "Strength training tones you and strengthens your bones without adding excess bulk."));
   }
-  if (bmi > 30) {
-    tips.push(isEs ? "Con BMI elevado, el entrenamiento de fuerza es más efectivo que solo el cardio para perder grasa." : "With elevated BMI, strength training is more effective than cardio alone for fat loss.");
+  if (bodyFatPct > 0) {
+    if ((sex === "male" && bodyFatPct >= 25) || (sex === "female" && bodyFatPct >= 32)) {
+      recovery.push(t("Tu grasa corporal está alta: prioriza el déficit calórico y la fuerza antes de buscar ganar músculo.", "Your body fat is high: prioritize a calorie deficit and strength work before chasing muscle gain."));
+    } else if ((sex === "male" && bodyFatPct < 14) || (sex === "female" && bodyFatPct < 21)) {
+      recovery.push(t("Estás muy definido: asegúrate de comer suficiente para sostener el rendimiento y las hormonas.", "You're very lean: make sure you eat enough to sustain performance and hormones."));
+    }
   }
-  if (bmi > 0 && bmi < 18.5) {
-    tips.push(isEs ? "Estás por debajo del peso ideal. Agrega 300–500 kcal extra de alimentos nutritivos diariamente." : "You're below ideal weight. Add 300–500 extra kcal from nutritious foods daily.");
-  }
-  return tips;
+  sections.push({ title: t("RECUPERACIÓN", "RECOVERY"), accent: "#B8A0FF", tips: recovery });
+
+  return sections;
 }
 
 function cloneData(value) {
@@ -1519,13 +1594,14 @@ export default function AtlasLuthor() {
   const [todayOnlyMode, setTodayOnlyMode] = useState(false);
   const [quickMode, setQuickMode] = useState(false);
   const [highlightedExerciseIndex, setHighlightedExerciseIndex] = useState(0);
-  const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "", album: "" });
+  const [photoDraft, setPhotoDraft] = useState({ date: getDateKey(), note: "", dataUrl: "", album: "", weight: "" });
   const [viewingPhoto, setViewingPhoto] = useState(null);
   const [comparePos, setComparePos] = useState(50);
   const [compareAId, setCompareAId] = useState("");
   const [compareBId, setCompareBId] = useState("");
   const [albumFilter, setAlbumFilter] = useState("");
   const [albumDraft, setAlbumDraft] = useState("");
+  const [showAlbumModal, setShowAlbumModal] = useState(false);
   const [reminderDraft, setReminderDraft] = useState({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
   const [clockNow, setClockNow] = useState(() => new Date());
@@ -1780,11 +1856,11 @@ export default function AtlasLuthor() {
       if (!wasChecked) recordExerciseCompletion(exercise, key);
       const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
       setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
-      startRestTimer(90);
+      startRestTimer(restSecondsSetting);
     } else {
       nextChecked[key] = false;
       setHighlightedExerciseIndex(exerciseIndex);
-      if (delta > 0) startRestTimer(90);
+      if (delta > 0) startRestTimer(restSecondsSetting);
     }
 
     setSetProgress(nextSetProgress);
@@ -1805,7 +1881,7 @@ export default function AtlasLuthor() {
       recordExerciseCompletion(session.exercises[exerciseIndex], key);
       const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
       setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
-      startRestTimer(90);
+      startRestTimer(restSecondsSetting);
     } else {
       setSetProgress(prev => ({ ...prev, [key]: 0 }));
       setHighlightedExerciseIndex(exerciseIndex);
@@ -2021,6 +2097,8 @@ export default function AtlasLuthor() {
   const restTimerCircumference = 2 * Math.PI * restTimerRadius;
   const restTimerProgress = restTimer.duration > 0 ? restTimer.secondsLeft / restTimer.duration : 0;
   const restTimerOffset = restTimerCircumference * (1 - restTimerProgress);
+  const restSecondsSetting = Number(appSettings.restSeconds) || 90;
+  const restPresets = [...new Set([60, 90, 120, restSecondsSetting])].sort((a, b) => a - b);
   const currentMonthKey = getMonthKey();
   const calendarCells = getMonthDays(currentMonthKey);
   // Resolves a calendar day's status. Unlogged past days are only "missed"
@@ -2233,7 +2311,18 @@ export default function AtlasLuthor() {
     return Math.min(100, Math.max(0, Math.round(((now - start) / total) * 100)));
   })();
   const homeMessage = getHomeMessage(weeklyMetrics.weeklyProgress, calendarLog, daysToGoal, language, todayDisplayName, weeklyMetrics.todayType);
-  const coachTips = getCoachTips(profileSex, profile.age, bmi, bodyFatPct, goals.bodyTypeGoal || "athletic", language);
+  const coachTips = getCoachTips({
+    sex: profileSex,
+    age: profile.age,
+    bmi,
+    bodyFatPct,
+    bodyTypeGoal: goals.bodyTypeGoal || "athletic",
+    language,
+    weightLb: profile.currentWeight,
+    tdee: nutritionTDEE,
+    calorieTarget,
+    macros: macroTargets,
+  });
   const remainingExercises = Math.max(weeklyMetrics.totalExercises - weeklyMetrics.completedExercises, 0);
   const setCompletionPct = weeklyMetrics.totalSets > 0 ? Math.round((weeklySetProgress / weeklyMetrics.totalSets) * 100) : 0;
   const allExerciseRows = days.flatMap(dayName =>
@@ -3011,18 +3100,23 @@ export default function AtlasLuthor() {
   const saveProgressPhoto = () => {
     if (!photoDraft.dataUrl) return;
 
+    const typedWeight = String(photoDraft.weight).trim();
+    const weightLb = typedWeight === ""
+      ? Number(profile.currentWeight) || 0
+      : (unitSystem === "metric" ? kgToLb(Number(typedWeight)) : Number(typedWeight));
+
     setProgressPhotos(prev => [
       {
         id: `photo-${Date.now()}`,
         date: photoDraft.date || getDateKey(),
-        weight: profile.currentWeight,
+        weight: Math.round((Number(weightLb) || 0) * 10) / 10,
         note: photoDraft.note,
         album: photoDraft.album || "",
         dataUrl: photoDraft.dataUrl,
       },
       ...prev,
     ].slice(0, 24));
-    setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: photoDraft.album || "" });
+    setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: photoDraft.album || "", weight: "" });
   };
 
   const deleteProgressPhoto = photoId => {
@@ -3036,6 +3130,9 @@ export default function AtlasLuthor() {
 
     setPhotoAlbums(prev => (prev.includes(name) ? prev : [...prev, name]));
     setAlbumDraft("");
+    setShowAlbumModal(false);
+    setAlbumFilter(name);
+    setPhotoDraft(prev => ({ ...prev, album: name }));
   };
 
   const removePhotoAlbum = name => {
@@ -4969,32 +5066,45 @@ export default function AtlasLuthor() {
                 )}
 
                 <div className="home-card">
-                  <p className="detail-label">{text.albumsLabel}</p>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                    <p className="detail-label" style={{ margin: 0 }}>{text.albumsLabel}</p>
                     <button
-                      className={`album-chip${albumFilter === "" ? " active" : ""}`}
-                      onClick={() => setAlbumFilter("")}
+                      className="album-chip"
+                      onClick={() => { setAlbumDraft(""); setShowAlbumModal(true); }}
+                      style={{ display: "flex", alignItems: "center", gap: 5 }}
                     >
-                      {language === "es" ? "Todos" : "All"} ({progressPhotos.length})
+                      <span style={{ fontSize: 15, lineHeight: 1, fontWeight: 900 }}>+</span> {text.newAlbumBtn}
                     </button>
-                    {photoAlbums.map(album => (
-                      <button
-                        key={album}
-                        className={`album-chip${albumFilter === album ? " active" : ""}`}
-                        onClick={() => setAlbumFilter(album)}
-                      >
-                        {album} ({progressPhotos.filter(photo => photo.album === album).length})
-                      </button>
-                    ))}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, marginTop: 12 }}>
-                    <input className="input" value={albumDraft} onChange={event => setAlbumDraft(event.target.value)} placeholder={text.newAlbumPlaceholder} />
-                    <button className="dark-btn" onClick={addPhotoAlbum}>{text.createBtn}</button>
-                  </div>
-                  {albumFilter && (
-                    <button className="edit-btn" onClick={() => removePhotoAlbum(albumFilter)} style={{ marginTop: 10, color: "#E5604D" }}>
-                      {text.deleteAlbumBtn} "{albumFilter}"
-                    </button>
+                  {photoAlbums.length === 0 ? (
+                    <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 10 }}>
+                      {text.noAlbumsHint}
+                    </p>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                        <button
+                          className={`album-chip${albumFilter === "" ? " active" : ""}`}
+                          onClick={() => setAlbumFilter("")}
+                        >
+                          {language === "es" ? "Todos" : "All"} ({progressPhotos.length})
+                        </button>
+                        {photoAlbums.map(album => (
+                          <button
+                            key={album}
+                            className={`album-chip${albumFilter === album ? " active" : ""}`}
+                            onClick={() => setAlbumFilter(album)}
+                          >
+                            {album} ({progressPhotos.filter(photo => photo.album === album).length})
+                          </button>
+                        ))}
+                      </div>
+                      {albumFilter && (
+                        <button className="edit-btn" onClick={() => removePhotoAlbum(albumFilter)} style={{ marginTop: 10, color: "#E5604D" }}>
+                          {text.deleteAlbumBtn} "{albumFilter}"
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -5004,6 +5114,19 @@ export default function AtlasLuthor() {
                     <label style={{ display: "block" }}>
                       <span className="field-label">{text.dateField}</span>
                       <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
+                    </label>
+                    <label style={{ display: "block" }}>
+                      <span className="field-label">{text.weightWord} ({weightUnit(unitSystem)})</span>
+                      <input
+                        className="input"
+                        type="number"
+                        inputMode="decimal"
+                        value={photoDraft.weight}
+                        onChange={event => setPhotoDraft(prev => ({ ...prev, weight: event.target.value }))}
+                        placeholder={unitSystem === "metric"
+                          ? String(Math.round(lbToKg(Number(profile.currentWeight) || 0) * 10) / 10)
+                          : String(Math.round(Number(profile.currentWeight) || 0))}
+                      />
                     </label>
                     <label style={{ display: "block" }}>
                       <span className="field-label">{text.noteField}</span>
@@ -5575,14 +5698,23 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div className="home-card" style={{ borderColor: `${goalAccent}22` }}>
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: goalAccent, fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: goalAccent, fontFamily: "'Orbitron', monospace", marginBottom: 14 }}>
                       {text.tipsTitle.toUpperCase()}
                     </p>
-                    <div style={{ display: "grid", gap: 10 }}>
-                      {coachTips.map((tip, index) => (
-                        <div key={index} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                          <div style={{ width: 5, height: 5, borderRadius: "50%", background: goalAccent, marginTop: 6, flexShrink: 0 }} />
-                          <p style={{ color: isLightMode ? "#1A1A2E" : "#C8D0DC", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.6 }}>{tip}</p>
+                    <div style={{ display: "grid", gap: 18 }}>
+                      {coachTips.map(section => (
+                        <div key={section.title}>
+                          <p style={{ fontSize: 9, letterSpacing: 2, color: section.accent, fontFamily: "'Orbitron', monospace", marginBottom: 9 }}>
+                            {section.title}
+                          </p>
+                          <div style={{ display: "grid", gap: 9 }}>
+                            {section.tips.map((tip, index) => (
+                              <div key={index} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
+                                <div style={{ width: 5, height: 5, borderRadius: "50%", background: section.accent, marginTop: 6, flexShrink: 0 }} />
+                                <p style={{ color: isLightMode ? "#1A1A2E" : "#C8D0DC", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.6 }}>{tip}</p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -5734,9 +5866,14 @@ export default function AtlasLuthor() {
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                    {[60, 90, 120].map(seconds => (
-                      <button key={seconds} className="dark-btn" onClick={() => startRestTimer(seconds)} style={{ padding: "10px 8px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(64px, 1fr))", gap: 8 }}>
+                    {restPresets.map(seconds => (
+                      <button
+                        key={seconds}
+                        className="dark-btn"
+                        onClick={() => startRestTimer(seconds)}
+                        style={{ padding: "10px 8px", borderColor: seconds === restSecondsSetting ? `${theme.accent}66` : undefined }}
+                      >
                         {seconds}s
                       </button>
                     ))}
@@ -6352,6 +6489,20 @@ export default function AtlasLuthor() {
               </label>
               <p className="setting-sub">{text.unitSystemSub}</p>
 
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.restTimer}</span>
+                <select
+                  className="input"
+                  value={restSecondsSetting}
+                  onChange={event => setAppSettings(prev => ({ ...prev, restSeconds: Number(event.target.value) }))}
+                >
+                  {[30, 45, 60, 75, 90, 105, 120, 150, 180].map(seconds => (
+                    <option key={seconds} value={seconds}>{seconds}s ({formatTimer(seconds)})</option>
+                  ))}
+                </select>
+              </label>
+              <p className="setting-sub">{text.restTimerSub}</p>
+
               <div className="setting-row">
                 <div>
                   <p className="setting-title">{language === "es" ? "Notificaciones" : "Notifications"}</p>
@@ -6506,6 +6657,30 @@ export default function AtlasLuthor() {
               </button>
               <button className="dark-btn" onClick={() => setShowReminders(false)}>
                 {text.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAlbumModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              {text.newAlbumTitle}
+            </p>
+            <div className="settings-grid">
+              <input
+                className="input"
+                value={albumDraft}
+                onChange={event => setAlbumDraft(event.target.value)}
+                onKeyDown={event => { if (event.key === "Enter") addPhotoAlbum(); }}
+                placeholder={text.newAlbumPlaceholder}
+                autoFocus
+              />
+              <button className="primary-btn" onClick={addPhotoAlbum}>{text.createBtn}</button>
+              <button className="dark-btn" onClick={() => { setShowAlbumModal(false); setAlbumDraft(""); }}>
+                {text.cancel}
               </button>
             </div>
           </div>
