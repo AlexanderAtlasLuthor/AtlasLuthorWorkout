@@ -183,7 +183,7 @@ const DEFAULT_PROFILE = {
   startDate: "2026-03-23",
   sex: "male",
   age: "30",
-  activityLevel: "moderate",
+  activityLevel: "auto",
 };
 
 const DEFAULT_GOALS = {
@@ -1241,6 +1241,24 @@ function getCoachTips({ sex, age, bmi, bodyFatPct, bodyTypeGoal, language, weigh
   return sections;
 }
 
+// Estimates the user's activity level from their weekly training schedule so
+// the calorie target reflects how much they actually train. Two-a-day weeks
+// (sessions well beyond training days) bump the level up one tier.
+function deriveActivityLevel(trainingDays, trainingSessions) {
+  let level;
+  if (trainingDays <= 0) level = "sedentary";
+  else if (trainingDays <= 2) level = "light";
+  else if (trainingDays <= 5) level = "moderate";
+  else level = "active";
+
+  if (trainingDays >= 4 && trainingSessions >= trainingDays * 2) {
+    const index = ACTIVITY_LEVELS.indexOf(level);
+    level = ACTIVITY_LEVELS[Math.min(index + 1, ACTIVITY_LEVELS.length - 1)];
+  }
+
+  return level;
+}
+
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -1900,6 +1918,8 @@ export default function AtlasLuthor() {
     let workoutSessions = 0;
     let completedSessions = 0;
     let completedDays = 0;
+    let trainingDays = 0;
+    let trainingSessions = 0;
 
     days.forEach(dayName => {
       let dayExercises = 0;
@@ -1907,6 +1927,7 @@ export default function AtlasLuthor() {
 
       workoutData[dayName].sessions.forEach((currentSession, sessionIndex) => {
         if (!currentSession.rest) workoutSessions += 1;
+        if (!currentSession.rest && currentSession.exercises.length > 0) trainingSessions += 1;
         if (currentSession.warmup) cardioSessions += 1;
 
         totalExercises += currentSession.exercises.length;
@@ -1924,6 +1945,10 @@ export default function AtlasLuthor() {
           completedSessions += 1;
         }
       });
+
+      if (dayExercises > 0) {
+        trainingDays += 1;
+      }
 
       if (dayExercises > 0 && dayDone === dayExercises) {
         completedDays += 1;
@@ -1943,6 +1968,8 @@ export default function AtlasLuthor() {
       workoutSessions,
       completedSessions,
       completedDays,
+      trainingDays,
+      trainingSessions,
       today,
       todayType: todayWorkout.type,
       todayLabel: todayWorkout.label,
@@ -2251,7 +2278,10 @@ export default function AtlasLuthor() {
   const leanMassLb = getLeanMass(profile.currentWeight, bodyFatPct);
   const heightInches = parseHeightInches(profile.height);
   const nutritionBMR = calcBMR({ weightLb: profile.currentWeight, heightInches, age: profile.age, sex: profileSex });
-  const nutritionTDEE = calcTDEE(nutritionBMR, profile.activityLevel || "moderate");
+  const autoActivityLevel = deriveActivityLevel(weeklyMetrics.trainingDays, weeklyMetrics.trainingSessions);
+  const isAutoActivity = !ACTIVITY_LEVELS.includes(profile.activityLevel);
+  const effectiveActivityLevel = isAutoActivity ? autoActivityLevel : profile.activityLevel;
+  const nutritionTDEE = calcTDEE(nutritionBMR, effectiveActivityLevel);
   const calorieTarget = goalCalorieTarget(nutritionTDEE, goals.bodyTypeGoal || "athletic");
   const macroTargets = macroSplit(calorieTarget, goals.bodyTypeGoal || "athletic");
   const todayFood = foodLog[getDateKey()] || {};
@@ -5289,6 +5319,35 @@ export default function AtlasLuthor() {
                     </div>
                   </div>
 
+                  <div className="home-card">
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
+                      {text.activityLevel.toUpperCase()}
+                    </p>
+                    <select
+                      className="input"
+                      value={isAutoActivity ? "auto" : profile.activityLevel}
+                      onChange={event => setProfile(prev => ({ ...prev, activityLevel: event.target.value }))}
+                    >
+                      <option value="auto">
+                        {(language === "es" ? "Automático" : "Automatic")} · {text[`activity${autoActivityLevel.charAt(0).toUpperCase()}${autoActivityLevel.slice(1)}`]}
+                      </option>
+                      {ACTIVITY_LEVELS.map(level => (
+                        <option key={level} value={level}>
+                          {text[`activity${level.charAt(0).toUpperCase()}${level.slice(1)}`]}
+                        </option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 8, lineHeight: 1.5 }}>
+                      {isAutoActivity
+                        ? (language === "es"
+                            ? `Calculado desde tu protocolo: ${weeklyMetrics.trainingDays} días y ${weeklyMetrics.trainingSessions} sesiones por semana. Tu meta de calorías se ajusta sola cuando cambias tu rutina.`
+                            : `Calculated from your protocol: ${weeklyMetrics.trainingDays} days and ${weeklyMetrics.trainingSessions} sessions per week. Your calorie goal updates itself when your routine changes.`)
+                        : (language === "es"
+                            ? "Definido manualmente. Elige Automático para que se ajuste a tu entrenamiento real."
+                            : "Set manually. Choose Automatic to match your actual training.")}
+                    </p>
+                  </div>
+
                   <div className="detail-grid">
                     {macroRows.map(macro => {
                       const pct = macro.target > 0 ? Math.min(100, Math.round((macro.val / macro.target) * 100)) : 0;
@@ -7136,9 +7195,10 @@ export default function AtlasLuthor() {
                 <span className="field-label">{text.activityLevel.toUpperCase()}</span>
                 <select
                   className="input"
-                  value={editingProfile.activityLevel || "moderate"}
+                  value={ACTIVITY_LEVELS.includes(editingProfile.activityLevel) ? editingProfile.activityLevel : "auto"}
                   onChange={event => setEditingProfile(prev => ({ ...prev, activityLevel: event.target.value }))}
                 >
+                  <option value="auto">{language === "es" ? "Automático (según tu rutina)" : "Automatic (from your routine)"}</option>
                   {ACTIVITY_LEVELS.map(level => (
                     <option key={level} value={level}>
                       {text[`activity${level.charAt(0).toUpperCase()}${level.slice(1)}`]}
