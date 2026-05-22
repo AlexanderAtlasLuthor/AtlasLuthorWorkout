@@ -160,6 +160,8 @@ const DEFAULT_PROFILE = {
   targetWeight: "185",
   height: "5'9\"",
   startDate: "2026-03-23",
+  sex: "male",
+  age: "30",
 };
 
 const DEFAULT_GOALS = {
@@ -167,6 +169,7 @@ const DEFAULT_GOALS = {
   weeklySessionsGoal: "10",
   targetDate: "2026-04-09",
   focusGoal: "Build strength and finish the protocol",
+  bodyTypeGoal: "athletic",
 };
 
 const DEFAULT_CLOUD_SETTINGS = {
@@ -244,6 +247,7 @@ function defaultUserData() {
     notificationSettings: cloneData(DEFAULT_NOTIFICATION_SETTINGS),
     setProgress: {},
     appSettings: withNameParts(DEFAULT_APP_SETTINGS),
+    waterLog: {},
   };
 }
 
@@ -260,11 +264,34 @@ const DEFAULT_SIGNUP = {
   focusGoal: "Build strength and finish the protocol",
   language: getDefaultLanguage(),
   trainingPlan: "blank",
+  sex: "male",
+  age: "30",
 };
 
 const WEIGHT_OPTIONS = Array.from({ length: 61 }, (_, index) => `${index * 5} lb`);
-const BODY_WEIGHT_OPTIONS = Array.from({ length: 121 }, (_, index) => String(120 + index));
-const HEIGHT_OPTIONS = ["5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"", "5'5\"", "5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "5'11\"", "6'0\"", "6'1\"", "6'2\"", "6'3\"", "6'4\""];
+const BODY_WEIGHT_OPTIONS = Array.from({ length: 271 }, (_, index) => String(80 + index));
+const HEIGHT_OPTIONS = ["4'10\"","4'11\"","5'0\"","5'1\"","5'2\"","5'3\"","5'4\"","5'5\"","5'6\"","5'7\"","5'8\"","5'9\"","5'10\"","5'11\"","6'0\"","6'1\"","6'2\"","6'3\"","6'4\"","6'5\"","6'6\"","6'7\""];
+const GENDER_OPTIONS = [{ value: "male", label: "Male" }, { value: "female", label: "Female" }];
+const AGE_OPTIONS = Array.from({ length: 63 }, (_, i) => String(18 + i));
+const BODY_TYPE_GOAL_OPTIONS = [
+  { value: "lean", label: "Get Lean / Cut" },
+  { value: "athletic", label: "Athletic Recomp" },
+  { value: "muscular", label: "Build Muscle / Bulk" },
+  { value: "maintain", label: "Maintain & Tone" },
+];
+const WATER_GOAL_OPTIONS = ["4", "6", "8", "10", "12", "14", "16"];
+const COMMON_EXERCISES = {
+  "Chest": ["Bench Press","DB Bench Press","Incline Bench Press","Incline DB Press","Decline Bench Press","Push Up","Cable Chest Fly","DB Chest Fly","Chest Machine Press","Pec Deck Fly","Cable Crossover","Weighted Dip","Supine Press"],
+  "Back": ["Deadlift","Pull Up","Chin Up","Lat Pull Down","Seated Cable Row","Row Barbell","Row Dumbbell","T-Bar Row","Rack Pull","Lower Back Extension","Face Pull","Shrugs","Upright Row Front","Upright Row Back"],
+  "Shoulders": ["Shoulder Press","DB Shoulder Press","Arnold Press","Lateral Raise","Front Raise","Rear Delt Fly","Upright Row","Cable Lateral Raise","Machine Shoulder Press"],
+  "Biceps": ["Dumbbell Curls","Barbell Curls 21s","One Arm Curl","Pull Up Biceps","Cable Pull Up Pirámide","Hammer Curl","Preacher Curl","Cable Curl","Concentration Curl","EZ Bar Curl","Incline DB Curl"],
+  "Triceps": ["Cable Rope Triceps Pushdown","Overhead DB Extension","Skull Crusher","Close Grip Bench Press","Tricep Press","Barbell Overhead Triceps","Tricep Cable Over Head","DB Kickback"],
+  "Legs": ["Hack Squat","Barbell Squat","Squats","Leg Press","Walking Lunge","Reverse Lunge","Bulgarian Split Squat","Leg Extension","Leg Curl","Calf Raise","Hip Thrust","Glute Bridge","Romanian Deadlift","Squats Barbell"],
+  "Core": ["Plank","Side Plank","Ab Wheel","Cable Crunch","Hanging Leg Raise","Decline Crunch","Russian Twist","Dead Bug","Bicycle Crunch","V-Up","Flutter Kick"],
+  "Cardio": ["Run 1 Mile","Row Machine","Stairs Level 5","Treadmill","Cycling","Elliptical","Jump Rope","Box Jump","Burpee"],
+  "Full Body": ["Olympic Lift","Power Clean","Hang Clean","Clean and Jerk","Snatch","Push Press","Kettlebell Swing","Squats Barbell"],
+};
+const EXERCISE_MUSCLE_GROUPS = ["All", ...Object.keys(COMMON_EXERCISES)];
 const SET_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map(String);
 const REP_OPTIONS = [4, 5, 6, 8, 10, 12, 15, 20, "3x3", "AMRAP"].map(String);
 const RPE_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -408,6 +435,28 @@ const UI_TEXT = {
     close: "Close",
     cancel: "Cancel",
     doneBtn: "Done",
+    waterToday: "Water Today",
+    waterTracking: "Water Tracking",
+    glasses: "glasses",
+    glassWord: "Glass",
+    waterGoal: "Daily Goal",
+    drinkReminder: "Stay hydrated. Aim for your daily goal.",
+    coachTitle: "Coach",
+    bodyTypeLabel: "Body Type Goal",
+    tipsTitle: "Protocol Tips",
+    bmiLabel: "BMI",
+    bodyFatLabel: "Body Fat",
+    leanMassLabel: "Lean Mass",
+    ibwLabel: "Ideal Weight",
+    sexLabel: "Sex",
+    ageLabel: "Age",
+    countdownTitle: "Countdown to Goal",
+    finalStretch: "Final stretch!",
+    almostThere: "Almost there. Don't stop!",
+    daysLeft: "DAYS LEFT",
+    maleLabel: "Male",
+    femaleLabel: "Female",
+    bodyComposition: "Body Composition",
   },
   es: {
     goodMorning: "Buenos días",
@@ -530,6 +579,28 @@ const UI_TEXT = {
     close: "Cerrar",
     cancel: "Cancelar",
     doneBtn: "Listo",
+    waterToday: "Agua Hoy",
+    waterTracking: "Control de Agua",
+    glasses: "vasos",
+    glassWord: "Vaso",
+    waterGoal: "Meta Diaria",
+    drinkReminder: "Mantente hidratado. Llega a tu meta diaria.",
+    coachTitle: "Coach",
+    bodyTypeLabel: "Meta de Cuerpo",
+    tipsTitle: "Consejos del Protocolo",
+    bmiLabel: "IMC",
+    bodyFatLabel: "Grasa Corporal",
+    leanMassLabel: "Masa Magra",
+    ibwLabel: "Peso Ideal",
+    sexLabel: "Sexo",
+    ageLabel: "Edad",
+    countdownTitle: "Cuenta Regresiva",
+    finalStretch: "¡La recta final!",
+    almostThere: "¡Casi ahí! No pares.",
+    daysLeft: "DÍAS RESTANTES",
+    maleLabel: "Hombre",
+    femaleLabel: "Mujer",
+    bodyComposition: "Composición Corporal",
   },
 };
 
@@ -558,6 +629,110 @@ const DAY_SHORT_TRANSLATIONS = {
   en: { Lunes: "MON", Martes: "TUE", Miércoles: "WED", Jueves: "THU", Viernes: "FRI", Sábado: "SAT", Domingo: "SUN" },
   es: { Lunes: "LUN", Martes: "MAR", Miércoles: "MIE", Jueves: "JUE", Viernes: "VIE", Sábado: "SAB", Domingo: "DOM" },
 };
+
+function parseHeightToInches(heightStr) {
+  if (!heightStr) return 0;
+  const match = String(heightStr).match(/(\d+)'(\d+)?/);
+  if (!match) return 0;
+  return Number(match[1] || 0) * 12 + Number(match[2] || 0);
+}
+
+function calculateBMI(weightLb, heightStr) {
+  const wKg = Number(weightLb) * 0.453592;
+  const inches = parseHeightToInches(heightStr);
+  if (inches === 0) return 0;
+  const hM = inches * 0.0254;
+  return Math.round((wKg / (hM * hM)) * 10) / 10;
+}
+
+function calculateBodyFatPct(bmi, age, sex) {
+  if (!bmi) return 0;
+  const a = Math.max(1, Number(age) || 25);
+  const sexFactor = sex === "female" ? 0 : 1;
+  return Math.max(3, Math.round(((1.2 * bmi) + (0.23 * a) - (10.8 * sexFactor) - 5.4) * 10) / 10);
+}
+
+function calculateIBW(heightStr, sex) {
+  const inches = parseHeightToInches(heightStr);
+  if (inches === 0) return 0;
+  const over5Ft = Math.max(0, inches - 60);
+  const baseKg = sex === "female" ? 45.5 : 50;
+  return Math.round((baseKg + 2.3 * over5Ft) * 2.205);
+}
+
+function getLeanMass(weightLb, bodyFatPct) {
+  return Math.max(0, Math.round(Number(weightLb) * (1 - Number(bodyFatPct) / 100)));
+}
+
+function getDaysToGoal(targetDate) {
+  if (!targetDate) return null;
+  const target = new Date(targetDate + "T00:00:00");
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diff = target.getTime() - now.getTime();
+  return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
+}
+
+function getHomeMessage(weeklyProgress, calendarLog, daysToGoal, language) {
+  const isEs = language === "es";
+  const todayKey = getDateKey();
+  const todayLog = calendarLog[todayKey];
+  const hasTrainedToday = todayLog?.status === "completed" || todayLog?.status === "trained";
+  let missedStreak = 0;
+  for (let i = 1; i <= 5; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toISOString().slice(0, 10);
+    if (calendarLog[k]?.status === "missed") missedStreak++;
+    else break;
+  }
+  if (typeof daysToGoal === "number" && daysToGoal === 0) return isEs ? "¡Llegaste a tu fecha meta! Fija un nuevo objetivo." : "You reached your target date! Set a new goal.";
+  if (typeof daysToGoal === "number" && daysToGoal <= 7 && daysToGoal > 0) return isEs ? `¡Solo ${daysToGoal} días para tu meta! Termina fuerte.` : `Only ${daysToGoal} days to your goal! Finish strong.`;
+  if (typeof daysToGoal === "number" && daysToGoal <= 30 && daysToGoal > 0) return isEs ? `${daysToGoal} días para tu meta. Cada sesión cuenta.` : `${daysToGoal} days to your goal. Every session counts.`;
+  if (missedStreak >= 3) return isEs ? "Llevas varios días sin entrenar. El protocolo te espera — vuelve hoy." : "Several days without training. The protocol needs you — get back today.";
+  if (weeklyProgress >= 95) return isEs ? "¡Semana perfecta! Estás aplastando el protocolo." : "Near-perfect week! You're crushing the protocol.";
+  if (weeklyProgress >= 70) return isEs ? "¡Gran semana! Cierra fuerte y llega al 100%." : "Great week! Close it strong and hit 100%.";
+  if (weeklyProgress >= 40) return isEs ? "Buen progreso esta semana. Sigue empujando." : "Solid progress this week. Keep pushing.";
+  if (hasTrainedToday) return isEs ? "¡Buen trabajo hoy! Mantén el impulso." : "Good work today! Keep the momentum going.";
+  return isEs ? "El protocolo está listo. ¡Es hora de entrenar!" : "Protocol is ready. Time to train.";
+}
+
+function getCoachTips(sex, age, bmi, bodyFatPct, bodyTypeGoal, language) {
+  const isEs = language === "es";
+  const ageNum = Number(age) || 25;
+  const tips = [];
+  if (bodyTypeGoal === "lean") {
+    tips.push(isEs ? "Déficit calórico moderado de 300–500 kcal/día. Déficit mayor pierde músculo." : "Moderate caloric deficit of 300–500 kcal/day. Larger deficits burn muscle.");
+    tips.push(isEs ? "Come 0.8–1g de proteína por lb de peso corporal para proteger el músculo." : "Eat 0.8–1g of protein per lb of body weight to protect muscle mass.");
+    tips.push(isEs ? "Cardio HIIT 2–3 días/semana maximiza la quema de grasa preservando músculo." : "HIIT cardio 2–3 days/week maximizes fat loss while preserving muscle.");
+  } else if (bodyTypeGoal === "muscular") {
+    tips.push(isEs ? "Superávit calórico de 300–500 kcal/día para optimizar la ganancia de masa muscular." : "Caloric surplus of 300–500 kcal/day optimizes muscle gain without excess fat.");
+    tips.push(isEs ? "Prioriza ejercicios compuestos pesados: Squat, Bench Press, Deadlift, Row, Press." : "Prioritize heavy compound lifts: Squat, Bench Press, Deadlift, Row, Press.");
+    tips.push(isEs ? "Duerme 8 horas. El músculo se sintetiza principalmente durante el sueño." : "Sleep 8 hours. Most muscle synthesis happens during sleep.");
+  } else if (bodyTypeGoal === "athletic") {
+    tips.push(isEs ? "Recomposición: come en mantenimiento calórico con alta proteína." : "Recomposition: eat at maintenance calories with high protein intake.");
+    tips.push(isEs ? "Combina 4 días de fuerza con 2 de cardio para un físico atlético equilibrado." : "Combine 4 strength days with 2 cardio days for a balanced athletic physique.");
+    tips.push(isEs ? "La consistencia es más importante que la intensidad. El protocolo gana a largo plazo." : "Consistency beats intensity. The protocol wins long-term.");
+  } else {
+    tips.push(isEs ? "Mantenimiento: sé consistente con tu protocolo y mantén el balance calórico." : "Maintenance: stay consistent with your weekly protocol and caloric balance.");
+    tips.push(isEs ? "Varía la intensidad cada 4–6 semanas para evitar el estancamiento." : "Vary intensity every 4–6 weeks to prevent plateaus.");
+  }
+  if (ageNum >= 40) {
+    tips.push(isEs ? "A los 40+: prioriza movilidad diaria y descanso. Las articulaciones importan tanto como el músculo." : "Age 40+: prioritize daily mobility and rest. Joints matter as much as muscle.");
+    tips.push(isEs ? "Deload cada 4–6 semanas es especialmente importante con la edad." : "Deloading every 4–6 weeks becomes increasingly important with age.");
+  } else if (ageNum < 25) {
+    tips.push(isEs ? "A tu edad, la recuperación es rápida. Puedes entrenar con mayor intensidad y frecuencia." : "At your age, recovery is fast. You can train with higher intensity and frequency.");
+  }
+  if (sex === "female") {
+    tips.push(isEs ? "El entrenamiento de fuerza es ideal: tonifica, no crea 'bulky', y quema más calorías que el cardio." : "Strength training is ideal: it tones, doesn't make you 'bulky', and burns more calories than cardio.");
+  }
+  if (bmi > 30) {
+    tips.push(isEs ? "Con BMI elevado, el entrenamiento de fuerza es más efectivo que solo el cardio para perder grasa." : "With elevated BMI, strength training is more effective than cardio alone for fat loss.");
+  }
+  if (bmi > 0 && bmi < 18.5) {
+    tips.push(isEs ? "Estás por debajo del peso ideal. Agrega 300–500 kcal extra de alimentos nutritivos diariamente." : "You're below ideal weight. Add 300–500 extra kcal from nutritious foods daily.");
+  }
+  return tips;
+}
 
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
@@ -917,6 +1092,9 @@ export default function AtlasLuthor() {
   const [reminderDraft, setReminderDraft] = useState({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
   const [clockNow, setClockNow] = useState(() => new Date());
+  const [waterLog, setWaterLog] = useState({});
+  const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
+  const [exerciseFilterMuscle, setExerciseFilterMuscle] = useState("All");
   const notifiedTimersRef = useRef(new Set());
   const loadedUserRef = useRef("");
   const tapFeedbackRef = useRef(true);
@@ -984,6 +1162,7 @@ export default function AtlasLuthor() {
       notificationSettings,
       setProgress,
       appSettings,
+      waterLog,
     });
 
     setStorageFull(!saved);
@@ -1004,6 +1183,7 @@ export default function AtlasLuthor() {
     notificationSettings,
     setProgress,
     appSettings,
+    waterLog,
   ]);
 
   useEffect(() => {
@@ -1440,6 +1620,8 @@ export default function AtlasLuthor() {
     { id: "photos", title: text.progressPhotos, label: "Photos", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "metrics", title: text.weeklyMetrics, label: "Metrics", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "week", title: text.weekPlan, label: "Week", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "water", title: text.waterTracking, label: "Water", accent: "#90C8FF" },
+    { id: "coach", title: text.coachTitle, label: "Coach", accent: "#B8A0FF" },
   ];
   const activeFeature = featurePages.find(page => page.id === activeFeaturePage) || featurePages[0];
   const weeklySetProgress = days.reduce((sum, dayName) => (
@@ -1452,6 +1634,18 @@ export default function AtlasLuthor() {
   ), 0);
   const totalPhotoCount = progressPhotos.length;
   const latestPhoto = progressPhotos[0];
+  const waterToday = waterLog[getDateKey()] || { glasses: 0, goal: 8 };
+  const waterGlasses = Number(waterToday.glasses || 0);
+  const waterGoalNum = Number(waterToday.goal || 8);
+  const waterPct = Math.min(100, waterGoalNum > 0 ? Math.round((waterGlasses / waterGoalNum) * 100) : 0);
+  const bmi = calculateBMI(profile.currentWeight, profile.height);
+  const profileSex = profile.sex || "male";
+  const bodyFatPct = calculateBodyFatPct(bmi, profile.age, profileSex);
+  const ibwLb = calculateIBW(profile.height, profileSex);
+  const leanMassLb = getLeanMass(profile.currentWeight, bodyFatPct);
+  const daysToGoal = getDaysToGoal(goals.targetDate);
+  const homeMessage = getHomeMessage(weeklyMetrics.weeklyProgress, calendarLog, daysToGoal, language);
+  const coachTips = getCoachTips(profileSex, profile.age, bmi, bodyFatPct, goals.bodyTypeGoal || "athletic", language);
   const remainingExercises = Math.max(weeklyMetrics.totalExercises - weeklyMetrics.completedExercises, 0);
   const setCompletionPct = weeklyMetrics.totalSets > 0 ? Math.round((weeklySetProgress / weeklyMetrics.totalSets) * 100) : 0;
   const allExerciseRows = days.flatMap(dayName =>
@@ -1552,6 +1746,7 @@ export default function AtlasLuthor() {
     });
     setSetProgress(data?.setProgress || {});
     setAppSettings(nextAppSettings);
+    setWaterLog(data?.waterLog || {});
     setActiveDay(getTodayDayName());
     setActiveSession(0);
     setActiveFeaturePage("today");
@@ -1566,6 +1761,8 @@ export default function AtlasLuthor() {
       targetWeight: draft.targetWeight,
       height: draft.height,
       startDate: draft.startDate || getDateKey(),
+      sex: draft.sex || "male",
+      age: draft.age || "30",
     };
     const nextGoals = {
       ...DEFAULT_GOALS,
@@ -1597,6 +1794,7 @@ export default function AtlasLuthor() {
       notificationSettings: cloneData(DEFAULT_NOTIFICATION_SETTINGS),
       setProgress: {},
       appSettings: nextAppSettings,
+      waterLog: {},
     };
   };
 
@@ -1810,6 +2008,30 @@ export default function AtlasLuthor() {
 
   const stopRestTimer = () => {
     setRestTimer(prev => ({ ...prev, secondsLeft: 0, running: false, endsAt: null, notified: false }));
+  };
+
+  const addWater = (amount = 1) => {
+    const date = getDateKey();
+    setWaterLog(prev => {
+      const current = prev[date] || { glasses: 0, goal: 8 };
+      return { ...prev, [date]: { ...current, glasses: Math.min(Number(current.goal), Number(current.glasses) + amount) } };
+    });
+  };
+
+  const removeWater = (amount = 1) => {
+    const date = getDateKey();
+    setWaterLog(prev => {
+      const current = prev[date] || { glasses: 0, goal: 8 };
+      return { ...prev, [date]: { ...current, glasses: Math.max(0, Number(current.glasses) - amount) } };
+    });
+  };
+
+  const setWaterGoalForToday = (goal) => {
+    const date = getDateKey();
+    setWaterLog(prev => {
+      const current = prev[date] || { glasses: 0 };
+      return { ...prev, [date]: { ...current, goal: Number(goal) } };
+    });
   };
 
   const saveExerciseNote = note => {
@@ -2262,6 +2484,7 @@ export default function AtlasLuthor() {
     setTodayOnlyMode(!!options.todayOnly);
     setQuickMode(!!options.quick);
     setHighlightedExerciseIndex(0);
+    setExpandedExerciseIndex(null);
     setScreen("workout");
   };
 
@@ -2329,6 +2552,18 @@ export default function AtlasLuthor() {
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes waterWave {
+          0% { transform: translateX(0) scaleY(1); }
+          50% { transform: translateX(-10%) scaleY(1.1); }
+          100% { transform: translateX(0) scaleY(1); }
+        }
+
+        @keyframes countdownPulse {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.04); }
+          100% { opacity: 1; transform: scale(1); }
         }
 
         .fade-up { animation: fadeUp 0.3s ease forwards; }
@@ -2665,6 +2900,21 @@ export default function AtlasLuthor() {
                   })}
                 </div>
 
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <label style={{ display: "block" }}>
+                    <span className="field-label">{signupDraft.language === "es" ? "SEXO" : "SEX"}</span>
+                    <select className="input" value={signupDraft.sex} onChange={event => setSignupDraft(prev => ({ ...prev, sex: event.target.value }))}>
+                      {GENDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{signupDraft.language === "es" ? (option.value === "male" ? "Hombre" : "Mujer") : option.label}</option>)}
+                    </select>
+                  </label>
+                  <label style={{ display: "block" }}>
+                    <span className="field-label">{signupDraft.language === "es" ? "EDAD" : "AGE"}</span>
+                    <select className="input" value={signupDraft.age} onChange={event => setSignupDraft(prev => ({ ...prev, age: event.target.value }))}>
+                      {AGE_OPTIONS.map(option => <option key={option} value={option}>{option} {signupDraft.language === "es" ? "años" : "yrs"}</option>)}
+                    </select>
+                  </label>
+                </div>
+
                 <label style={{ display: "block" }}>
                   <span className="field-label">{signupDraft.language === "es" ? "PESO ACTUAL" : "CURRENT WEIGHT"}</span>
                   <select className="input" value={signupDraft.currentWeight} onChange={event => setSignupDraft(prev => ({ ...prev, currentWeight: event.target.value }))}>
@@ -2746,9 +2996,7 @@ export default function AtlasLuthor() {
                 </div>
               </div>
               <p className="feature-copy">
-                {language === "es"
-                  ? `Hoy es ${todayDisplayName}. Tu protocolo ${weeklyMetrics.todayType} está listo con ${weeklyMetrics.weeklyProgress}% de progreso semanal.`
-                  : `Today is ${todayDisplayName}. Your ${weeklyMetrics.todayType} protocol is ready with ${weeklyMetrics.weeklyProgress}% weekly progress.`}
+                {homeMessage}
               </p>
             </div>
 
@@ -2768,6 +3016,78 @@ export default function AtlasLuthor() {
               <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
                 {text.startToday}
               </button>
+            </div>
+
+            {typeof daysToGoal === "number" && (
+              <div className="home-card" style={{ marginBottom: 14, borderColor: daysToGoal <= 7 ? "#FFD06088" : daysToGoal <= 30 ? "#90C8FF44" : "rgba(255,255,255,0.075)", background: daysToGoal <= 7 ? (isLightMode ? "#FEFAE8" : "#1A1400") : undefined }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, color: daysToGoal <= 7 ? "#FFD060" : daysToGoal <= 30 ? "#90C8FF" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                  {text.countdownTitle.toUpperCase()}
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+                  <div style={{ textAlign: "center", flexShrink: 0 }}>
+                    <p style={{ fontSize: 72, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: daysToGoal <= 7 ? "#FFD060" : daysToGoal <= 30 ? "#90C8FF" : isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1, animation: daysToGoal <= 7 ? "countdownPulse 2s ease-in-out infinite" : "none" }}>
+                      {daysToGoal}
+                    </p>
+                    <p style={{ fontSize: 9, letterSpacing: 3, color: daysToGoal <= 7 ? "#FFD060" : "#666", fontFamily: "'Orbitron', monospace", marginTop: 2 }}>
+                      {text.daysLeft}
+                    </p>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, lineHeight: 1.4 }}>
+                      {goals.focusGoal}
+                    </p>
+                    <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 12, marginTop: 6 }}>
+                      {language === "es" ? "Meta:" : "Target:"} {goals.targetDate}
+                    </p>
+                    {daysToGoal <= 7 && daysToGoal > 0 && (
+                      <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 12, marginTop: 6, fontWeight: 900, letterSpacing: 1 }}>
+                        {text.finalStretch}
+                      </p>
+                    )}
+                    {daysToGoal > 7 && daysToGoal <= 30 && (
+                      <p style={{ color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontSize: 12, marginTop: 6, fontWeight: 800 }}>
+                        {text.almostThere}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    {text.waterToday.toUpperCase()}
+                  </p>
+                  <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: "#90C8FF", lineHeight: 1 }}>
+                    {waterGlasses}<span style={{ fontSize: 14, color: "#666" }}>/{waterGoalNum} {text.glasses}</span>
+                  </p>
+                </div>
+                <button className="edit-btn" onClick={() => openFeaturePage("water")} style={{ color: "#90C8FF" }}>
+                  {language === "es" ? "Ver" : "View"}
+                </button>
+              </div>
+              <div style={{ width: "100%", height: 54, borderRadius: 14, overflow: "hidden", border: "1.5px solid #1A2A3A", background: isLightMode ? "#E8F4FF" : "#0A1520", position: "relative" }}>
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${waterPct}%`, background: "linear-gradient(180deg, #55AAEE 0%, #1E6FAA 100%)", transition: "height 0.6s cubic-bezier(0.4,0,0.2,1)", borderRadius: "0 0 12px 12px" }}>
+                  {waterGlasses > 0 && (
+                    <div style={{ position: "absolute", top: -6, left: "-50%", width: "200%", height: 12, background: "rgba(100,180,255,0.45)", borderRadius: "50%", animation: "waterWave 2s ease-in-out infinite" }} />
+                  )}
+                </div>
+                {waterPct >= 40 && (
+                  <p style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', monospace", fontSize: 13, fontWeight: 900, color: "#FFFFFF", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
+                    {waterPct}%
+                  </p>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                <button className="dark-btn" onClick={() => removeWater()} style={{ color: "#888" }}>
+                  – {text.glassWord}
+                </button>
+                <button className="dark-btn" onClick={() => addWater()} style={{ color: "#90C8FF" }}>
+                  + {text.glassWord}
+                </button>
+              </div>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
@@ -3205,6 +3525,8 @@ export default function AtlasLuthor() {
                 {activeFeaturePage === "photos" && "Keeps local progress photos by date, weight, and note for visual comparison."}
                 {activeFeaturePage === "metrics" && "Breaks down the full weekly workload: exercises, sets, sessions, cardio, completion, and set progress."}
                 {activeFeaturePage === "week" && "Shows the full seven-day split and gives fast access to every programmed workout day."}
+                {activeFeaturePage === "water" && (language === "es" ? "Registra tu hidratación diaria. El agua mejora el rendimiento, la recuperación y el metabolismo." : "Track your daily hydration. Water improves performance, recovery and metabolism.")}
+                {activeFeaturePage === "coach" && (language === "es" ? "Consejos personalizados basados en tu edad, sexo, composición corporal y meta de tipo de cuerpo." : "Personalized tips based on your age, sex, body composition, and body type goal.")}
               </p>
             </div>
 
@@ -3261,6 +3583,8 @@ export default function AtlasLuthor() {
                     { label: "CHANGE", val: `${signedNumber(weightChange)} LB` },
                     { label: "TO GOAL", val: `${signedNumber(weightToGoal)} LB` },
                     { label: "HEIGHT", val: profile.height },
+                    { label: text.sexLabel.toUpperCase(), val: profileSex === "male" ? text.maleLabel : text.femaleLabel },
+                    { label: text.ageLabel.toUpperCase(), val: `${profile.age || "--"} ${language === "es" ? "años" : "yrs"}` },
                   ].map(metric => (
                     <div key={metric.label} className="detail-card">
                       <p className="detail-label">{metric.label}</p>
@@ -3268,6 +3592,24 @@ export default function AtlasLuthor() {
                     </div>
                   ))}
                 </div>
+                {bmi > 0 && (
+                  <div className="home-card">
+                    <p className="detail-label">{text.bodyComposition.toUpperCase()}</p>
+                    <div className="detail-grid" style={{ marginTop: 10 }}>
+                      {[
+                        { label: text.bmiLabel, val: String(bmi) },
+                        { label: text.bodyFatLabel, val: `${bodyFatPct}%` },
+                        { label: text.leanMassLabel, val: `${leanMassLb} LB` },
+                        { label: text.ibwLabel, val: `${ibwLb} LB` },
+                      ].map(item => (
+                        <div key={item.label} className="detail-card">
+                          <p className="detail-label">{item.label}</p>
+                          <p className="detail-value">{item.val}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <button className="primary-btn" onClick={() => setEditingProfile({ ...profile })}>
                   EDIT BODY STATUS
                 </button>
@@ -3663,6 +4005,163 @@ export default function AtlasLuthor() {
                 })}
               </div>
             )}
+
+            {activeFeaturePage === "water" && (
+              <div className="detail-list">
+                <div style={{ textAlign: "center", marginBottom: 10 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    {text.waterToday.toUpperCase()}
+                  </p>
+                  <p style={{ fontSize: 64, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: waterPct >= 100 ? "#3FB98A" : "#90C8FF", lineHeight: 1 }}>
+                    {waterGlasses}
+                  </p>
+                  <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 14, marginTop: 4 }}>
+                    {language === "es" ? `de ${waterGoalNum} vasos` : `of ${waterGoalNum} glasses`}
+                  </p>
+                </div>
+
+                <div style={{ width: "100%", height: 120, borderRadius: 18, overflow: "hidden", border: "1.5px solid #1A2A3A", background: isLightMode ? "#E8F4FF" : "#0A1520", position: "relative", marginBottom: 4 }}>
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${waterPct}%`, background: waterPct >= 100 ? "linear-gradient(180deg, #3FB98A 0%, #1E7A56 100%)" : "linear-gradient(180deg, #55AAEE 0%, #1E6FAA 100%)", transition: "height 0.6s cubic-bezier(0.4,0,0.2,1)" }}>
+                    {waterGlasses > 0 && (
+                      <div style={{ position: "absolute", top: -8, left: "-50%", width: "200%", height: 16, background: "rgba(100,180,255,0.45)", borderRadius: "50%", animation: "waterWave 2s ease-in-out infinite" }} />
+                    )}
+                  </div>
+                  <p style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', monospace", fontSize: 22, fontWeight: 900, color: waterPct > 30 ? "#FFFFFF" : "#90C8FF", textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                    {waterPct}%
+                  </p>
+                </div>
+
+                {waterPct >= 100 && (
+                  <div style={{ textAlign: "center", padding: "10px 0 4px" }}>
+                    <p style={{ color: "#3FB98A", fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 900 }}>
+                      {language === "es" ? "¡Meta de agua alcanzada! 💧" : "Daily water goal reached! 💧"}
+                    </p>
+                  </div>
+                )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <button className="dark-btn" onClick={() => removeWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: "#888" }}>
+                    – {text.glassWord}
+                  </button>
+                  <button className="primary-btn" onClick={() => addWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}>
+                    + {text.glassWord}
+                  </button>
+                </div>
+
+                <div className="detail-card">
+                  <p className="detail-label">{text.waterGoal.toUpperCase()}</p>
+                  <select
+                    className="input"
+                    value={String(waterGoalNum)}
+                    onChange={event => setWaterGoalForToday(event.target.value)}
+                    style={{ marginTop: 8 }}
+                  >
+                    {WATER_GOAL_OPTIONS.map(option => (
+                      <option key={option} value={option}>{option} {text.glasses}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="detail-grid">
+                  {Object.entries(waterLog)
+                    .sort((a, b) => b[0].localeCompare(a[0]))
+                    .slice(0, 8)
+                    .map(([date, entry]) => (
+                      <div key={date} className="detail-card">
+                        <p className="detail-label">{date}</p>
+                        <p className="detail-value">{Number(entry.glasses || 0)}/{Number(entry.goal || 8)}</p>
+                        <div style={{ height: 4, background: "#1E1E26", borderRadius: 4, overflow: "hidden", marginTop: 6 }}>
+                          <div style={{ width: `${Math.min(100, Math.round((Number(entry.glasses || 0) / Number(entry.goal || 8)) * 100))}%`, height: "100%", background: "#90C8FF", borderRadius: 4 }} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+
+                <div className="home-card">
+                  <p className="detail-label">{language === "es" ? "POR QUÉ IMPORTA" : "WHY IT MATTERS"}</p>
+                  <p className="detail-row-sub" style={{ marginTop: 6 }}>
+                    {language === "es"
+                      ? "El agua mejora el rendimiento muscular, la recuperación, el enfoque, y el metabolismo. Beber suficiente agua puede aumentar la fuerza y la resistencia hasta un 10-15%."
+                      : "Water improves muscle performance, recovery, focus, and metabolism. Proper hydration can boost strength and endurance by 10-15%."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activeFeaturePage === "coach" && (
+              <div className="detail-list">
+                <div className="detail-grid">
+                  {[
+                    { label: text.bmiLabel, val: bmi > 0 ? String(bmi) : "N/A" },
+                    { label: text.bodyFatLabel, val: bmi > 0 ? `${bodyFatPct}%` : "N/A" },
+                    { label: text.leanMassLabel, val: bmi > 0 ? `${leanMassLb} LB` : "N/A" },
+                    { label: text.ibwLabel, val: ibwLb > 0 ? `${ibwLb} LB` : "N/A" },
+                  ].map(item => (
+                    <div key={item.label} className="detail-card">
+                      <p className="detail-label">{item.label}</p>
+                      <p className="detail-value">{item.val}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="detail-card">
+                  <p className="detail-label">{language === "es" ? "PERFIL" : "PROFILE"}</p>
+                  <div style={{ display: "flex", gap: 14, marginTop: 8, flexWrap: "wrap" }}>
+                    {[
+                      { label: text.sexLabel, val: profileSex === "male" ? text.maleLabel : text.femaleLabel },
+                      { label: text.ageLabel, val: `${profile.age || "--"} ${language === "es" ? "años" : "yrs"}` },
+                      { label: text.bodyTypeLabel, val: (BODY_TYPE_GOAL_OPTIONS.find(o => o.value === (goals.bodyTypeGoal || "athletic"))?.label || "Athletic") },
+                    ].map(item => (
+                      <div key={item.label} style={{ textAlign: "center" }}>
+                        <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 900 }}>{item.val}</p>
+                        <p style={{ color: "#666", fontFamily: "'Orbitron', monospace", fontSize: 9, letterSpacing: 1, marginTop: 3 }}>{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 8 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#B8A0FF", fontFamily: "'Orbitron', monospace" }}>{text.bodyTypeLabel.toUpperCase()}</p>
+                  {BODY_TYPE_GOAL_OPTIONS.map(option => {
+                    const selected = (goals.bodyTypeGoal || "athletic") === option.value;
+                    const label = language === "es"
+                      ? ({ lean: "Definir / Cortar", athletic: "Recomposición Atlética", muscular: "Ganar Músculo / Volumen", maintain: "Mantener & Tonificar" }[option.value] || option.label)
+                      : option.label;
+                    return (
+                      <button
+                        key={option.value}
+                        className="dark-btn"
+                        onClick={() => setGoals(prev => ({ ...prev, bodyTypeGoal: option.value }))}
+                        style={{ textAlign: "left", boxShadow: selected ? "0 0 0 2px #B8A0FF" : "none", borderColor: selected ? "#B8A0FF66" : undefined }}
+                      >
+                        <span style={{ display: "block", fontWeight: 900, color: selected ? "#B8A0FF" : "#FFFFFF" }}>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="home-card" style={{ borderColor: "#B8A0FF33" }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#B8A0FF", fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
+                    {text.tipsTitle.toUpperCase()}
+                  </p>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {coachTips.map((tip, index) => (
+                      <div key={index} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#B8A0FF", marginTop: 5, flexShrink: 0 }} />
+                        <p style={{ color: isLightMode ? "#1A1A2E" : "#D0D0E0", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.55 }}>{tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button className="dark-btn" onClick={() => setEditingProfile({ ...profile })}>
+                  {language === "es" ? "Editar Perfil Corporal" : "Edit Body Profile"}
+                </button>
+                <button className="dark-btn" onClick={() => setEditingGoals({ ...goals })}>
+                  {language === "es" ? "Cambiar Meta de Cuerpo" : "Change Body Type Goal"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -3698,6 +4197,7 @@ export default function AtlasLuthor() {
                       onClick={() => {
                         setActiveDay(d);
                         setActiveSession(0);
+                        setExpandedExerciseIndex(null);
                       }}
                     >
                       <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: isActive ? t.accent : "#6E7480", fontFamily: "'Orbitron', monospace" }}>
@@ -3959,6 +4459,93 @@ export default function AtlasLuthor() {
                 const setsDone = Number(setProgress[key] || 0);
                 const totalExerciseSets = Number(ex.sets || 0);
                 const setsLeft = Math.max(totalExerciseSets - setsDone, 0);
+                const isExpanded = expandedExerciseIndex === i && !isDone;
+
+                if (isExpanded) {
+                  return (
+                    <div
+                      key={i}
+                      className="home-card fade-up"
+                      style={{ marginBottom: 12, borderColor: theme.accent, boxShadow: `0 0 28px ${theme.accent}33`, padding: 20 }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
+                            {language === "es" ? "EJERCICIO ACTIVO" : "ACTIVE EXERCISE"}
+                          </p>
+                          <h3 style={{ fontSize: 22, fontWeight: 900, fontFamily: "'DM Sans', sans-serif", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1.2 }}>
+                            {ex.name}
+                          </h3>
+                        </div>
+                        <button className="edit-btn" onClick={() => setExpandedExerciseIndex(null)} style={{ flexShrink: 0, marginLeft: 8 }}>
+                          ↑ {language === "es" ? "Colapsar" : "Collapse"}
+                        </button>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
+                        <div className="stat-box" style={{ padding: 14 }}>
+                          <p style={{ fontSize: 28, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.weight}</p>
+                          <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 6, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
+                        </div>
+                        <div className="stat-box" style={{ padding: 14 }}>
+                          <p style={{ fontSize: 28, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.sets}×{ex.reps}</p>
+                          <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 6, fontFamily: "'Orbitron', monospace" }}>{text.mSets} × {text.repsWord}</p>
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700 }}>{text.mSets}: {setsDone}/{totalExerciseSets}</span>
+                          <span style={{ color: setsLeft === 0 ? theme.accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 900 }}>{setsLeft} {text.leftWord}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 5 }}>
+                          {Array.from({ length: totalExerciseSets }).map((_, si) => (
+                            <div key={si} style={{ flex: 1, height: 8, borderRadius: 4, background: si < setsDone ? theme.accent : (isLightMode ? "#E2E4E9" : "#2A2A34"), transition: "background 0.3s ease" }} />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                        <button
+                          className="dark-btn"
+                          onClick={() => updateSetCount(i, -1)}
+                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}
+                        >
+                          {text.minusSet}
+                        </button>
+                        <button
+                          className="primary-btn"
+                          onClick={() => updateSetCount(i, 1)}
+                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}
+                        >
+                          {text.plusSet}
+                        </button>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <button
+                          className="dark-btn"
+                          onClick={() => setEditingNote({ key, name: ex.name, pain: note?.pain || "", difficulty: note?.difficulty || "", pr: !!note?.pr, technique: note?.technique || "" })}
+                          style={{ color: hasNote ? theme.accent : "#888" }}
+                        >
+                          {text.notesWord} {hasNote ? "✓" : ""}
+                        </button>
+                        <button
+                          className="dark-btn"
+                          onClick={() => toggleExercise(i)}
+                          style={{ color: "#3FB98A" }}
+                        >
+                          {text.markExerciseDone}
+                        </button>
+                      </div>
+                      {hasNote && (
+                        <p style={{ color: theme.accent, fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, marginTop: 10 }}>
+                          {note.pr ? "PR · " : ""}{note.difficulty ? `RPE ${note.difficulty} · ` : ""}{note.technique || note.pain}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
 
                 return (
                   <div
@@ -3968,16 +4555,28 @@ export default function AtlasLuthor() {
                     tabIndex={0}
                     aria-pressed={isDone}
                     aria-label={`${ex.name}, ${isDone ? "completed" : "not completed"}`}
-                    onClick={() => toggleExercise(i)}
+                    onClick={() => {
+                      if (!isDone) {
+                        setExpandedExerciseIndex(i);
+                        setHighlightedExerciseIndex(i);
+                      } else {
+                        toggleExercise(i);
+                      }
+                    }}
                     onKeyDown={event => {
                       if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
                         event.preventDefault();
-                        toggleExercise(i);
+                        if (!isDone) setExpandedExerciseIndex(i);
+                        else toggleExercise(i);
                       }
                     }}
                     style={highlightedExerciseIndex === i && !isDone ? { borderColor: theme.accent, boxShadow: `0 0 22px ${theme.accent}22` } : {}}
                   >
-                    <div className="check" style={isDone ? { background: theme.accent, borderColor: theme.accent, color: isLightMode ? "#FFFFFF" : "#000" } : {}}>
+                    <div
+                      className="check"
+                      style={isDone ? { background: theme.accent, borderColor: theme.accent, color: isLightMode ? "#FFFFFF" : "#000" } : {}}
+                      onClick={event => { event.stopPropagation(); toggleExercise(i); }}
+                    >
                       {isDone ? "✓" : ""}
                     </div>
 
@@ -4004,6 +4603,7 @@ export default function AtlasLuthor() {
                         onClick={event => {
                           event.stopPropagation();
                           updateSetCount(i, 1);
+                          if (!isDone) setExpandedExerciseIndex(i);
                         }}
                         style={{ color: theme.accent }}
                       >
@@ -4740,7 +5340,36 @@ export default function AtlasLuthor() {
 
             <p className="menu-section-label" style={{ marginTop: 16 }}>ADD EXERCISE</p>
             <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-              <input className="input" value={editingRoutine.draft.name} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))} placeholder="New exercise name" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
+                <select
+                  className="input"
+                  value={exerciseFilterMuscle}
+                  onChange={event => setExerciseFilterMuscle(event.target.value)}
+                >
+                  {EXERCISE_MUSCLE_GROUPS.map(group => (
+                    <option key={group} value={group}>{group}</option>
+                  ))}
+                </select>
+                <select
+                  className="input"
+                  value={editingRoutine.draft.name}
+                  onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))}
+                >
+                  <option value="">{language === "es" ? "Seleccionar ejercicio" : "Select exercise"}</option>
+                  {(exerciseFilterMuscle === "All"
+                    ? Object.values(COMMON_EXERCISES).flat()
+                    : (COMMON_EXERCISES[exerciseFilterMuscle] || [])
+                  ).map(ex => (
+                    <option key={ex} value={ex}>{ex}</option>
+                  ))}
+                </select>
+              </div>
+              <input
+                className="input"
+                value={editingRoutine.draft.name}
+                onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))}
+                placeholder={language === "es" ? "O escribe el nombre del ejercicio" : "Or type a custom exercise name"}
+              />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                 <select className="input" value={editingRoutine.draft.sets} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, sets: event.target.value } }))}>
                   {SET_OPTIONS.map(option => <option key={option} value={option}>{option} sets</option>)}
@@ -4753,7 +5382,7 @@ export default function AtlasLuthor() {
                 </select>
               </div>
               <button className="primary-btn" onClick={addRoutineExercise}>
-                Add Exercise
+                {language === "es" ? "Agregar Ejercicio" : "Add Exercise"}
               </button>
               <button className="dark-btn" onClick={() => setEditingRoutine(null)}>
                 {text.doneBtn}
@@ -4764,21 +5393,53 @@ export default function AtlasLuthor() {
         );
       })()}
 
-      {editingProfile && (
+      {editingProfile && (() => {
+        const editBmi = calculateBMI(editingProfile.currentWeight, editingProfile.height);
+        const editBf = calculateBodyFatPct(editBmi, editingProfile.age, editingProfile.sex || "male");
+        const editIbw = calculateIBW(editingProfile.height, editingProfile.sex || "male");
+        const editLean = getLeanMass(editingProfile.currentWeight, editBf);
+        return (
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              EDIT BODY STATUS
+              {language === "es" ? "EDITAR ESTADO CORPORAL" : "EDIT BODY STATUS"}
             </p>
 
             <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">{text.sexLabel}</span>
+                  <select
+                    className="input"
+                    value={editingProfile.sex || "male"}
+                    onChange={event => setEditingProfile(prev => ({ ...prev, sex: event.target.value }))}
+                  >
+                    {GENDER_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{language === "es" ? (option.value === "male" ? "Hombre" : "Mujer") : option.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ display: "block" }}>
+                  <span className="field-label">{text.ageLabel}</span>
+                  <select
+                    className="input"
+                    value={editingProfile.age || "30"}
+                    onChange={event => setEditingProfile(prev => ({ ...prev, age: event.target.value }))}
+                  >
+                    {Array.from(new Set([editingProfile.age || "30", ...AGE_OPTIONS])).map(option => (
+                      <option key={option} value={option}>{option} {language === "es" ? "años" : "yrs"}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
               <select
                 className="input"
                 value={editingProfile.currentWeight}
                 onChange={event => setEditingProfile(prev => ({ ...prev, currentWeight: event.target.value }))}
               >
                 {Array.from(new Set([editingProfile.currentWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} LB current</option>
+                  <option key={option} value={option}>{option} LB {language === "es" ? "actual" : "current"}</option>
                 ))}
               </select>
 
@@ -4788,7 +5449,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingProfile(prev => ({ ...prev, startWeight: event.target.value }))}
               >
                 {Array.from(new Set([editingProfile.startWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} LB start</option>
+                  <option key={option} value={option}>{option} LB {language === "es" ? "inicio" : "start"}</option>
                 ))}
               </select>
 
@@ -4798,7 +5459,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingProfile(prev => ({ ...prev, targetWeight: event.target.value }))}
               >
                 {Array.from(new Set([editingProfile.targetWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} LB target</option>
+                  <option key={option} value={option}>{option} LB {language === "es" ? "meta" : "target"}</option>
                 ))}
               </select>
 
@@ -4819,6 +5480,27 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingProfile(prev => ({ ...prev, startDate: event.target.value }))}
                 placeholder="Start date"
               />
+
+              {editBmi > 0 && (
+                <div style={{ border: "1px solid #24242E", borderRadius: 12, padding: 12, background: "#101015" }}>
+                  <p style={{ fontSize: 9, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                    {text.bodyComposition.toUpperCase()}
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                    {[
+                      { label: text.bmiLabel, val: String(editBmi) },
+                      { label: text.bodyFatLabel, val: `${editBf}%` },
+                      { label: text.leanMassLabel, val: `${editLean} LB` },
+                      { label: text.ibwLabel, val: `${editIbw} LB` },
+                    ].map(item => (
+                      <div key={item.label} style={{ textAlign: "center" }}>
+                        <p style={{ fontSize: 16, fontWeight: 900, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>{item.val}</p>
+                        <p style={{ fontSize: 9, letterSpacing: 1, color: "#666", fontFamily: "'Orbitron', monospace", marginTop: 3 }}>{item.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
@@ -4838,13 +5520,14 @@ export default function AtlasLuthor() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {editingGoals && (
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              SET MY GOALS
+              {language === "es" ? "DEFINIR MIS METAS" : "SET MY GOALS"}
             </p>
 
             <div style={{ display: "grid", gap: 10 }}>
@@ -4852,8 +5535,25 @@ export default function AtlasLuthor() {
                 className="input"
                 value={editingGoals.focusGoal}
                 onChange={event => setEditingGoals(prev => ({ ...prev, focusGoal: event.target.value }))}
-                placeholder="Main goal"
+                placeholder={language === "es" ? "Meta principal" : "Main goal"}
               />
+
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.bodyTypeLabel.toUpperCase()}</span>
+                <select
+                  className="input"
+                  value={editingGoals.bodyTypeGoal || "athletic"}
+                  onChange={event => setEditingGoals(prev => ({ ...prev, bodyTypeGoal: event.target.value }))}
+                >
+                  {BODY_TYPE_GOAL_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {language === "es"
+                        ? ({ lean: "Definir / Cortar", athletic: "Recomposición Atlética", muscular: "Ganar Músculo / Volumen", maintain: "Mantener & Tonificar" }[option.value] || option.label)
+                        : option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
               <select
                 className="input"
