@@ -458,6 +458,97 @@ const UI_TEXT = {
     maleLabel: "Male",
     femaleLabel: "Female",
     bodyComposition: "Body Composition",
+    currentLabel: "CURRENT",
+    heightLabel: "HEIGHT",
+    editBodyStatus: "EDIT BODY STATUS",
+    bodyTrend: "BODY TREND",
+    stableSinceStart: "Stable since start",
+    upFromStarting: "Up from starting weight",
+    downFromStarting: "Down from starting weight",
+    manualBodyCheck: "Manual body check",
+    autoProgressCapture: "Auto progress capture",
+    dayByDay: "DAY BY DAY",
+    scoreBreakdown: "SCORE BREAKDOWN",
+    weeklyCompletion: "Weekly completion",
+    sessionTarget: "Session target",
+    streakPressure: "Streak pressure",
+    prMomentum: "PR momentum",
+    streakLabel: "STREAK",
+    prsLabel: "PRS",
+    avgRpeLabel: "AVG RPE",
+    deloadLabel: "DELOAD",
+    exercisesLogged: "exercises logged",
+    noEntrySaved: "No entry saved yet",
+    totalPrs: "TOTAL PRS",
+    heaviestLabel: "HEAVIEST",
+    heaviestLoads: "HEAVIEST PROGRAMMED LOADS",
+    highNotes: "HIGH NOTES",
+    thisWeek: "THIS WEEK",
+    lowerLoadAdvice: "Lower load, reduce intensity, or add recovery.",
+    noFatigueWarning: "No fatigue warning from the current notes.",
+    painSignalNote: "Pain marked Sharp/Stop or RPE 9-10 raises the warning signal.",
+    recentSignals: "RECENT NOTE SIGNALS",
+    deloadActiveVal: "ACTIVE",
+    deloadClearVal: "CLEAR",
+    noExerciseNotes: "No exercise notes yet",
+    addPainRPE: "Add pain/RPE from any exercise",
+    mainFocus: "MAIN FOCUS",
+    targetDateSub: "Target date:",
+    setMyGoals: "SET MY GOALS",
+    remainingExercises: "REMAINING EXERCISES",
+    setCompletionLabel: "SET COMPLETION",
+    saveProgress: "SAVE PROGRESS",
+    manualSave: "Manual save",
+    autoSnapshot: "Auto snapshot",
+    badgesLabel: "BADGES",
+    photosLabel: "PHOTOS",
+    albumsLabel: "ALBUMS",
+    addPhotoLabel: "ADD PHOTO",
+    dateField: "DATE",
+    noteField: "NOTE",
+    albumField: "ALBUM",
+    noAlbum: "No album",
+    newAlbumPlaceholder: "New album name",
+    createBtn: "Create",
+    deleteAlbumBtn: "Delete album",
+    noPhotosInAlbum: "No photos in this album yet.",
+    setProgressLabel: "SET PROGRESS",
+    manageWorkoutsSub: "Add, edit, or remove exercises and sessions.",
+    addExerciseSection: "ADD EXERCISE",
+    noExercisesYet: "No exercises in this session yet. Add one below.",
+    exerciseLabel: "EXERCISE",
+    removeBtn: "Remove",
+    exerciseNamePlaceholder: "Exercise name",
+    daySection: "DAY",
+    sessionSection: "SESSION",
+    sessionNameField: "SESSION NAME",
+    timeField: "TIME",
+    addSessionBtn: "Add Session",
+    duplicateBtn: "Duplicate",
+    deleteBtn: "Delete",
+    sessionNamePlaceholder: "Session name",
+    repsLabel: "REPS",
+    customReminders: "CUSTOM REMINDERS",
+    reminderTitlePlaceholder: "Reminder title",
+    reminderMessagePlaceholder: "Reminder message",
+    addReminderBtn: "ADD REMINDER",
+    reminderOn: "On",
+    reminderOff: "Off",
+    editWeight: "EDIT WEIGHT",
+    weekWord: "week",
+    sessionsWord: "sessions",
+    featDescToday: "The command center for the current day: start the session, jump into quick mode, and keep the week's protocol moving.",
+    featDescBody: "Tracks current body weight against the starting point and target so the protocol has a visible physical direction.",
+    featDescScore: "Combines weekly completion, sessions, streak, PRs, and fatigue into one performance signal.",
+    featDescCalendar: "Shows the month as training status: completed, trained, missed, rest, or planned.",
+    featDescPrs: "Collects every exercise marked as a PR from notes, then pairs it with the current programmed weight and date.",
+    featDescFatigue: "Uses RPE and pain notes to show weekly strain and warn when the protocol may need a lighter day.",
+    featDescGoals: "Keeps weekly targets and the main focus goal visible, with progress against each target.",
+    featDescProgress: "Stores body-weight and weekly-performance snapshots so progress survives beyond today's checkboxes.",
+    featDescBadges: "Turns consistency into simple streaks and badges without making the app feel noisy.",
+    featDescPhotos: "Keeps local progress photos by date, weight, and note for visual comparison.",
+    featDescMetrics: "Breaks down the full weekly workload: exercises, sets, sessions, cardio, completion, and set progress.",
+    featDescWeek: "Shows the full seven-day split and gives fast access to every programmed workout day.",
   },
   es: {
     goodMorning: "Buenos días",
@@ -603,6 +694,97 @@ const UI_TEXT = {
     maleLabel: "Hombre",
     femaleLabel: "Mujer",
     bodyComposition: "Composición Corporal",
+    currentLabel: "ACTUAL",
+    heightLabel: "ALTURA",
+    editBodyStatus: "EDITAR ESTADO CORPORAL",
+    bodyTrend: "TENDENCIA CORPORAL",
+    stableSinceStart: "Estable desde el inicio",
+    upFromStarting: "Subiendo desde el peso inicial",
+    downFromStarting: "Bajando desde el peso inicial",
+    manualBodyCheck: "Revisión corporal manual",
+    autoProgressCapture: "Captura automática de progreso",
+    dayByDay: "DÍA A DÍA",
+    scoreBreakdown: "DESGLOSE DEL PUNTAJE",
+    weeklyCompletion: "Cumplimiento semanal",
+    sessionTarget: "Meta de sesiones",
+    streakPressure: "Presión de racha",
+    prMomentum: "Impulso de récords",
+    streakLabel: "RACHA",
+    prsLabel: "RÉCORDS",
+    avgRpeLabel: "RPE PROM.",
+    deloadLabel: "DESCARGA",
+    exercisesLogged: "ejercicios registrados",
+    noEntrySaved: "Aún no hay entrada guardada",
+    totalPrs: "RÉCORDS TOTALES",
+    heaviestLabel: "MÁS PESADO",
+    heaviestLoads: "CARGAS PROGRAMADAS MÁS PESADAS",
+    highNotes: "NOTAS ALTAS",
+    thisWeek: "ESTA SEMANA",
+    lowerLoadAdvice: "Baja la carga, reduce la intensidad o agrega recuperación.",
+    noFatigueWarning: "Sin alerta de fatiga en las notas actuales.",
+    painSignalNote: "Dolor Agudo/Parar o RPE 9-10 activa la señal de alerta.",
+    recentSignals: "SEÑALES RECIENTES",
+    deloadActiveVal: "ACTIVO",
+    deloadClearVal: "DESPEJADO",
+    noExerciseNotes: "Aún no hay notas de ejercicios",
+    addPainRPE: "Agrega dolor/RPE en cualquier ejercicio",
+    mainFocus: "ENFOQUE PRINCIPAL",
+    targetDateSub: "Fecha meta:",
+    setMyGoals: "DEFINIR MIS METAS",
+    remainingExercises: "EJERCICIOS RESTANTES",
+    setCompletionLabel: "SERIES COMPLETADAS",
+    saveProgress: "GUARDAR PROGRESO",
+    manualSave: "Guardado manual",
+    autoSnapshot: "Captura automática",
+    badgesLabel: "INSIGNIAS",
+    photosLabel: "FOTOS",
+    albumsLabel: "ÁLBUMES",
+    addPhotoLabel: "AGREGAR FOTO",
+    dateField: "FECHA",
+    noteField: "NOTA",
+    albumField: "ÁLBUM",
+    noAlbum: "Sin álbum",
+    newAlbumPlaceholder: "Nombre del álbum",
+    createBtn: "Crear",
+    deleteAlbumBtn: "Eliminar álbum",
+    noPhotosInAlbum: "Aún no hay fotos en este álbum.",
+    setProgressLabel: "PROGRESO DE SERIES",
+    manageWorkoutsSub: "Agrega, edita o elimina ejercicios y sesiones.",
+    addExerciseSection: "AGREGAR EJERCICIO",
+    noExercisesYet: "Aún no hay ejercicios en esta sesión. Agrega uno abajo.",
+    exerciseLabel: "EJERCICIO",
+    removeBtn: "Eliminar",
+    exerciseNamePlaceholder: "Nombre del ejercicio",
+    daySection: "DÍA",
+    sessionSection: "SESIÓN",
+    sessionNameField: "NOMBRE DE SESIÓN",
+    timeField: "HORA",
+    addSessionBtn: "Agregar Sesión",
+    duplicateBtn: "Duplicar",
+    deleteBtn: "Eliminar",
+    sessionNamePlaceholder: "Nombre de la sesión",
+    repsLabel: "REPS",
+    customReminders: "RECORDATORIOS PERSONALIZADOS",
+    reminderTitlePlaceholder: "Título del recordatorio",
+    reminderMessagePlaceholder: "Mensaje del recordatorio",
+    addReminderBtn: "AGREGAR RECORDATORIO",
+    reminderOn: "Activo",
+    reminderOff: "Inactivo",
+    editWeight: "EDITAR PESO",
+    weekWord: "semana",
+    sessionsWord: "sesiones",
+    featDescToday: "El centro de mando del día actual: inicia la sesión, entra al modo rápido y mantén el protocolo semanal en movimiento.",
+    featDescBody: "Rastrea el peso corporal actual contra el punto de inicio y la meta para que el protocolo tenga una dirección física visible.",
+    featDescScore: "Combina cumplimiento semanal, sesiones, racha, récords y fatiga en una sola señal de rendimiento.",
+    featDescCalendar: "Muestra el mes como estado de entrenamiento: completado, entrenado, perdido, descanso o planeado.",
+    featDescPrs: "Reúne cada ejercicio marcado como récord en las notas y lo empareja con el peso programado actual y la fecha.",
+    featDescFatigue: "Usa notas de RPE y dolor para mostrar la carga semanal y avisar cuando el protocolo puede necesitar un día más ligero.",
+    featDescGoals: "Mantiene visibles las metas semanales y el objetivo principal, con progreso hacia cada meta.",
+    featDescProgress: "Guarda instantáneas de peso corporal y rendimiento semanal para que el progreso sobreviva más allá de los checkboxes de hoy.",
+    featDescBadges: "Convierte la constancia en rachas e insignias simples sin hacer la app ruidosa.",
+    featDescPhotos: "Guarda fotos de progreso locales por fecha, peso y nota para comparación visual.",
+    featDescMetrics: "Desglosa la carga semanal completa: ejercicios, series, sesiones, cardio, completados y progreso de series.",
+    featDescWeek: "Muestra la división completa de siete días y da acceso rápido a cada día de entrenamiento programado.",
   },
 };
 
@@ -3641,18 +3823,18 @@ export default function AtlasLuthor() {
               </p>
               <h2 className="feature-title">{activeFeature.title}</h2>
               <p className="feature-copy">
-                {activeFeaturePage === "today" && "The command center for the current day: start the session, jump into quick mode, and keep the week's protocol moving."}
-                {activeFeaturePage === "body" && "Tracks current body weight against the starting point and target so the protocol has a visible physical direction."}
-                {activeFeaturePage === "score" && "Combines weekly completion, sessions, streak, PRs, and fatigue into one performance signal."}
-                {activeFeaturePage === "calendar" && "Shows the month as training status: completed, trained, missed, rest, or planned."}
-                {activeFeaturePage === "prs" && "Collects every exercise marked as a PR from notes, then pairs it with the current programmed weight and date."}
-                {activeFeaturePage === "fatigue" && "Uses RPE and pain notes to show weekly strain and warn when the protocol may need a lighter day."}
-                {activeFeaturePage === "goals" && "Keeps weekly targets and the main focus goal visible, with progress against each target."}
-                {activeFeaturePage === "progress" && "Stores body-weight and weekly-performance snapshots so progress survives beyond today's checkboxes."}
-                {activeFeaturePage === "badges" && "Turns consistency into simple streaks and badges without making the app feel noisy."}
-                {activeFeaturePage === "photos" && "Keeps local progress photos by date, weight, and note for visual comparison."}
-                {activeFeaturePage === "metrics" && "Breaks down the full weekly workload: exercises, sets, sessions, cardio, completion, and set progress."}
-                {activeFeaturePage === "week" && "Shows the full seven-day split and gives fast access to every programmed workout day."}
+                {activeFeaturePage === "today" && text.featDescToday}
+                {activeFeaturePage === "body" && text.featDescBody}
+                {activeFeaturePage === "score" && text.featDescScore}
+                {activeFeaturePage === "calendar" && text.featDescCalendar}
+                {activeFeaturePage === "prs" && text.featDescPrs}
+                {activeFeaturePage === "fatigue" && text.featDescFatigue}
+                {activeFeaturePage === "goals" && text.featDescGoals}
+                {activeFeaturePage === "progress" && text.featDescProgress}
+                {activeFeaturePage === "badges" && text.featDescBadges}
+                {activeFeaturePage === "photos" && text.featDescPhotos}
+                {activeFeaturePage === "metrics" && text.featDescMetrics}
+                {activeFeaturePage === "week" && text.featDescWeek}
                 {activeFeaturePage === "water" && (language === "es" ? "Registra tu hidratación diaria. El agua mejora el rendimiento, la recuperación y el metabolismo." : "Track your daily hydration. Water improves performance, recovery and metabolism.")}
                 {activeFeaturePage === "coach" && (language === "es" ? "Consejos personalizados basados en tu edad, sexo, composición corporal y meta de tipo de cuerpo." : "Personalized tips based on your age, sex, body composition, and body type goal.")}
               </p>
@@ -3682,16 +3864,16 @@ export default function AtlasLuthor() {
                   START TODAY
                 </button>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
-                  <button className="dark-btn" onClick={resetWeek}>Reset Week</button>
+                  <button className="dark-btn" onClick={resetWeek}>{text.resetWeek}</button>
                 </div>
                 <div className="home-card">
-                  <p className="detail-label">NEXT PRIORITIES</p>
+                  <p className="detail-label">{language === "es" ? "PRÓXIMAS PRIORIDADES" : "NEXT PRIORITIES"}</p>
                   <div className="detail-list">
-                    {(incompleteExerciseRows.length ? incompleteExerciseRows : [{ key: "done", exercise: { name: "All exercises completed", weight: "" }, dayName: weeklyMetrics.today, sessionName: "Protocol", setsDone: 0, setsTotal: 0, setsLeft: 0 }]).slice(0, 4).map(row => (
+                    {(incompleteExerciseRows.length ? incompleteExerciseRows : [{ key: "done", exercise: { name: language === "es" ? "Todos los ejercicios completados" : "All exercises completed", weight: "" }, dayName: weeklyMetrics.today, sessionName: language === "es" ? "Protocolo" : "Protocol", setsDone: 0, setsTotal: 0, setsLeft: 0 }]).slice(0, 4).map(row => (
                       <div key={`${row.key}-today-priority`} className="detail-row">
                         <div>
                           <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {row.setsDone}/{row.setsTotal} sets</p>
+                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {row.setsDone}/{row.setsTotal} {text.setsWord}</p>
                         </div>
                         <span style={{ color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.exercise.weight}</span>
                       </div>
@@ -3705,12 +3887,12 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-grid">
                   {[
-                    { label: "CURRENT", val: `${profile.currentWeight} LB` },
-                    { label: "START", val: `${profile.startWeight} LB` },
-                    { label: "TARGET", val: `${profile.targetWeight} LB` },
-                    { label: "CHANGE", val: `${signedNumber(weightChange)} LB` },
-                    { label: "TO GOAL", val: `${signedNumber(weightToGoal)} LB` },
-                    { label: "HEIGHT", val: profile.height },
+                    { label: text.currentLabel, val: `${profile.currentWeight} LB` },
+                    { label: text.start, val: `${profile.startWeight} LB` },
+                    { label: text.target, val: `${profile.targetWeight} LB` },
+                    { label: text.change, val: `${signedNumber(weightChange)} LB` },
+                    { label: text.toGoal, val: `${signedNumber(weightToGoal)} LB` },
+                    { label: text.heightLabel, val: profile.height },
                     { label: text.sexLabel.toUpperCase(), val: profileSex === "male" ? text.maleLabel : text.femaleLabel },
                     { label: text.ageLabel.toUpperCase(), val: `${profile.age || "--"} ${language === "es" ? "años" : "yrs"}` },
                   ].map(metric => (
@@ -3739,15 +3921,17 @@ export default function AtlasLuthor() {
                   </div>
                 )}
                 <button className="primary-btn" onClick={() => setEditingProfile({ ...profile })}>
-                  EDIT BODY STATUS
+                  {text.editBodyStatus}
                 </button>
                 <div className="home-card">
-                  <p className="detail-label">BODY TREND</p>
+                  <p className="detail-label">{text.bodyTrend}</p>
                   <p className="detail-row-main">
-                    {weightChange === 0 ? "Stable since start" : weightChange > 0 ? "Up from starting weight" : "Down from starting weight"}
+                    {weightChange === 0 ? text.stableSinceStart : weightChange > 0 ? text.upFromStarting : text.downFromStarting}
                   </p>
                   <p className="detail-row-sub">
-                    Start date {profile.startDate}. Target date {goals.targetDate}. Current gap to target is {signedNumber(weightToGoal)} LB.
+                    {language === "es"
+                      ? `Fecha inicio ${profile.startDate}. Fecha meta ${goals.targetDate}. Diferencia actual a la meta: ${signedNumber(weightToGoal)} LB.`
+                      : `Start date ${profile.startDate}. Target date ${goals.targetDate}. Current gap to target is ${signedNumber(weightToGoal)} LB.`}
                   </p>
                 </div>
                 <div className="detail-list">
@@ -3755,20 +3939,20 @@ export default function AtlasLuthor() {
                     <div key={`${entry.id}-body-row`} className="detail-row">
                       <div>
                         <p className="detail-row-main">{entry.date}</p>
-                        <p className="detail-row-sub">{entry.type === "manual" ? "Manual body check" : "Auto progress capture"}</p>
+                        <p className="detail-row-sub">{entry.type === "manual" ? text.manualBodyCheck : text.autoProgressCapture}</p>
                       </div>
                       <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} LB</span>
                     </div>
                   ))}
                 </div>
                 <div className="home-card">
-                  <p className="detail-label">DAY BY DAY</p>
+                  <p className="detail-label">{text.dayByDay}</p>
                   <div className="detail-list">
                     {dayBreakdowns.map(row => (
                       <div key={`${row.dayName}-metric-detail`} className="detail-row">
                         <div>
                           <p className="detail-row-main">{displayDayShort(row.dayName, row.label)} - {displayDay(row.dayName)}</p>
-                          <p className="detail-row-sub">{row.doneDayExercises}/{row.totalDayExercises} exercises - {row.doneDaySets}/{row.totalDaySets} sets</p>
+                          <p className="detail-row-sub">{row.doneDayExercises}/{row.totalDayExercises} {text.exercisesWord} - {row.doneDaySets}/{row.totalDaySets} {text.setsWord}</p>
                         </div>
                         <span style={{ color: themeFor(row.type).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.progressPct}%</span>
                       </div>
@@ -3782,23 +3966,23 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-card" style={{ textAlign: "center", padding: 20 }}>
                   <p style={{ color: "#FFFFFF", fontSize: 54, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{atlasScore}</p>
-                  <p className="detail-row-sub">{deloadWarning ? "Deload pressure is active" : "Protocol status stable"}</p>
+                  <p className="detail-row-sub">{deloadWarning ? text.deloadActive : text.protocolStable}</p>
                 </div>
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">WEEKLY</p><p className="detail-value">{weeklyMetrics.weeklyProgress}%</p></div>
-                  <div className="detail-card"><p className="detail-label">SESSIONS</p><p className="detail-value">{weeklyMetrics.completedSessions}/{weeklySessionsGoal}</p></div>
-                  <div className="detail-card"><p className="detail-label">STREAK</p><p className="detail-value">{weeklyStreak}</p></div>
-                  <div className="detail-card"><p className="detail-label">PRS</p><p className="detail-value">{prEntries.length}</p></div>
-                  <div className="detail-card"><p className="detail-label">AVG RPE</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
-                  <div className="detail-card"><p className="detail-label">DELOAD</p><p className="detail-value">{deloadWarning ? "-10" : "+5"}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.mWeekly}</p><p className="detail-value">{weeklyMetrics.weeklyProgress}%</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.mSessions}</p><p className="detail-value">{weeklyMetrics.completedSessions}/{weeklySessionsGoal}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.streakLabel}</p><p className="detail-value">{weeklyStreak}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.prsLabel}</p><p className="detail-value">{prEntries.length}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.avgRpeLabel}</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.deloadLabel}</p><p className="detail-value">{deloadWarning ? "-10" : "+5"}</p></div>
                 </div>
                 <div className="home-card">
-                  <p className="detail-label">SCORE BREAKDOWN</p>
+                  <p className="detail-label">{text.scoreBreakdown}</p>
                   <div className="detail-list">
-                    <div className="detail-row"><p className="detail-row-main">Weekly completion</p><span>{Math.round(weeklyMetrics.weeklyProgress * 0.45)} pts</span></div>
-                    <div className="detail-row"><p className="detail-row-main">Session target</p><span>{Math.round(Math.min(weeklyMetrics.completedSessions / weeklySessionsGoal, 1) * 25)} pts</span></div>
-                    <div className="detail-row"><p className="detail-row-main">Streak pressure</p><span>{Math.min(weeklyStreak, 4) * 5} pts</span></div>
-                    <div className="detail-row"><p className="detail-row-main">PR momentum</p><span>{prEntries.length * 3} pts</span></div>
+                    <div className="detail-row"><p className="detail-row-main">{text.weeklyCompletion}</p><span>{Math.round(weeklyMetrics.weeklyProgress * 0.45)} pts</span></div>
+                    <div className="detail-row"><p className="detail-row-main">{text.sessionTarget}</p><span>{Math.round(Math.min(weeklyMetrics.completedSessions / weeklySessionsGoal, 1) * 25)} pts</span></div>
+                    <div className="detail-row"><p className="detail-row-main">{text.streakPressure}</p><span>{Math.min(weeklyStreak, 4) * 5} pts</span></div>
+                    <div className="detail-row"><p className="detail-row-main">{text.prMomentum}</p><span>{prEntries.length * 3} pts</span></div>
                   </div>
                 </div>
               </div>
@@ -3850,7 +4034,7 @@ export default function AtlasLuthor() {
                     <div key={`${cell.key}-row`} className="detail-row">
                       <div>
                         <p className="detail-row-main">{cell.key} - {displayDay(cell.dayName)}</p>
-                        <p className="detail-row-sub">{logged ? `${logged.completed}/${logged.total} exercises logged` : "No entry saved yet"}</p>
+                        <p className="detail-row-sub">{logged ? `${logged.completed}/${logged.total} ${text.exercisesLogged}` : text.noEntrySaved}</p>
                       </div>
                       <span style={{ color: "#FFFFFF", fontFamily: "'Orbitron', monospace", fontSize: 10 }}>{status.toUpperCase()}</span>
                     </div>
@@ -3862,10 +4046,10 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "prs" && (
               <div className="detail-list">
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">TOTAL PRS</p><p className="detail-value">{prEntries.length}</p></div>
-                  <div className="detail-card"><p className="detail-label">HEAVIEST</p><p className="detail-value">{heaviestExerciseRows[0]?.exercise.weight || "--"}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.totalPrs}</p><p className="detail-value">{prEntries.length}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.heaviestLabel}</p><p className="detail-value">{heaviestExerciseRows[0]?.exercise.weight || "--"}</p></div>
                 </div>
-                {(prEntries.length ? prEntries : [{ key: "empty-pr", exerciseName: "No PRs marked yet", sessionName: "Open Notes on an exercise and mark PR", weight: "", date: "" }]).map(entry => (
+                {(prEntries.length ? prEntries : [{ key: "empty-pr", exerciseName: text.noPrsYet, sessionName: text.markPrHint, weight: "", date: "" }]).map(entry => (
                   <div key={entry.key} className="detail-row">
                     <div>
                       <p className="detail-row-main">{entry.exerciseName}</p>
@@ -3875,7 +4059,7 @@ export default function AtlasLuthor() {
                   </div>
                 ))}
                 <div className="home-card">
-                  <p className="detail-label">HEAVIEST PROGRAMMED LOADS</p>
+                  <p className="detail-label">{text.heaviestLoads}</p>
                   <div className="detail-list">
                     {heaviestExerciseRows.slice(0, 5).map(row => (
                       <div key={`${row.key}-heavy`} className="detail-row">
@@ -3894,23 +4078,23 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "fatigue" && (
               <div className="detail-list">
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">AVG RPE</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
-                  <div className="detail-card"><p className="detail-label">HIGH NOTES</p><p className="detail-value">{highFatigueNotes}</p></div>
-                  <div className="detail-card"><p className="detail-label">DELOAD</p><p className="detail-value">{deloadWarning ? "ACTIVE" : "CLEAR"}</p></div>
-                  <div className="detail-card"><p className="detail-label">THIS WEEK</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.avgRpeLabel}</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.highNotes}</p><p className="detail-value">{highFatigueNotes}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.deloadLabel}</p><p className="detail-value">{deloadWarning ? text.deloadActiveVal : text.deloadClearVal}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.thisWeek}</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
                 </div>
                 <div className="home-card" style={{ borderColor: deloadWarning ? "#FFD06066" : "rgba(255,255,255,0.075)" }}>
-                  <p className="detail-row-main">{deloadWarning ? "Lower load, reduce intensity, or add recovery." : "No fatigue warning from the current notes."}</p>
-                  <p className="detail-row-sub">Pain marked Sharp/Stop or RPE 9-10 raises the warning signal.</p>
+                  <p className="detail-row-main">{deloadWarning ? text.lowerLoadAdvice : text.noFatigueWarning}</p>
+                  <p className="detail-row-sub">{text.painSignalNote}</p>
                 </div>
                 <div className="home-card">
-                  <p className="detail-label">RECENT NOTE SIGNALS</p>
+                  <p className="detail-label">{text.recentSignals}</p>
                   <div className="detail-list">
-                    {(noteRows.length ? noteRows : [{ key: "empty-note", exercise: { name: "No exercise notes yet" }, dayName: "Notes", sessionName: "Add pain/RPE from any exercise", note: {} }]).slice(0, 6).map(row => (
+                    {(noteRows.length ? noteRows : [{ key: "empty-note", exercise: { name: text.noExerciseNotes }, dayName: language === "es" ? "Notas" : "Notes", sessionName: text.addPainRPE, note: {} }]).slice(0, 6).map(row => (
                       <div key={`${row.key}-fatigue-note`} className="detail-row">
                         <div>
                           <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - Pain {row.note?.pain || "N/A"} - RPE {row.note?.difficulty || "N/A"}</p>
+                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {language === "es" ? "Dolor" : "Pain"} {row.note?.pain || "N/A"} - RPE {row.note?.difficulty || "N/A"}</p>
                         </div>
                         <span style={{ color: row.note?.pr ? "#FFD060" : "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.note?.pr ? "PR" : "NOTE"}</span>
                       </div>
@@ -3923,11 +4107,11 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "goals" && (
               <div className="detail-list">
                 <div className="home-card">
-                  <p className="detail-label">MAIN FOCUS</p>
+                  <p className="detail-label">{text.mainFocus}</p>
                   <p className="detail-row-main">{goals.focusGoal}</p>
-                  <p className="detail-row-sub">Target date: {goals.targetDate}</p>
+                  <p className="detail-row-sub">{text.targetDateSub} {goals.targetDate}</p>
                 </div>
-                {[{ label: "Weekly protocol", current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct }, { label: "Completed sessions", current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct }].map(goal => (
+                {[{ label: text.weeklyProtocol, current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct }, { label: text.completedSessions, current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct }].map(goal => (
                   <div key={goal.label} className="detail-card">
                     <p className="detail-label">{goal.label.toUpperCase()}</p>
                     <p className="detail-value">{goal.current} / {goal.target}</p>
@@ -3936,10 +4120,10 @@ export default function AtlasLuthor() {
                     </div>
                   </div>
                 ))}
-                <button className="primary-btn" onClick={() => setEditingGoals({ ...goals })}>SET MY GOALS</button>
+                <button className="primary-btn" onClick={() => setEditingGoals({ ...goals })}>{text.setMyGoals}</button>
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">REMAINING EXERCISES</p><p className="detail-value">{remainingExercises}</p></div>
-                  <div className="detail-card"><p className="detail-label">SET COMPLETION</p><p className="detail-value">{setCompletionPct}%</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.remainingExercises}</p><p className="detail-value">{remainingExercises}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.setCompletionLabel}</p><p className="detail-value">{setCompletionPct}%</p></div>
                 </div>
               </div>
             )}
@@ -3947,7 +4131,7 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "progress" && (
               <div className="detail-list">
                 <div className="compact-actions">
-                  <button className="primary-btn" onClick={rememberProgress}>SAVE PROGRESS</button>
+                  <button className="primary-btn" onClick={rememberProgress}>{text.saveProgress}</button>
                   <button className="dark-btn" onClick={() => setShowDataTools(true)}>Backup</button>
                   <button className="dark-btn" onClick={resetWeek}>Reset Week</button>
                 </div>
@@ -3968,8 +4152,8 @@ export default function AtlasLuthor() {
                 {progressEntries.slice(0, 12).map(entry => (
                   <div key={`${entry.id}-feature`} className="detail-row">
                     <div>
-                      <p className="detail-row-main">{entry.date} - {entry.type === "manual" ? "Manual save" : "Auto snapshot"}</p>
-                      <p className="detail-row-sub">{entry.completedExercises} exercises - {entry.completedSessions} sessions - week {entry.weekKey}</p>
+                      <p className="detail-row-main">{entry.date} - {entry.type === "manual" ? text.manualSave : text.autoSnapshot}</p>
+                      <p className="detail-row-sub">{entry.completedExercises} {text.exercisesWord} - {entry.completedSessions} {text.sessionsWord} - {text.weekWord} {entry.weekKey}</p>
                     </div>
                     <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} LB</span>
                   </div>
@@ -3980,13 +4164,13 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "badges" && (
               <div className="detail-list">
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">WEEK STREAK</p><p className="detail-value">{weeklyStreak}</p></div>
-                  <div className="detail-card"><p className="detail-label">DAYS CLEAR</p><p className="detail-value">{weeklyMetrics.completedDays}/7</p></div>
-                  <div className="detail-card"><p className="detail-label">WEEK OF</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
-                  <div className="detail-card"><p className="detail-label">BADGES</p><p className="detail-value">{earnedBadges.length || 1}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.weekStreak}</p><p className="detail-value">{weeklyStreak}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.daysClear}</p><p className="detail-value">{weeklyMetrics.completedDays}/7</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.weekOf}</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.badgesLabel}</p><p className="detail-value">{earnedBadges.length || 1}</p></div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(earnedBadges.length ? earnedBadges : ["Protocol Started"]).map(badge => (
+                  {(earnedBadges.length ? earnedBadges : [text.protocolStarted]).map(badge => (
                     <span key={badge} style={{ color: "#D8D8D8", background: "#101015", border: "1px solid #2A2A34", borderRadius: 999, padding: "9px 12px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 900 }}>
                       {badge}
                     </span>
@@ -3998,18 +4182,18 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "photos" && (
               <div className="detail-list">
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">PHOTOS</p><p className="detail-value">{totalPhotoCount}</p></div>
-                  <div className="detail-card"><p className="detail-label">ALBUMS</p><p className="detail-value">{photoAlbums.length}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.photosLabel}</p><p className="detail-value">{totalPhotoCount}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.albumsLabel}</p><p className="detail-value">{photoAlbums.length}</p></div>
                 </div>
 
                 <div className="home-card">
-                  <p className="detail-label">ALBUMS</p>
+                  <p className="detail-label">{text.albumsLabel}</p>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
                     <button
                       className={`album-chip${albumFilter === "" ? " active" : ""}`}
                       onClick={() => setAlbumFilter("")}
                     >
-                      All ({progressPhotos.length})
+                      {language === "es" ? "Todos" : "All"} ({progressPhotos.length})
                     </button>
                     {photoAlbums.map(album => (
                       <button
@@ -4022,40 +4206,40 @@ export default function AtlasLuthor() {
                     ))}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8, marginTop: 12 }}>
-                    <input className="input" value={albumDraft} onChange={event => setAlbumDraft(event.target.value)} placeholder="New album name" />
-                    <button className="dark-btn" onClick={addPhotoAlbum}>Create</button>
+                    <input className="input" value={albumDraft} onChange={event => setAlbumDraft(event.target.value)} placeholder={text.newAlbumPlaceholder} />
+                    <button className="dark-btn" onClick={addPhotoAlbum}>{text.createBtn}</button>
                   </div>
                   {albumFilter && (
                     <button className="edit-btn" onClick={() => removePhotoAlbum(albumFilter)} style={{ marginTop: 10, color: "#E5604D" }}>
-                      Delete album "{albumFilter}"
+                      {text.deleteAlbumBtn} "{albumFilter}"
                     </button>
                   )}
                 </div>
 
                 <div className="home-card">
-                  <p className="detail-label">ADD PHOTO</p>
+                  <p className="detail-label">{text.addPhotoLabel}</p>
                   <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
                     <label style={{ display: "block" }}>
-                      <span className="field-label">DATE</span>
+                      <span className="field-label">{text.dateField}</span>
                       <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
                     </label>
                     <label style={{ display: "block" }}>
-                      <span className="field-label">NOTE</span>
-                      <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder="What does this photo show?" />
+                      <span className="field-label">{text.noteField}</span>
+                      <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={language === "es" ? "¿Qué muestra esta foto?" : "What does this photo show?"} />
                     </label>
                     <label style={{ display: "block" }}>
-                      <span className="field-label">ALBUM</span>
+                      <span className="field-label">{text.albumField}</span>
                       <select className="input" value={photoDraft.album} onChange={event => setPhotoDraft(prev => ({ ...prev, album: event.target.value }))}>
-                        <option value="">No album</option>
+                        <option value="">{text.noAlbum}</option>
                         {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
                       </select>
                     </label>
                     <label className="dark-btn" style={{ textAlign: "center" }}>
-                      Choose Photo
+                      {text.choosePhoto}
                       <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
                     </label>
                     {photoDraft.dataUrl && <img src={photoDraft.dataUrl} alt="Progress preview" style={{ width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }} />}
-                    {photoDraft.dataUrl && <button className="primary-btn" onClick={saveProgressPhoto}>SAVE PHOTO</button>}
+                    {photoDraft.dataUrl && <button className="primary-btn" onClick={saveProgressPhoto}>{text.savePhoto}</button>}
                   </div>
                 </div>
 
@@ -4066,7 +4250,7 @@ export default function AtlasLuthor() {
                     return (
                       <div className="home-card">
                         <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>
-                          {albumFilter ? "No photos in this album yet." : text.noPhotos}
+                          {albumFilter ? text.noPhotosInAlbum : text.noPhotos}
                         </p>
                       </div>
                     );
@@ -4078,7 +4262,7 @@ export default function AtlasLuthor() {
                         <div key={`${photo.id}-feature`} className="photo-tile" onClick={() => setViewingPhoto(photo)}>
                           <img src={photo.dataUrl} alt={photo.note || "Progress"} />
                           <div className="photo-body">
-                            <p className="photo-note">{photo.note || "No note"}</p>
+                            <p className="photo-note">{photo.note || text.noNote}</p>
                             <p className="photo-sub">{photo.date} · {photo.weight} LB{photo.album ? ` · ${photo.album}` : ""}</p>
                           </div>
                         </div>
@@ -4093,14 +4277,14 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-grid">
                   {[
-                    { label: "WEEKLY", val: `${weeklyMetrics.weeklyProgress}%` },
-                    { label: "DONE", val: weeklyMetrics.completedExercises },
-                    { label: "EXERCISES", val: weeklyMetrics.totalExercises },
-                    { label: "SETS", val: weeklyMetrics.totalSets },
-                    { label: "SET PROGRESS", val: `${weeklySetProgress}/${weeklyMetrics.totalSets}` },
-                    { label: "SESSIONS", val: weeklyMetrics.workoutSessions },
-                    { label: "COMPLETED", val: weeklyMetrics.completedSessions },
-                    { label: "CARDIO", val: weeklyMetrics.cardioSessions },
+                    { label: text.mWeekly, val: `${weeklyMetrics.weeklyProgress}%` },
+                    { label: text.mDone, val: weeklyMetrics.completedExercises },
+                    { label: text.mExercises, val: weeklyMetrics.totalExercises },
+                    { label: text.mSets, val: weeklyMetrics.totalSets },
+                    { label: text.setProgressLabel, val: `${weeklySetProgress}/${weeklyMetrics.totalSets}` },
+                    { label: text.mSessions, val: weeklyMetrics.workoutSessions },
+                    { label: text.mCompleted, val: weeklyMetrics.completedSessions },
+                    { label: text.mCardio, val: weeklyMetrics.cardioSessions },
                   ].map(metric => (
                     <div key={metric.label} className="detail-card">
                       <p className="detail-label">{metric.label}</p>
@@ -4123,7 +4307,7 @@ export default function AtlasLuthor() {
                     <div key={`${dayName}-feature`} className="detail-row">
                       <div>
                         <p className="detail-row-main">{displayDayShort(dayName, currentDay.label)} - {displayDay(dayName)}</p>
-                        <p className="detail-row-sub">{currentDay.sessions.map(item => item.name).join(" / ")} - {dayExercises} exercises - {daySets} sets</p>
+                        <p className="detail-row-sub">{currentDay.sessions.map(item => item.name).join(" / ")} - {dayExercises} {text.exercisesWord} - {daySets} {text.setsWord}</p>
                       </div>
                       <button className="edit-btn" onClick={() => openWorkout(dayName)} style={{ color: currentTheme.accent }}>
                         {currentDay.type}
@@ -4357,7 +4541,7 @@ export default function AtlasLuthor() {
                   </div>
 
                   <button className="dark-btn" onClick={() => setEditingProfile({ ...profile })}>
-                    {language === "es" ? "Editar Perfil Corporal" : "Edit Body Profile"}
+                    {text.editBodyStatus}
                   </button>
                 </div>
               );
@@ -5120,7 +5304,7 @@ export default function AtlasLuthor() {
                 onChange={event => setNotificationSettings(prev => ({ ...prev, sound: event.target.value }))}
               >
                 {SOUND_OPTIONS.map(option => (
-                  <option key={option} value={option}>{option} tone</option>
+                  <option key={option} value={option}>{option} {language === "es" ? "tono" : "tone"}</option>
                 ))}
               </select>
 
@@ -5172,7 +5356,7 @@ export default function AtlasLuthor() {
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              CUSTOM REMINDERS
+              {text.customReminders}
             </p>
 
             <div className="settings-grid">
@@ -5184,10 +5368,10 @@ export default function AtlasLuthor() {
                   </div>
                   <div style={{ display: "grid", gap: 8 }}>
                     <button className="edit-btn" onClick={() => updateCustomReminder(reminder.id, { enabled: !reminder.enabled })}>
-                      {reminder.enabled ? "On" : "Off"}
+                      {reminder.enabled ? text.reminderOn : text.reminderOff}
                     </button>
                     <button className="edit-btn" onClick={() => removeCustomReminder(reminder.id)}>
-                      Remove
+                      {text.removeBtn}
                     </button>
                   </div>
                 </div>
@@ -5197,7 +5381,7 @@ export default function AtlasLuthor() {
                 className="input"
                 value={reminderDraft.label}
                 onChange={event => setReminderDraft(prev => ({ ...prev, label: event.target.value }))}
-                placeholder="Reminder title"
+                placeholder={text.reminderTitlePlaceholder}
               />
               <input
                 className="input"
@@ -5209,7 +5393,7 @@ export default function AtlasLuthor() {
                 className="input"
                 value={reminderDraft.message}
                 onChange={event => setReminderDraft(prev => ({ ...prev, message: event.target.value }))}
-                placeholder="Reminder message"
+                placeholder={text.reminderMessagePlaceholder}
               />
               <select
                 className="input"
@@ -5217,11 +5401,11 @@ export default function AtlasLuthor() {
                 onChange={event => setReminderDraft(prev => ({ ...prev, sound: event.target.value }))}
               >
                 {SOUND_OPTIONS.map(option => (
-                  <option key={option} value={option}>{option} tone</option>
+                  <option key={option} value={option}>{option} {language === "es" ? "tono" : "tone"}</option>
                 ))}
               </select>
               <button className="primary-btn" onClick={addCustomReminder}>
-                ADD REMINDER
+                {text.addReminderBtn}
               </button>
               <button className="dark-btn" onClick={() => setShowReminders(false)}>
                 {text.close}
@@ -5235,7 +5419,7 @@ export default function AtlasLuthor() {
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              EDIT WEIGHT
+              {text.editWeight}
             </p>
 
             <h3 style={{ fontFamily: "'DM Sans', sans-serif", marginBottom: 14 }}>
@@ -5327,7 +5511,7 @@ export default function AtlasLuthor() {
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              EXERCISE NOTES
+              {language === "es" ? "NOTAS DEL EJERCICIO" : "EXERCISE NOTES"}
             </p>
 
             <h3 style={{ fontFamily: "'DM Sans', sans-serif", marginBottom: 14 }}>
@@ -5341,7 +5525,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingNote(prev => ({ ...prev, pain: event.target.value }))}
               >
                 {PAIN_OPTIONS.map(option => (
-                  <option key={option || "empty"} value={option}>{option || "Pain / discomfort"}</option>
+                  <option key={option || "empty"} value={option}>{option || (language === "es" ? "Dolor / malestar" : "Pain / discomfort")}</option>
                 ))}
               </select>
 
@@ -5351,7 +5535,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingNote(prev => ({ ...prev, difficulty: event.target.value }))}
               >
                 {RPE_OPTIONS.map(option => (
-                  <option key={option || "empty"} value={option}>{option ? `RPE ${option}` : "Difficulty 1-10"}</option>
+                  <option key={option || "empty"} value={option}>{option ? `RPE ${option}` : (language === "es" ? "Dificultad 1-10" : "Difficulty 1-10")}</option>
                 ))}
               </select>
 
@@ -5359,7 +5543,7 @@ export default function AtlasLuthor() {
                 className="input"
                 value={editingNote.technique}
                 onChange={event => setEditingNote(prev => ({ ...prev, technique: event.target.value }))}
-                placeholder="Technique notes"
+                placeholder={language === "es" ? "Notas de técnica" : "Technique notes"}
               />
 
               <label style={{ display: "flex", alignItems: "center", gap: 10, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
@@ -5368,7 +5552,7 @@ export default function AtlasLuthor() {
                   checked={editingNote.pr}
                   onChange={event => setEditingNote(prev => ({ ...prev, pr: event.target.checked }))}
                 />
-                Mark as PR
+                {language === "es" ? "Marcar como Récord" : "Mark as PR"}
               </label>
             </div>
 
@@ -5392,20 +5576,22 @@ export default function AtlasLuthor() {
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              BACKUP / RESTORE
+              {language === "es" ? "RESPALDO / RESTAURAR" : "BACKUP / RESTORE"}
             </p>
 
             <p style={{ color: "#777", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
-              Export your weights, goals, checks, notes, and progress history to a JSON file. Import restores data from a previous backup.
+              {language === "es"
+                ? "Exporta tus pesos, metas, checks, notas e historial de progreso a un archivo JSON. Importar restaura datos de un respaldo anterior."
+                : "Export your weights, goals, checks, notes, and progress history to a JSON file. Import restores data from a previous backup."}
             </p>
 
             <div style={{ display: "grid", gap: 10 }}>
               <button className="primary-btn" onClick={exportData}>
-                Export Progress
+                {language === "es" ? "Exportar Progreso" : "Export Progress"}
               </button>
 
               <label className="dark-btn" style={{ textAlign: "center" }}>
-                Import Backup
+                {language === "es" ? "Importar Respaldo" : "Import Backup"}
                 <input
                   type="file"
                   accept="application/json"
@@ -5415,29 +5601,29 @@ export default function AtlasLuthor() {
               </label>
 
               <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 12, lineHeight: 1.5 }}>
-                Cloud sync sends your data to the endpoint you enter, with no built-in
-                authentication. Only use an endpoint you control and trust. Download replaces
-                your current data.
+                {language === "es"
+                  ? "El sync en la nube envía tus datos al endpoint que ingreses, sin autenticación integrada. Usa solo un endpoint que controles. Descargar reemplaza tus datos actuales."
+                  : "Cloud sync sends your data to the endpoint you enter, with no built-in authentication. Only use an endpoint you control and trust. Download replaces your current data."}
               </p>
 
               <input
                 className="input"
                 value={cloudSettings.endpoint}
                 onChange={event => setCloudSettings(prev => ({ ...prev, endpoint: event.target.value }))}
-                placeholder="Cloud sync endpoint URL"
+                placeholder={language === "es" ? "URL del endpoint de sync" : "Cloud sync endpoint URL"}
               />
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
                 <button className="dark-btn" onClick={uploadCloudSync}>
-                  Cloud Upload
+                  {language === "es" ? "Subir a la nube" : "Cloud Upload"}
                 </button>
                 <button className="dark-btn" onClick={downloadCloudSync}>
-                  Cloud Download
+                  {language === "es" ? "Bajar de la nube" : "Cloud Download"}
                 </button>
               </div>
 
               <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
-                Cloud status: {cloudSettings.status}
+                {language === "es" ? "Estado:" : "Cloud status:"} {cloudSettings.status}
               </p>
 
               <button className="dark-btn" onClick={() => setShowDataTools(false)}>
@@ -5459,10 +5645,10 @@ export default function AtlasLuthor() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <div>
                 <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                  MANAGE WORKOUTS
+                  {text.manageWorkouts.toUpperCase()}
                 </p>
                 <p style={{ fontSize: 12, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
-                  Add, edit, or remove exercises and sessions.
+                  {text.manageWorkoutsSub}
                 </p>
               </div>
               <button className="edit-btn" onClick={() => setEditingRoutine(null)} style={{ padding: "8px 12px" }}>
@@ -5470,7 +5656,7 @@ export default function AtlasLuthor() {
               </button>
             </div>
 
-            <p className="menu-section-label">DAY</p>
+            <p className="menu-section-label">{text.daySection}</p>
             <select
               className="input"
               style={{ marginTop: 6, marginBottom: 16 }}
@@ -5482,7 +5668,7 @@ export default function AtlasLuthor() {
               ))}
             </select>
 
-            <p className="menu-section-label">SESSION</p>
+            <p className="menu-section-label">{text.sessionSection}</p>
             <div style={{ display: "grid", gap: 8, marginTop: 6, marginBottom: 16 }}>
               <select
                 className="input"
@@ -5495,16 +5681,16 @@ export default function AtlasLuthor() {
               </select>
               <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 8 }}>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">SESSION NAME</span>
+                  <span className="field-label">{text.sessionNameField}</span>
                   <input
                     className="input"
                     value={routineSession?.name || ""}
                     onChange={event => updateRoutineSessionMeta({ name: event.target.value })}
-                    placeholder="Session name"
+                    placeholder={text.sessionNamePlaceholder}
                   />
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">TIME</span>
+                  <span className="field-label">{text.timeField}</span>
                   <select
                     className="input"
                     value={routineSession?.time || "AM"}
@@ -5517,24 +5703,24 @@ export default function AtlasLuthor() {
                 </label>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                <button className="dark-btn" onClick={addRoutineSession}>Add Session</button>
-                <button className="dark-btn" onClick={duplicateRoutineSession}>Duplicate</button>
+                <button className="dark-btn" onClick={addRoutineSession}>{text.addSessionBtn}</button>
+                <button className="dark-btn" onClick={duplicateRoutineSession}>{text.duplicateBtn}</button>
                 <button
                   className="dark-btn"
                   onClick={removeRoutineSession}
                   disabled={routineDay.sessions.length <= 1}
                   style={routineDay.sessions.length <= 1 ? { opacity: 0.4 } : { color: "#E5604D" }}
                 >
-                  Delete
+                  {text.deleteBtn}
                 </button>
               </div>
             </div>
 
-            <p className="menu-section-label">EXERCISES</p>
+            <p className="menu-section-label">{text.mExercises}</p>
             <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
               {(routineSession?.exercises || []).length === 0 && (
                 <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: "10px 2px" }}>
-                  No exercises in this session yet. Add one below.
+                  {text.noExercisesYet}
                 </p>
               )}
               {(routineSession?.exercises || []).map((exercise, exerciseIndex) => (
@@ -5545,30 +5731,30 @@ export default function AtlasLuthor() {
                         {exerciseIndex + 1}
                       </div>
                       <span style={{ fontSize: 9, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontWeight: 700 }}>
-                        EXERCISE
+                        {text.exerciseLabel}
                       </span>
                     </div>
                     <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)} style={{ color: "#E5604D", fontSize: 11 }}>
-                      Remove
+                      {text.removeBtn}
                     </button>
                   </div>
                   <div style={{ padding: "10px 14px 14px" }}>
-                    <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} placeholder="Exercise name" style={{ marginBottom: 10, fontWeight: 600 }} />
+                    <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} placeholder={text.exerciseNamePlaceholder} style={{ marginBottom: 10, fontWeight: 600 }} />
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                       <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>SETS</p>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.mSets}</p>
                         <select className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })}>
                           {SET_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
                         </select>
                       </div>
                       <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>REPS</p>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.repsLabel}</p>
                         <select className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })}>
                           {Array.from(new Set([String(exercise.reps), ...REP_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
                         </select>
                       </div>
                       <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>WEIGHT</p>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.weightWord}</p>
                         <select className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })}>
                           {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
                         </select>
@@ -5579,7 +5765,7 @@ export default function AtlasLuthor() {
               ))}
             </div>
 
-            <p className="menu-section-label" style={{ marginTop: 16 }}>ADD EXERCISE</p>
+            <p className="menu-section-label" style={{ marginTop: 16 }}>{text.addExerciseSection}</p>
             <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
                 <select
@@ -5613,10 +5799,10 @@ export default function AtlasLuthor() {
               />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                 <select className="input" value={editingRoutine.draft.sets} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, sets: event.target.value } }))}>
-                  {SET_OPTIONS.map(option => <option key={option} value={option}>{option} sets</option>)}
+                  {SET_OPTIONS.map(option => <option key={option} value={option}>{option} {text.setsWord}</option>)}
                 </select>
                 <select className="input" value={editingRoutine.draft.reps} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, reps: event.target.value } }))}>
-                  {REP_OPTIONS.map(option => <option key={option} value={option}>{option} reps</option>)}
+                  {REP_OPTIONS.map(option => <option key={option} value={option}>{option} {text.repsWord}</option>)}
                 </select>
                 <select className="input" value={editingRoutine.draft.weight} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, weight: event.target.value } }))}>
                   {WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
@@ -5643,7 +5829,7 @@ export default function AtlasLuthor() {
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {language === "es" ? "EDITAR ESTADO CORPORAL" : "EDIT BODY STATUS"}
+              {text.editBodyStatus}
             </p>
 
             <div style={{ display: "grid", gap: 10 }}>
@@ -5719,7 +5905,7 @@ export default function AtlasLuthor() {
                 type="date"
                 value={editingProfile.startDate}
                 onChange={event => setEditingProfile(prev => ({ ...prev, startDate: event.target.value }))}
-                placeholder="Start date"
+                placeholder={language === "es" ? "Fecha de inicio" : "Start date"}
               />
 
               {editBmi > 0 && (
@@ -5768,7 +5954,7 @@ export default function AtlasLuthor() {
         <div className="modal-backdrop">
           <div className="modal">
             <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {language === "es" ? "DEFINIR MIS METAS" : "SET MY GOALS"}
+              {text.setMyGoals}
             </p>
 
             <div style={{ display: "grid", gap: 10 }}>
@@ -5802,7 +5988,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingGoals(prev => ({ ...prev, weeklyProgressGoal: event.target.value }))}
               >
                 {Array.from(new Set([editingGoals.weeklyProgressGoal, ...PROGRESS_GOAL_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option}% weekly goal</option>
+                  <option key={option} value={option}>{option}% {language === "es" ? "meta semanal" : "weekly goal"}</option>
                 ))}
               </select>
 
@@ -5812,7 +5998,7 @@ export default function AtlasLuthor() {
                 onChange={event => setEditingGoals(prev => ({ ...prev, weeklySessionsGoal: event.target.value }))}
               >
                 {Array.from(new Set([editingGoals.weeklySessionsGoal, ...SESSION_GOAL_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} sessions</option>
+                  <option key={option} value={option}>{option} {text.sessionsWord}</option>
                 ))}
               </select>
 
@@ -5821,7 +6007,7 @@ export default function AtlasLuthor() {
                 type="date"
                 value={editingGoals.targetDate}
                 onChange={event => setEditingGoals(prev => ({ ...prev, targetDate: event.target.value }))}
-                placeholder="Target date"
+                placeholder={language === "es" ? "Fecha meta" : "Target date"}
               />
             </div>
 
@@ -5849,7 +6035,7 @@ export default function AtlasLuthor() {
           <div className="modal" onClick={event => event.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                VIEW PHOTO
+                {language === "es" ? "VER FOTO" : "VIEW PHOTO"}
               </p>
               <button className="edit-btn" onClick={() => setViewingPhoto(null)} style={{ padding: "8px 12px" }}>
                 {text.close}
@@ -5863,23 +6049,23 @@ export default function AtlasLuthor() {
             />
 
             <div className="detail-grid" style={{ marginTop: 12 }}>
-              <div className="detail-card"><p className="detail-label">DATE</p><p className="detail-value">{viewingPhoto.date}</p></div>
-              <div className="detail-card"><p className="detail-label">WEIGHT</p><p className="detail-value">{viewingPhoto.weight} LB</p></div>
+              <div className="detail-card"><p className="detail-label">{text.dateField}</p><p className="detail-value">{viewingPhoto.date}</p></div>
+              <div className="detail-card"><p className="detail-label">{text.weightWord}</p><p className="detail-value">{viewingPhoto.weight} LB</p></div>
             </div>
 
             <div className="detail-card" style={{ marginTop: 10 }}>
-              <p className="detail-label">NOTE</p>
-              <p className="detail-value" style={{ fontSize: 14 }}>{viewingPhoto.note || "No note"}</p>
+              <p className="detail-label">{text.noteField}</p>
+              <p className="detail-value" style={{ fontSize: 14 }}>{viewingPhoto.note || text.noNote}</p>
             </div>
 
             <label style={{ display: "block", marginTop: 10 }}>
-              <span className="field-label">ALBUM</span>
+              <span className="field-label">{text.albumField}</span>
               <select
                 className="input"
                 value={viewingPhoto.album || ""}
                 onChange={event => updatePhotoAlbum(viewingPhoto.id, event.target.value)}
               >
-                <option value="">No album</option>
+                <option value="">{text.noAlbum}</option>
                 {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
               </select>
             </label>
@@ -5889,7 +6075,7 @@ export default function AtlasLuthor() {
                 {text.close}
               </button>
               <button className="dark-btn" style={{ flex: 1, color: "#E5604D" }} onClick={() => deleteProgressPhoto(viewingPhoto.id)}>
-                Delete Photo
+                {language === "es" ? "Eliminar Foto" : "Delete Photo"}
               </button>
             </div>
           </div>
