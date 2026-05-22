@@ -321,6 +321,24 @@ const COMMON_EXERCISES = {
   "Full Body": ["Olympic Lift","Power Clean","Hang Clean","Clean and Jerk","Snatch","Push Press","Kettlebell Swing","Squats Barbell"],
 };
 const EXERCISE_MUSCLE_GROUPS = ["All", ...Object.keys(COMMON_EXERCISES)];
+const EXERCISE_GROUP_LOOKUP = (() => {
+  const map = {};
+  Object.entries(COMMON_EXERCISES).forEach(([group, list]) => {
+    list.forEach(name => { map[name.toLowerCase()] = group; });
+  });
+  return map;
+})();
+// Maps an exercise name onto a muscle group, with a loose contains-match
+// fallback so routine variations still land in a sensible bucket.
+function muscleGroupFor(name) {
+  if (!name) return "Other";
+  const key = String(name).toLowerCase().trim();
+  if (EXERCISE_GROUP_LOOKUP[key]) return EXERCISE_GROUP_LOOKUP[key];
+  for (const known of Object.keys(EXERCISE_GROUP_LOOKUP)) {
+    if (key.includes(known)) return EXERCISE_GROUP_LOOKUP[known];
+  }
+  return "Other";
+}
 const SET_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map(String);
 const REP_OPTIONS = [4, 5, 6, 8, 10, 12, 15, 20, "3x3", "AMRAP"].map(String);
 const RPE_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -2044,18 +2062,23 @@ export default function AtlasLuthor() {
   const featurePageLabels = language === "es"
     ? { today:"Hoy", body:"Cuerpo", score:"Puntaje", calendar:"Calendario", prs:"Récords",
         fatigue:"Fatiga", goals:"Metas", progress:"Progreso", badges:"Insignias",
-        photos:"Fotos", metrics:"Métricas", week:"Semana", water:"Agua", coach:"Coach" }
+        photos:"Fotos", metrics:"Métricas", week:"Semana", water:"Agua", coach:"Coach",
+        nutrition:"Nutrición", cardio:"Cardio", challenges:"Retos" }
     : { today:"Today", body:"Body", score:"Score", calendar:"Calendar", prs:"PRs",
         fatigue:"Fatigue", goals:"Goals", progress:"Progress", badges:"Badges",
-        photos:"Photos", metrics:"Metrics", week:"Week", water:"Water", coach:"Coach" };
+        photos:"Photos", metrics:"Metrics", week:"Week", water:"Water", coach:"Coach",
+        nutrition:"Nutrition", cardio:"Cardio", challenges:"Challenges" };
   const featurePages = [
     { id: "today", title: text.todayCommand, label: featurePageLabels.today, accent: themeFor(weeklyMetrics.todayType).accent },
     { id: "body", title: text.bodyStatus, label: featurePageLabels.body, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "nutrition", title: text.nutrition, label: featurePageLabels.nutrition, accent: "#3FB98A" },
+    { id: "cardio", title: text.cardio, label: featurePageLabels.cardio, accent: "#FF9860" },
     { id: "score", title: text.atlasScore, label: featurePageLabels.score, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "calendar", title: text.monthCalendar, label: featurePageLabels.calendar, accent: "#90C8FF" },
     { id: "prs", title: text.prTracker, label: featurePageLabels.prs, accent: "#FFD060" },
     { id: "fatigue", title: text.fatigueDeload, label: featurePageLabels.fatigue, accent: deloadWarning ? "#FFD060" : isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "goals", title: text.myGoals, label: featurePageLabels.goals, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "challenges", title: text.challenges, label: featurePageLabels.challenges, accent: "#B8A0FF" },
     { id: "progress", title: text.progressMemory, label: featurePageLabels.progress, accent: "#90C8FF" },
     { id: "badges", title: text.streakBadges, label: featurePageLabels.badges, accent: "#B8A0FF" },
     { id: "photos", title: text.progressPhotos, label: featurePageLabels.photos, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
@@ -2084,6 +2107,57 @@ export default function AtlasLuthor() {
   const bodyFatPct = calculateBodyFatPct(bmi, profile.age, profileSex);
   const ibwLb = calculateIBW(profile.height, profileSex);
   const leanMassLb = getLeanMass(profile.currentWeight, bodyFatPct);
+  const heightInches = parseHeightInches(profile.height);
+  const nutritionBMR = calcBMR({ weightLb: profile.currentWeight, heightInches, age: profile.age, sex: profileSex });
+  const nutritionTDEE = calcTDEE(nutritionBMR, profile.activityLevel || "moderate");
+  const calorieTarget = goalCalorieTarget(nutritionTDEE, goals.bodyTypeGoal || "athletic");
+  const macroTargets = macroSplit(calorieTarget, goals.bodyTypeGoal || "athletic");
+  const todayFood = foodLog[getDateKey()] || {};
+  const todayMacros = sumDayMacros(todayFood);
+  const todayCardio = cardioLog[getDateKey()] || [];
+  const weeklyCardio = useMemo(() => {
+    const weekKey = getWorkoutWeekKey();
+    const totals = { sessions: 0, minutes: 0, distance: 0, calories: 0 };
+    Object.entries(cardioLog).forEach(([date, list]) => {
+      if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
+      (list || []).forEach(item => {
+        totals.sessions += 1;
+        totals.minutes += Number(item.durationMin) || 0;
+        totals.distance += Number(item.distance) || 0;
+        totals.calories += Number(item.calories) || 0;
+      });
+    });
+    return totals;
+  }, [cardioLog]);
+  const measurementEntries = useMemo(
+    () => Object.entries(measurementLog)
+      .map(([date, values]) => ({ date, ...values }))
+      .sort((a, b) => b.date.localeCompare(a.date)),
+    [measurementLog]
+  );
+  const latestMeasurement = measurementEntries[0] || null;
+  const navyBodyFatPct = latestMeasurement
+    ? navyBodyFat({ sex: profileSex, heightIn: heightInches, neckIn: latestMeasurement.neck, waistIn: latestMeasurement.waist, hipIn: latestMeasurement.hips })
+    : 0;
+  const volumeByGroup = useMemo(() => {
+    const groups = {};
+    days.forEach(dayName => {
+      workoutData[dayName].sessions.forEach((currentSession, sessionIndex) => {
+        currentSession.exercises.forEach((exercise, exerciseIndex) => {
+          const key = getExerciseKey(dayName, sessionIndex, exerciseIndex);
+          const setsDone = Math.min(Number(setProgress[key] || 0), Number(exercise.sets || 0));
+          const used = checked[key] ? Number(exercise.sets || 0) : setsDone;
+          if (used <= 0) return;
+          const volume = exerciseVolume(used, exercise.reps, exercise.weight);
+          if (volume <= 0) return;
+          const group = muscleGroupFor(exercise.name);
+          groups[group] = (groups[group] || 0) + volume;
+        });
+      });
+    });
+    return groups;
+  }, [workoutData, setProgress, checked]);
+  const weeklyVolume = Object.values(volumeByGroup).reduce((sum, value) => sum + value, 0);
   const daysToGoal = getDaysToGoal(goals.targetDate);
   const goalProgressPct = (() => {
     if (!goals.targetDate || !profile.startDate) return null;
@@ -2496,6 +2570,113 @@ export default function AtlasLuthor() {
       const current = prev[date] || { glasses: 0 };
       return { ...prev, [date]: { ...current, goal: Number(goal) } };
     });
+  };
+
+  const pushRecentFood = food => {
+    setRecentFoods(prev => [food, ...prev.filter(item => item.id !== food.id)].slice(0, 20));
+  };
+
+  const addFoodEntry = (meal, food) => {
+    const date = getDateKey();
+    const entry = {
+      entryId: `food-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id: food.id || food.name,
+      name: food.name,
+      kcal: Number(food.kcal) || 0,
+      protein: Number(food.protein) || 0,
+      carbs: Number(food.carbs) || 0,
+      fat: Number(food.fat) || 0,
+      qty: Number(food.qty) || 1,
+    };
+    setFoodLog(prev => {
+      const day = prev[date] || {};
+      return { ...prev, [date]: { ...day, [meal]: [...(day[meal] || []), entry] } };
+    });
+    pushRecentFood({ id: entry.id, name: entry.name, kcal: entry.kcal, protein: entry.protein, carbs: entry.carbs, fat: entry.fat });
+  };
+
+  const removeFoodEntry = (date, meal, entryId) => {
+    setFoodLog(prev => {
+      const day = prev[date];
+      if (!day) return prev;
+      return { ...prev, [date]: { ...day, [meal]: (day[meal] || []).filter(item => item.entryId !== entryId) } };
+    });
+  };
+
+  const addCustomFood = () => {
+    const name = customFoodDraft.name.trim();
+    if (!name) return;
+    const food = {
+      id: `custom-${Date.now()}`,
+      name,
+      kcal: Number(customFoodDraft.kcal) || 0,
+      protein: Number(customFoodDraft.protein) || 0,
+      carbs: Number(customFoodDraft.carbs) || 0,
+      fat: Number(customFoodDraft.fat) || 0,
+      serving: "1 serving",
+      custom: true,
+    };
+    setCustomFoods(prev => [food, ...prev].slice(0, 60));
+    if (addFoodTarget) addFoodEntry(addFoodTarget, { ...food, qty: 1 });
+    setCustomFoodDraft({ name: "", kcal: "", protein: "", carbs: "", fat: "" });
+  };
+
+  const addCardioSession = () => {
+    const durationMin = Number(cardioDraft.durationMin) || 0;
+    if (durationMin <= 0) return;
+    const date = getDateKey();
+    const entry = {
+      id: `cardio-${Date.now()}`,
+      type: cardioDraft.type,
+      durationMin,
+      distance: distanceInputToMiles(cardioDraft.distance, unitSystem),
+      calories: estimateCardioCalories(cardioDraft.type, durationMin, profile.currentWeight),
+      note: cardioDraft.note || "",
+    };
+    setCardioLog(prev => ({ ...prev, [date]: [entry, ...(prev[date] || [])] }));
+    setCardioDraft({ type: cardioDraft.type, durationMin: "", distance: "", note: "" });
+  };
+
+  const removeCardioSession = (date, id) => {
+    setCardioLog(prev => {
+      const list = (prev[date] || []).filter(item => item.id !== id);
+      const next = { ...prev };
+      if (list.length) next[date] = list;
+      else delete next[date];
+      return next;
+    });
+  };
+
+  const saveMeasurements = draft => {
+    const date = draft.date || getDateKey();
+    const values = {};
+    MEASUREMENT_FIELDS.forEach(field => {
+      const inches = measureInputToInches(draft[field], unitSystem);
+      if (inches > 0) values[field] = Math.round(inches * 10) / 10;
+    });
+    setMeasurementLog(prev => ({ ...prev, [date]: values }));
+    setEditingMeasurements(null);
+  };
+
+  const addChallenge = () => {
+    const title = challengeDraft.title.trim();
+    const target = Number(challengeDraft.target) || 0;
+    if (!title || target <= 0) return;
+    const end = new Date();
+    end.setDate(end.getDate() + (Number(challengeDraft.days) || 30));
+    setChallenges(prev => [{
+      id: `challenge-${Date.now()}`,
+      title,
+      metric: challengeDraft.metric,
+      target,
+      startDate: getDateKey(),
+      endDate: end.toISOString().slice(0, 10),
+    }, ...prev]);
+    setChallengeDraft({ title: "", metric: "workouts", target: "12", days: "30" });
+  };
+
+  const removeChallenge = id => {
+    setChallenges(prev => prev.filter(item => item.id !== id));
   };
 
   const saveExerciseNote = note => {
@@ -3701,6 +3882,39 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    {text.nutritionToday.toUpperCase()}
+                  </p>
+                  <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: "#3FB98A", lineHeight: 1 }}>
+                    {todayMacros.kcal}<span style={{ fontSize: 14, color: isLightMode ? "#7A8090" : "#666", fontWeight: 400 }}>/{calorieTarget}</span>
+                  </p>
+                </div>
+                <button className="edit-btn" onClick={() => openFeaturePage("nutrition")} style={{ color: "#3FB98A" }}>
+                  {language === "es" ? "Ver" : "View"}
+                </button>
+              </div>
+              <div style={{ height: 8, borderRadius: 5, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.07)", overflow: "hidden", marginBottom: 10 }}>
+                <div style={{ width: `${calorieTarget > 0 ? Math.min(100, Math.round((todayMacros.kcal / calorieTarget) * 100)) : 0}%`, height: "100%", background: todayMacros.kcal > calorieTarget && calorieTarget > 0 ? "#E5604D" : "#3FB98A", borderRadius: 5, transition: "width 0.4s ease" }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {[
+                  { label: text.protein, val: todayMacros.protein, target: macroTargets.protein, color: "#90C8FF" },
+                  { label: text.carbs, val: todayMacros.carbs, target: macroTargets.carbs, color: "#FFD060" },
+                  { label: text.fat, val: todayMacros.fat, target: macroTargets.fat, color: "#FF9860" },
+                ].map(macro => (
+                  <div key={macro.label} style={{ textAlign: "center" }}>
+                    <p style={{ fontSize: 14, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: macro.color }}>
+                      {macro.val}<span style={{ fontSize: 10, color: "#8A8F99" }}>/{macro.target}</span>
+                    </p>
+                    <p style={{ fontSize: 9, letterSpacing: 1, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginTop: 3 }}>{macro.label.toUpperCase()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
                   <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
@@ -4137,6 +4351,9 @@ export default function AtlasLuthor() {
                 {activeFeaturePage === "week" && text.featDescWeek}
                 {activeFeaturePage === "water" && (language === "es" ? "Registra tu hidratación diaria. El agua mejora el rendimiento, la recuperación y el metabolismo." : "Track your daily hydration. Water improves performance, recovery and metabolism.")}
                 {activeFeaturePage === "coach" && (language === "es" ? "Consejos personalizados basados en tu edad, sexo, composición corporal y meta de tipo de cuerpo." : "Personalized tips based on your age, sex, body composition, and body type goal.")}
+                {activeFeaturePage === "nutrition" && text.featDescNutrition}
+                {activeFeaturePage === "cardio" && text.featDescCardio}
+                {activeFeaturePage === "challenges" && text.featDescChallenges}
               </p>
             </div>
 
@@ -4617,6 +4834,118 @@ export default function AtlasLuthor() {
                 })}
               </div>
             )}
+
+            {activeFeaturePage === "nutrition" && (() => {
+              const calLeft = calorieTarget - todayMacros.kcal;
+              const calPct = calorieTarget > 0 ? Math.min(100, Math.round((todayMacros.kcal / calorieTarget) * 100)) : 0;
+              const ringR = 52;
+              const ringC = 2 * Math.PI * ringR;
+              const mealLabels = { breakfast: text.breakfast, lunch: text.lunch, dinner: text.dinner, snack: text.snack };
+              const macroRows = [
+                { key: "protein", label: text.protein, val: todayMacros.protein, target: macroTargets.protein, color: "#90C8FF" },
+                { key: "carbs", label: text.carbs, val: todayMacros.carbs, target: macroTargets.carbs, color: "#FFD060" },
+                { key: "fat", label: text.fat, val: todayMacros.fat, target: macroTargets.fat, color: "#FF9860" },
+              ];
+              const foodDays = Object.entries(foodLog).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 7);
+              return (
+                <div className="detail-list">
+                  <div className="home-card" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ position: "relative", width: 124, height: 124, flexShrink: 0 }}>
+                      <svg viewBox="0 0 124 124" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                        <circle cx="62" cy="62" r={ringR} fill="none" stroke={isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"} strokeWidth="10" />
+                        <circle cx="62" cy="62" r={ringR} fill="none" stroke={calLeft < 0 ? "#E5604D" : "#3FB98A"} strokeWidth="10" strokeLinecap="round" strokeDasharray={ringC} strokeDashoffset={ringC * (1 - calPct / 100)} style={{ transition: "stroke-dashoffset 0.6s ease" }} />
+                      </svg>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                        <p style={{ fontSize: 26, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1 }}>{todayMacros.kcal}</p>
+                        <p style={{ fontSize: 9, letterSpacing: 1, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginTop: 3 }}>/ {calorieTarget}</p>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>{text.caloriesLabel}</p>
+                      <p style={{ fontSize: 22, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: calLeft < 0 ? "#E5604D" : (isLightMode ? "#101015" : "#FFFFFF"), lineHeight: 1.1 }}>
+                        {Math.abs(calLeft)} <span style={{ fontSize: 12, color: "#8A8F99", fontWeight: 400 }}>{calLeft < 0 ? text.caloriesOver : text.caloriesLeft}</span>
+                      </p>
+                      <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6 }}>
+                        {text.bmrLabel} {nutritionBMR} · {text.tdeeLabel} {nutritionTDEE}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="detail-grid">
+                    {macroRows.map(macro => {
+                      const pct = macro.target > 0 ? Math.min(100, Math.round((macro.val / macro.target) * 100)) : 0;
+                      return (
+                        <div key={macro.key} className="detail-card">
+                          <p className="detail-label">{macro.label.toUpperCase()}</p>
+                          <p className="detail-value" style={{ color: macro.color }}>{macro.val}<span style={{ fontSize: 11, color: "#8A8F99" }}> / {macro.target} g</span></p>
+                          <div style={{ height: 5, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 8 }}>
+                            <div style={{ width: `${pct}%`, height: "100%", background: macro.color, borderRadius: 4, transition: "width 0.4s ease" }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {MEALS.map(meal => {
+                    const entries = todayFood[meal] || [];
+                    const mealKcal = entries.reduce((sum, item) => sum + (Number(item.kcal) || 0) * (Number(item.qty) || 1), 0);
+                    return (
+                      <div key={meal} className="home-card">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: entries.length ? 10 : 0 }}>
+                          <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                            {mealLabels[meal].toUpperCase()} · {Math.round(mealKcal)}
+                          </p>
+                          <button className="edit-btn" onClick={() => { setAddFoodTarget(meal); setFoodSearch(""); }} style={{ color: "#3FB98A" }}>+ {text.addFood}</button>
+                        </div>
+                        <div style={{ display: "grid", gap: 6 }}>
+                          {entries.map(item => (
+                            <div key={item.entryId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: isLightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 10px" }}>
+                              <div style={{ minWidth: 0 }}>
+                                <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}{item.qty > 1 ? ` ×${item.qty}` : ""}</p>
+                                <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>{Math.round(item.kcal * item.qty)} kcal · P{Math.round(item.protein * item.qty)} C{Math.round(item.carbs * item.qty)} F{Math.round(item.fat * item.qty)}</p>
+                              </div>
+                              <button className="edit-btn" onClick={() => removeFoodEntry(getDateKey(), meal, item.entryId)} style={{ color: "#E5604D", flexShrink: 0 }}>✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {todayMacros.kcal === 0 && (
+                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>{text.noFoodToday}</p>
+                  )}
+
+                  <div className="home-card">
+                    <p className="detail-label">{text.macroSplit.toUpperCase()}</p>
+                    <div className="detail-grid" style={{ marginTop: 10 }}>
+                      <div className="detail-card"><p className="detail-label">{text.calorieTarget}</p><p className="detail-value">{calorieTarget}</p></div>
+                      <div className="detail-card"><p className="detail-label">{text.protein}</p><p className="detail-value">{macroTargets.protein} g</p></div>
+                      <div className="detail-card"><p className="detail-label">{text.carbs}</p><p className="detail-value">{macroTargets.carbs} g</p></div>
+                      <div className="detail-card"><p className="detail-label">{text.fat}</p><p className="detail-value">{macroTargets.fat} g</p></div>
+                    </div>
+                  </div>
+
+                  {foodDays.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>{text.nutritionHistory.toUpperCase()}</p>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        {foodDays.map(([date, day]) => {
+                          const totals = sumDayMacros(day);
+                          const isToday = date === getDateKey();
+                          return (
+                            <div key={date} className="detail-row">
+                              <p className="detail-row-main" style={{ fontSize: 12, color: isToday ? "#3FB98A" : undefined }}>{isToday ? (language === "es" ? "HOY" : "TODAY") : date}</p>
+                              <span style={{ color: "#3FB98A", fontFamily: "'Orbitron', monospace", fontSize: 12 }}>{totals.kcal} kcal</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {activeFeaturePage === "water" && (() => {
               const wAccent = waterPct >= 100 ? "#3FB98A" : "#90C8FF";
@@ -6173,6 +6502,21 @@ export default function AtlasLuthor() {
                 </label>
               </div>
 
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.activityLevel.toUpperCase()}</span>
+                <select
+                  className="input"
+                  value={editingProfile.activityLevel || "moderate"}
+                  onChange={event => setEditingProfile(prev => ({ ...prev, activityLevel: event.target.value }))}
+                >
+                  {ACTIVITY_LEVELS.map(level => (
+                    <option key={level} value={level}>
+                      {text[`activity${level.charAt(0).toUpperCase()}${level.slice(1)}`]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <select
                 className="input"
                 value={editingProfile.currentWeight}
@@ -6342,6 +6686,83 @@ export default function AtlasLuthor() {
           </div>
         </div>
       )}
+
+      {addFoodTarget && (() => {
+        const query = foodSearch.trim().toLowerCase();
+        const displayName = food => food.name || (language === "es" ? food.es : food.en);
+        const mealLabels = { breakfast: text.breakfast, lunch: text.lunch, dinner: text.dinner, snack: text.snack };
+        const allFoods = [...customFoods, ...FOOD_DB];
+        const filtered = allFoods.filter(food => {
+          if (!query) return true;
+          return `${food.name || ""} ${food.en || ""} ${food.es || ""}`.toLowerCase().includes(query);
+        }).slice(0, 40);
+        return (
+          <div className="modal-backdrop">
+            <div className="modal">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <p style={{ fontSize: 12, letterSpacing: 2, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                  {text.addFood.toUpperCase()} · {mealLabels[addFoodTarget].toUpperCase()}
+                </p>
+                <button className="edit-btn" onClick={() => setAddFoodTarget(null)} style={{ padding: "8px 12px" }}>{text.doneBtn}</button>
+              </div>
+
+              <input className="input" value={foodSearch} onChange={event => setFoodSearch(event.target.value)} placeholder={text.searchFood} style={{ marginBottom: 10 }} />
+
+              {recentFoods.length > 0 && !query && (
+                <div style={{ marginBottom: 12 }}>
+                  <p className="menu-section-label">{text.recentFoods.toUpperCase()}</p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                    {recentFoods.slice(0, 8).map(food => (
+                      <button key={food.id} className="album-chip" onClick={() => addFoodEntry(addFoodTarget, { ...food, qty: 1 })}>
+                        + {food.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "grid", gap: 6, maxHeight: "34vh", overflow: "auto", marginBottom: 14 }}>
+                {filtered.map((food, index) => {
+                  const name = displayName(food);
+                  return (
+                    <button
+                      key={food.id || `${name}-${index}`}
+                      className="dark-btn"
+                      onClick={() => addFoodEntry(addFoodTarget, { id: food.id, name, kcal: food.kcal, protein: food.protein, carbs: food.carbs, fat: food.fat, qty: 1 })}
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left", gap: 10 }}
+                    >
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: "block", fontWeight: 800, fontSize: 13 }}>{name}</span>
+                        <span style={{ display: "block", fontSize: 11, color: "#8A8F99", marginTop: 2 }}>{food.serving || "1 serving"} · P{food.protein} C{food.carbs} F{food.fat}</span>
+                      </span>
+                      <span style={{ color: "#3FB98A", fontFamily: "'Orbitron', monospace", fontSize: 13, fontWeight: 900, flexShrink: 0 }}>{food.kcal}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="menu-section-label">{text.customFood.toUpperCase()}</p>
+              <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+                <input className="input" value={customFoodDraft.name} onChange={event => setCustomFoodDraft(prev => ({ ...prev, name: event.target.value }))} placeholder={text.foodName} />
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                  {[["kcal", "kcal"], ["protein", "P"], ["carbs", "C"], ["fat", "F"]].map(([field, label]) => (
+                    <input
+                      key={field}
+                      className="input"
+                      type="number"
+                      inputMode="numeric"
+                      value={customFoodDraft[field]}
+                      onChange={event => setCustomFoodDraft(prev => ({ ...prev, [field]: event.target.value }))}
+                      placeholder={label}
+                    />
+                  ))}
+                </div>
+                <button className="primary-btn" onClick={addCustomFood}>{text.saveFood}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {viewingPhoto && (
         <div className="modal-backdrop" onClick={() => setViewingPhoto(null)}>
