@@ -3056,9 +3056,6 @@ export default function AtlasLuthor() {
                   <h2 style={{ fontSize: 36, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1, letterSpacing: 1, margin: 0 }}>
                     {userName}
                   </h2>
-                  <p style={{ fontSize: 10, letterSpacing: 2, color: "#666", fontFamily: "'Orbitron', monospace", marginTop: 8 }}>
-                    {displayDayShort(weeklyMetrics.today, weeklyMetrics.todayLabel)} · {weeklyMetrics.todayType}
-                  </p>
                 </div>
               </div>
               <div style={{ height: 1, background: isLightMode ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)", margin: "16px 0 12px" }} />
@@ -4547,8 +4544,10 @@ export default function AtlasLuthor() {
             <div key={`${activeDay}-${activeSession}`} className="fade-up" style={{ padding: "20px 20px 0" }}>
               {session.warmup && (
                 <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, border: "1.5px solid #1E1E26", background: "#0F0F14", marginBottom: 16 }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 10, background: "#1A1A22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-                    ⚡
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: "#1A1A22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/>
+                    </svg>
                   </div>
 
                   <div style={{ flex: 1 }}>
@@ -5473,24 +5472,42 @@ export default function AtlasLuthor() {
                 </p>
               )}
               {(routineSession?.exercises || []).map((exercise, exerciseIndex) => (
-                <div key={`${exercise.name}-${exerciseIndex}`} style={{ border: "1px solid #24242E", borderRadius: 12, padding: 12, display: "grid", gap: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span className="field-label" style={{ marginBottom: 0 }}>EXERCISE {exerciseIndex + 1}</span>
-                    <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)} style={{ color: "#E5604D" }}>
+                <div key={`${exercise.name}-${exerciseIndex}`} style={{ border: "1px solid #24242E", borderRadius: 14, overflow: "hidden" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "rgba(144,200,255,0.05)", borderBottom: "1px solid #24242E" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 6, background: "#90C8FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#0A0A10", fontFamily: "'Orbitron', monospace", flexShrink: 0 }}>
+                        {exerciseIndex + 1}
+                      </div>
+                      <span style={{ fontSize: 9, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontWeight: 700 }}>
+                        EXERCISE
+                      </span>
+                    </div>
+                    <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)} style={{ color: "#E5604D", fontSize: 11 }}>
                       Remove
                     </button>
                   </div>
-                  <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} placeholder="Exercise name" />
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                    <select className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })}>
-                      {SET_OPTIONS.map(option => <option key={option} value={option}>{option} sets</option>)}
-                    </select>
-                    <select className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })}>
-                      {Array.from(new Set([String(exercise.reps), ...REP_OPTIONS])).map(option => <option key={option} value={option}>{option} reps</option>)}
-                    </select>
-                    <select className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })}>
-                      {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
-                    </select>
+                  <div style={{ padding: "10px 14px 14px" }}>
+                    <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} placeholder="Exercise name" style={{ marginBottom: 10, fontWeight: 600 }} />
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                      <div>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>SETS</p>
+                        <select className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })}>
+                          {SET_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>REPS</p>
+                        <select className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })}>
+                          {Array.from(new Set([String(exercise.reps), ...REP_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>WEIGHT</p>
+                        <select className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })}>
+                          {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
