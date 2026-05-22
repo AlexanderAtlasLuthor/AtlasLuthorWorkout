@@ -558,6 +558,7 @@ const UI_TEXT = {
     albumField: "ALBUM",
     noAlbum: "No album",
     newAlbumPlaceholder: "New album name",
+    addPhotoBtn: "Add Photo",
     newAlbumBtn: "New Album",
     newAlbumTitle: "New Album",
     noAlbumsHint: "No albums yet. Create one to group your progress photos.",
@@ -898,6 +899,7 @@ const UI_TEXT = {
     albumField: "ÁLBUM",
     noAlbum: "Sin álbum",
     newAlbumPlaceholder: "Nombre del álbum",
+    addPhotoBtn: "Agregar Foto",
     newAlbumBtn: "Nuevo Álbum",
     newAlbumTitle: "Nuevo Álbum",
     noAlbumsHint: "Aún no tienes álbumes. Crea uno para agrupar tus fotos de progreso.",
@@ -1620,6 +1622,7 @@ export default function AtlasLuthor() {
   const [albumFilter, setAlbumFilter] = useState("");
   const [albumDraft, setAlbumDraft] = useState("");
   const [showAlbumModal, setShowAlbumModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [reminderDraft, setReminderDraft] = useState({ label: "Custom reminder", time: "12:00", message: "Stay on protocol.", sound: "chime" });
   const [restTimer, setRestTimer] = useState({ secondsLeft: 0, duration: 0, running: false, label: "", endsAt: null, notified: false });
   const [clockNow, setClockNow] = useState(() => new Date());
@@ -3147,6 +3150,7 @@ export default function AtlasLuthor() {
       ...prev,
     ].slice(0, 24));
     setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: photoDraft.album || "", weight: "" });
+    setShowPhotoModal(false);
   };
 
   const deleteProgressPhoto = photoId => {
@@ -5138,45 +5142,15 @@ export default function AtlasLuthor() {
                   )}
                 </div>
 
-                <div className="home-card">
-                  <p className="detail-label">{text.addPhotoLabel}</p>
-                  <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-                    <label style={{ display: "block" }}>
-                      <span className="field-label">{text.dateField}</span>
-                      <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
-                    </label>
-                    <label style={{ display: "block" }}>
-                      <span className="field-label">{text.weightWord} ({weightUnit(unitSystem)})</span>
-                      <input
-                        className="input"
-                        type="number"
-                        inputMode="decimal"
-                        value={photoDraft.weight}
-                        onChange={event => setPhotoDraft(prev => ({ ...prev, weight: event.target.value }))}
-                        placeholder={unitSystem === "metric"
-                          ? String(Math.round(lbToKg(Number(profile.currentWeight) || 0) * 10) / 10)
-                          : String(Math.round(Number(profile.currentWeight) || 0))}
-                      />
-                    </label>
-                    <label style={{ display: "block" }}>
-                      <span className="field-label">{text.noteField}</span>
-                      <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={language === "es" ? "¿Qué muestra esta foto?" : "What does this photo show?"} />
-                    </label>
-                    <label style={{ display: "block" }}>
-                      <span className="field-label">{text.albumField}</span>
-                      <select className="input" value={photoDraft.album} onChange={event => setPhotoDraft(prev => ({ ...prev, album: event.target.value }))}>
-                        <option value="">{text.noAlbum}</option>
-                        {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
-                      </select>
-                    </label>
-                    <label className="dark-btn" style={{ textAlign: "center" }}>
-                      {text.choosePhoto}
-                      <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
-                    </label>
-                    {photoDraft.dataUrl && <img src={photoDraft.dataUrl} alt="Progress preview" style={{ width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }} />}
-                    {photoDraft.dataUrl && <button className="primary-btn" onClick={saveProgressPhoto}>{text.savePhoto}</button>}
-                  </div>
-                </div>
+                <button
+                  className="primary-btn"
+                  onClick={() => {
+                    setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: albumFilter || "", weight: "" });
+                    setShowPhotoModal(true);
+                  }}
+                >
+                  + {text.addPhotoBtn}
+                </button>
 
                 {(() => {
                   const shownPhotos = albumFilter ? progressPhotos.filter(photo => photo.album === albumFilter) : progressPhotos;
@@ -6739,6 +6713,68 @@ export default function AtlasLuthor() {
               />
               <button className="primary-btn" onClick={addPhotoAlbum}>{text.createBtn}</button>
               <button className="dark-btn" onClick={() => { setShowAlbumModal(false); setAlbumDraft(""); }}>
+                {text.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPhotoModal && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              {text.addPhotoLabel}
+            </p>
+            <div className="settings-grid">
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.dateField}</span>
+                <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
+              </label>
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.weightWord} ({weightUnit(unitSystem)})</span>
+                <input
+                  className="input"
+                  type="number"
+                  inputMode="decimal"
+                  value={photoDraft.weight}
+                  onChange={event => setPhotoDraft(prev => ({ ...prev, weight: event.target.value }))}
+                  placeholder={unitSystem === "metric"
+                    ? String(Math.round(lbToKg(Number(profile.currentWeight) || 0) * 10) / 10)
+                    : String(Math.round(Number(profile.currentWeight) || 0))}
+                />
+              </label>
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.noteField}</span>
+                <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={language === "es" ? "¿Qué muestra esta foto?" : "What does this photo show?"} />
+              </label>
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.albumField}</span>
+                <select className="input" value={photoDraft.album} onChange={event => setPhotoDraft(prev => ({ ...prev, album: event.target.value }))}>
+                  <option value="">{text.noAlbum}</option>
+                  {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
+                </select>
+              </label>
+              <label className="dark-btn" style={{ textAlign: "center" }}>
+                {photoDraft.dataUrl ? (language === "es" ? "Cambiar foto" : "Change photo") : text.choosePhoto}
+                <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
+              </label>
+              {photoDraft.dataUrl && <img src={photoDraft.dataUrl} alt="Progress preview" style={{ width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }} />}
+              <button
+                className="primary-btn"
+                onClick={saveProgressPhoto}
+                disabled={!photoDraft.dataUrl}
+                style={{ opacity: photoDraft.dataUrl ? 1 : 0.45 }}
+              >
+                {text.savePhoto}
+              </button>
+              <button
+                className="dark-btn"
+                onClick={() => {
+                  setShowPhotoModal(false);
+                  setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: "", weight: "" });
+                }}
+              >
                 {text.cancel}
               </button>
             </div>
