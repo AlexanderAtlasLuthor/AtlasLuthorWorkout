@@ -1690,10 +1690,10 @@ export default function AtlasLuthor() {
   );
   const weeklyStreak = completedWeekKeys.length;
   const earnedBadges = [
-    weeklyMetrics.weeklyProgress >= 100 ? "Protocol Clear" : null,
-    weeklyMetrics.completedSessions >= weeklySessionsGoal ? "Session Hunter" : null,
-    weeklyStreak >= 2 ? `${weeklyStreak} Week Streak` : null,
-    progressEntries.some(entry => entry.type === "manual") ? "Progress Logged" : null,
+    weeklyMetrics.weeklyProgress >= 100 ? (language === "es" ? "Protocolo Completo" : "Protocol Clear") : null,
+    weeklyMetrics.completedSessions >= weeklySessionsGoal ? (language === "es" ? "Cazador de Sesiones" : "Session Hunter") : null,
+    weeklyStreak >= 2 ? (language === "es" ? `Racha de ${weeklyStreak} Semanas` : `${weeklyStreak} Week Streak`) : null,
+    progressEntries.some(entry => entry.type === "manual") ? (language === "es" ? "Progreso Registrado" : "Progress Logged") : null,
   ].filter(Boolean);
   const restTimerRadius = 44;
   const restTimerCircumference = 2 * Math.PI * restTimerRadius;
@@ -1794,21 +1794,28 @@ export default function AtlasLuthor() {
   const displayDayShort = (dayName, fallback) => getDisplayDayShort(dayName, language, fallback);
   const weekHeaderLabels = getWeekHeaderLabels(language);
   const todayDisplayName = displayDay(weeklyMetrics.today);
+  const featurePageLabels = language === "es"
+    ? { today:"Hoy", body:"Cuerpo", score:"Puntaje", calendar:"Calendario", prs:"Récords",
+        fatigue:"Fatiga", goals:"Metas", progress:"Progreso", badges:"Insignias",
+        photos:"Fotos", metrics:"Métricas", week:"Semana", water:"Agua", coach:"Coach" }
+    : { today:"Today", body:"Body", score:"Score", calendar:"Calendar", prs:"PRs",
+        fatigue:"Fatigue", goals:"Goals", progress:"Progress", badges:"Badges",
+        photos:"Photos", metrics:"Metrics", week:"Week", water:"Water", coach:"Coach" };
   const featurePages = [
-    { id: "today", title: text.todayCommand, label: "Today", accent: themeFor(weeklyMetrics.todayType).accent },
-    { id: "body", title: text.bodyStatus, label: "Body", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
-    { id: "score", title: text.atlasScore, label: "Score", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
-    { id: "calendar", title: text.monthCalendar, label: "Calendar", accent: "#90C8FF" },
-    { id: "prs", title: text.prTracker, label: "PRs", accent: "#FFD060" },
-    { id: "fatigue", title: text.fatigueDeload, label: "Fatigue", accent: deloadWarning ? "#FFD060" : isLightMode ? "#0C0C10" : "#FFFFFF" },
-    { id: "goals", title: text.myGoals, label: "Goals", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
-    { id: "progress", title: text.progressMemory, label: "Progress", accent: "#90C8FF" },
-    { id: "badges", title: text.streakBadges, label: "Badges", accent: "#B8A0FF" },
-    { id: "photos", title: text.progressPhotos, label: "Photos", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
-    { id: "metrics", title: text.weeklyMetrics, label: "Metrics", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
-    { id: "week", title: text.weekPlan, label: "Week", accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
-    { id: "water", title: text.waterTracking, label: "Water", accent: "#90C8FF" },
-    { id: "coach", title: text.coachTitle, label: "Coach", accent: "#B8A0FF" },
+    { id: "today", title: text.todayCommand, label: featurePageLabels.today, accent: themeFor(weeklyMetrics.todayType).accent },
+    { id: "body", title: text.bodyStatus, label: featurePageLabels.body, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "score", title: text.atlasScore, label: featurePageLabels.score, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "calendar", title: text.monthCalendar, label: featurePageLabels.calendar, accent: "#90C8FF" },
+    { id: "prs", title: text.prTracker, label: featurePageLabels.prs, accent: "#FFD060" },
+    { id: "fatigue", title: text.fatigueDeload, label: featurePageLabels.fatigue, accent: deloadWarning ? "#FFD060" : isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "goals", title: text.myGoals, label: featurePageLabels.goals, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "progress", title: text.progressMemory, label: featurePageLabels.progress, accent: "#90C8FF" },
+    { id: "badges", title: text.streakBadges, label: featurePageLabels.badges, accent: "#B8A0FF" },
+    { id: "photos", title: text.progressPhotos, label: featurePageLabels.photos, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "metrics", title: text.weeklyMetrics, label: featurePageLabels.metrics, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "week", title: text.weekPlan, label: featurePageLabels.week, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
+    { id: "water", title: text.waterTracking, label: featurePageLabels.water, accent: "#90C8FF" },
+    { id: "coach", title: text.coachTitle, label: featurePageLabels.coach, accent: "#B8A0FF" },
   ];
   const activeFeature = featurePages.find(page => page.id === activeFeaturePage) || featurePages[0];
   const weeklySetProgress = days.reduce((sum, dayName) => (
@@ -4053,7 +4060,7 @@ export default function AtlasLuthor() {
                   <div key={entry.key} className="detail-row">
                     <div>
                       <p className="detail-row-main">{entry.exerciseName}</p>
-                      <p className="detail-row-sub">{entry.dayName ? displayDay(entry.dayName) : "PR"} - {entry.sessionName}</p>
+                      <p className="detail-row-sub">{entry.dayName ? displayDay(entry.dayName) : "PR"} — {entry.sessionName}</p>
                     </div>
                     <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} {entry.date}</span>
                   </div>
@@ -4096,7 +4103,7 @@ export default function AtlasLuthor() {
                           <p className="detail-row-main">{row.exercise.name}</p>
                           <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {language === "es" ? "Dolor" : "Pain"} {row.note?.pain || "N/A"} - RPE {row.note?.difficulty || "N/A"}</p>
                         </div>
-                        <span style={{ color: row.note?.pr ? "#FFD060" : "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.note?.pr ? "PR" : "NOTE"}</span>
+                        <span style={{ color: row.note?.pr ? "#FFD060" : "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.note?.pr ? "PR" : (language === "es" ? "NOTA" : "NOTE")}</span>
                       </div>
                     ))}
                   </div>
@@ -4132,8 +4139,8 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="compact-actions">
                   <button className="primary-btn" onClick={rememberProgress}>{text.saveProgress}</button>
-                  <button className="dark-btn" onClick={() => setShowDataTools(true)}>Backup</button>
-                  <button className="dark-btn" onClick={resetWeek}>Reset Week</button>
+                  <button className="dark-btn" onClick={() => setShowDataTools(true)}>{text.backup}</button>
+                  <button className="dark-btn" onClick={resetWeek}>{text.resetWeek}</button>
                 </div>
                 {chartEntries.length > 0 && (
                   <div className="home-card" style={{ display: "flex", alignItems: "end", gap: 8, height: 130 }}>
