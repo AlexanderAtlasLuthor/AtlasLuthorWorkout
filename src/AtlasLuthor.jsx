@@ -1526,6 +1526,7 @@ export default function AtlasLuthor() {
   const [editingMeasurements, setEditingMeasurements] = useState(null);
   const [challengeDraft, setChallengeDraft] = useState({ title: "", metric: "workouts", target: "12", days: "30" });
   const [prToast, setPrToast] = useState("");
+  const [toast, setToast] = useState("");
   const [cuesExerciseIndex, setCuesExerciseIndex] = useState(null);
   const notifiedTimersRef = useRef(new Set());
   const loadedUserRef = useRef("");
@@ -2722,6 +2723,78 @@ export default function AtlasLuthor() {
     setChallenges(prev => prev.filter(item => item.id !== id));
   };
 
+  // Computes local challenge progress from the training, hydration and
+  // cardio logs within the challenge window.
+  const computeChallengeProgress = challenge => {
+    const inRange = date => date >= challenge.startDate && date <= challenge.endDate;
+    if (challenge.metric === "water") {
+      return Object.entries(waterLog).filter(([date, entry]) =>
+        inRange(date) && Number(entry.glasses || 0) >= Number(entry.goal || 8)).length;
+    }
+    if (challenge.metric === "cardio") {
+      return Object.entries(cardioLog).reduce((sum, [date, list]) =>
+        inRange(date) ? sum + (list?.length || 0) : sum, 0);
+    }
+    return Object.entries(calendarLog).filter(([date, entry]) =>
+      inRange(date) && (entry.status === "completed" || entry.status === "trained")).length;
+  };
+
+  const flashToast = message => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2600);
+  };
+
+  const shareWorkoutSummary = async () => {
+    const summary = language === "es"
+      ? `Atlas Luthor — Puntaje ${atlasScore}/100\nProgreso semanal: ${weeklyMetrics.weeklyProgress}%\nSesiones: ${weeklyMetrics.completedSessions} · Racha: ${weeklyStreak} sem · PRs: ${prEntries.length}`
+      : `Atlas Luthor — Score ${atlasScore}/100\nWeekly progress: ${weeklyMetrics.weeklyProgress}%\nSessions: ${weeklyMetrics.completedSessions} · Streak: ${weeklyStreak} wk · PRs: ${prEntries.length}`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({ title: "Atlas Luthor", text: summary });
+        return;
+      }
+    } catch {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(summary);
+      flashToast(text.shareCopied);
+    } catch {
+      // Clipboard can be unavailable in some contexts; fail quietly.
+    }
+  };
+
+  const shareProgressCard = async () => {
+    const blob = await renderShareCard({
+      subtitle: language === "es" ? "Progreso Semanal" : "Weekly Progress",
+      score: atlasScore,
+      stats: [
+        { label: language === "es" ? "Semana" : "Week", value: `${weeklyMetrics.weeklyProgress}%` },
+        { label: language === "es" ? "Racha" : "Streak", value: weeklyStreak },
+        { label: "PRs", value: prEntries.length },
+      ],
+      message: goals.focusGoal,
+    });
+    if (!blob) return;
+    const file = new File([blob], "atlas-progress.png", { type: "image/png" });
+    try {
+      if (typeof navigator !== "undefined" && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Atlas Luthor" });
+        return;
+      }
+    } catch {
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "atlas-progress.png";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const saveExerciseNote = note => {
     setExerciseNotes(prev => ({
       ...prev,
@@ -3566,6 +3639,12 @@ export default function AtlasLuthor() {
       {prToast && (
         <div style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(14px + env(safe-area-inset-top))", zIndex: 60, background: "#FFD060", color: "#1A1400", padding: "11px 18px", borderRadius: 999, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, letterSpacing: 1, boxShadow: "0 10px 34px rgba(0,0,0,0.45)", maxWidth: "90vw", textAlign: "center" }}>
           ⭐ {text.newPR} · {prToast}
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(14px + env(safe-area-inset-top))", zIndex: 60, background: "#90C8FF", color: "#06182B", padding: "11px 18px", borderRadius: 999, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, letterSpacing: 1, boxShadow: "0 10px 34px rgba(0,0,0,0.45)", maxWidth: "90vw", textAlign: "center" }}>
+          {toast}
         </div>
       )}
 
@@ -4601,6 +4680,10 @@ export default function AtlasLuthor() {
                     <div className="detail-row"><p className="detail-row-main">{text.prMomentum}</p><span>{prEntries.length * 3} pts</span></div>
                   </div>
                 </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <button className="dark-btn" onClick={shareWorkoutSummary}>{text.shareProgress}</button>
+                  <button className="primary-btn" onClick={shareProgressCard}>{text.shareCard}</button>
+                </div>
               </div>
             )}
 
@@ -5139,6 +5222,62 @@ export default function AtlasLuthor() {
                       </div>
                     </div>
                   ))}
+                </div>
+              );
+            })()}
+
+            {activeFeaturePage === "challenges" && (() => {
+              const metricLabels = { workouts: text.challengeWorkouts, water: text.challengeWater, cardio: text.challengeCardio };
+              return (
+                <div className="detail-list">
+                  <div className="home-card">
+                    <p className="detail-label">{text.newChallenge.toUpperCase()}</p>
+                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                      <input className="input" value={challengeDraft.title} onChange={event => setChallengeDraft(prev => ({ ...prev, title: event.target.value }))} placeholder={text.challengeTitle} />
+                      <select className="input" value={challengeDraft.metric} onChange={event => setChallengeDraft(prev => ({ ...prev, metric: event.target.value }))}>
+                        <option value="workouts">{text.challengeWorkouts}</option>
+                        <option value="water">{text.challengeWater}</option>
+                        <option value="cardio">{text.challengeCardio}</option>
+                      </select>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        <label style={{ display: "block" }}>
+                          <span className="field-label">{text.challengeTarget.toUpperCase()}</span>
+                          <input className="input" type="number" inputMode="numeric" value={challengeDraft.target} onChange={event => setChallengeDraft(prev => ({ ...prev, target: event.target.value }))} />
+                        </label>
+                        <label style={{ display: "block" }}>
+                          <span className="field-label">{text.challengeDays.toUpperCase()}</span>
+                          <input className="input" type="number" inputMode="numeric" value={challengeDraft.days} onChange={event => setChallengeDraft(prev => ({ ...prev, days: event.target.value }))} />
+                        </label>
+                      </div>
+                      <button className="primary-btn" onClick={addChallenge}>{text.createChallenge}</button>
+                    </div>
+                  </div>
+
+                  {challenges.length === 0 && (
+                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>{text.noChallenges}</p>
+                  )}
+                  {challenges.map(challenge => {
+                    const progress = computeChallengeProgress(challenge);
+                    const pct = challenge.target > 0 ? Math.min(100, Math.round((progress / challenge.target) * 100)) : 0;
+                    const done = progress >= challenge.target;
+                    return (
+                      <div key={challenge.id} className="home-card" style={{ borderColor: done ? "#3FB98A66" : undefined }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <p className="detail-row-main">{challenge.title}</p>
+                            <p className="detail-row-sub">{metricLabels[challenge.metric]} · {challenge.startDate} → {challenge.endDate}</p>
+                          </div>
+                          <button className="edit-btn" onClick={() => removeChallenge(challenge.id)} style={{ color: "#E5604D", flexShrink: 0 }}>✕</button>
+                        </div>
+                        <div style={{ height: 8, borderRadius: 5, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                          <div style={{ width: `${pct}%`, height: "100%", background: done ? "#3FB98A" : "#B8A0FF", borderRadius: 5, transition: "width 0.4s ease" }} />
+                        </div>
+                        <p style={{ marginTop: 8, fontSize: 12, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: done ? "#3FB98A" : "#8A8F99" }}>
+                          {progress} / {challenge.target} · {pct}%{done ? ` · ${text.challengeDone}` : ""}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })()}
