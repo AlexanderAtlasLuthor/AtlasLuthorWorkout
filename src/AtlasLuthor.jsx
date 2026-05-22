@@ -316,6 +316,7 @@ const TRAINING_PLAN_OPTIONS = [
 const UI_TEXT = {
   en: {
     goodMorning: "Good morning",
+    goodEvening: "Good evening",
     goodNight: "Good night",
     todayCommand: "Today Command",
     bodyStatus: "Body Status",
@@ -460,6 +461,7 @@ const UI_TEXT = {
   },
   es: {
     goodMorning: "Buenos días",
+    goodEvening: "Buenas tardes",
     goodNight: "Buenas noches",
     todayCommand: "Comando de Hoy",
     bodyStatus: "Estado Corporal",
@@ -673,7 +675,7 @@ function getDaysToGoal(targetDate) {
   return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
 }
 
-function getHomeMessage(weeklyProgress, calendarLog, daysToGoal, language) {
+function getHomeMessage(weeklyProgress, calendarLog, daysToGoal, language, todayDisplayName, todayType) {
   const isEs = language === "es";
   const todayKey = getDateKey();
   const todayLog = calendarLog[todayKey];
@@ -681,19 +683,21 @@ function getHomeMessage(weeklyProgress, calendarLog, daysToGoal, language) {
   let missedStreak = 0;
   for (let i = 1; i <= 5; i++) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const k = d.toISOString().slice(0, 10);
+    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     if (calendarLog[k]?.status === "missed") missedStreak++;
     else break;
   }
-  if (typeof daysToGoal === "number" && daysToGoal === 0) return isEs ? "¡Llegaste a tu fecha meta! Fija un nuevo objetivo." : "You reached your target date! Set a new goal.";
-  if (typeof daysToGoal === "number" && daysToGoal <= 7 && daysToGoal > 0) return isEs ? `¡Solo ${daysToGoal} días para tu meta! Termina fuerte.` : `Only ${daysToGoal} days to your goal! Finish strong.`;
-  if (typeof daysToGoal === "number" && daysToGoal <= 30 && daysToGoal > 0) return isEs ? `${daysToGoal} días para tu meta. Cada sesión cuenta.` : `${daysToGoal} days to your goal. Every session counts.`;
-  if (missedStreak >= 3) return isEs ? "Llevas varios días sin entrenar. El protocolo te espera — vuelve hoy." : "Several days without training. The protocol needs you — get back today.";
-  if (weeklyProgress >= 95) return isEs ? "¡Semana perfecta! Estás aplastando el protocolo." : "Near-perfect week! You're crushing the protocol.";
-  if (weeklyProgress >= 70) return isEs ? "¡Gran semana! Cierra fuerte y llega al 100%." : "Great week! Close it strong and hit 100%.";
-  if (weeklyProgress >= 40) return isEs ? "Buen progreso esta semana. Sigue empujando." : "Solid progress this week. Keep pushing.";
-  if (hasTrainedToday) return isEs ? "¡Buen trabajo hoy! Mantén el impulso." : "Good work today! Keep the momentum going.";
-  return isEs ? "El protocolo está listo. ¡Es hora de entrenar!" : "Protocol is ready. Time to train.";
+  if (typeof daysToGoal === "number" && daysToGoal === 0) return isEs ? "¡Llegaste a tu fecha meta! Fija un nuevo objetivo." : "You hit your target date! Time to set the next goal.";
+  if (typeof daysToGoal === "number" && daysToGoal <= 7 && daysToGoal > 0) return isEs ? `¡Solo ${daysToGoal} días para tu meta! Termina fuerte — cada serie cuenta.` : `Only ${daysToGoal} days left. Leave nothing on the table.`;
+  if (typeof daysToGoal === "number" && daysToGoal <= 30 && daysToGoal > 0) return isEs ? `${daysToGoal} días para tu meta. No pierdas el momentum.` : `${daysToGoal} days to your goal. Don't lose the momentum.`;
+  if (missedStreak >= 3) return isEs ? "Han pasado varios días. El cuerpo se adapta — pero solo si entrenas. Vuelve hoy." : "It's been a few days. Fitness is built in the gym, not planned there. Get back today.";
+  if (weeklyProgress >= 95) return isEs ? "¡Semana casi perfecta! Cierra al 100% y demuestra lo que eres." : "Dominant week. Close it at 100% and cement the standard.";
+  if (weeklyProgress >= 70) return isEs ? "¡Sólida semana! Una o dos sesiones más y cierras fuerte." : "Strong week. One more session and you close it right.";
+  if (weeklyProgress >= 40) return isEs ? "Buen ritmo esta semana. Sigue acumulando — la consistencia es todo." : "Good rhythm this week. Keep stacking sessions — consistency wins.";
+  if (hasTrainedToday) return isEs ? "¡Ya entrenaste hoy! El trabajo está hecho. Descansa y recupérate." : "You already trained today. Work is done — rest and recover.";
+  const type = todayType || "TRAINING";
+  const day = todayDisplayName || (isEs ? "Hoy" : "Today");
+  return isEs ? `Es día de ${type}. Ejecuta el protocolo y sé mejor que ayer.` : `${day} is ${type} day. Execute the protocol and be better than yesterday.`;
 }
 
 function getCoachTips(sex, age, bmi, bodyFatPct, bodyTypeGoal, language) {
@@ -873,7 +877,8 @@ function isProgressionDue(lastDate) {
 }
 
 function getDateKey() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function toNumber(value) {
@@ -918,7 +923,9 @@ function getAutoTheme(hour = new Date().getHours()) {
 }
 
 function getGreetingKey(hour = new Date().getHours()) {
-  return hour >= 18 ? "goodNight" : "goodMorning";
+  if (hour >= 5 && hour < 12) return "goodMorning";
+  if (hour >= 22 || hour < 5) return "goodNight";
+  return "goodEvening";
 }
 
 function getDisplayDay(dayName, language = "en") {
@@ -1653,7 +1660,7 @@ export default function AtlasLuthor() {
     if (total <= 0) return 100;
     return Math.min(100, Math.max(0, Math.round(((now - start) / total) * 100)));
   })();
-  const homeMessage = getHomeMessage(weeklyMetrics.weeklyProgress, calendarLog, daysToGoal, language);
+  const homeMessage = getHomeMessage(weeklyMetrics.weeklyProgress, calendarLog, daysToGoal, language, todayDisplayName, weeklyMetrics.todayType);
   const coachTips = getCoachTips(profileSex, profile.age, bmi, bodyFatPct, goals.bodyTypeGoal || "athletic", language);
   const remainingExercises = Math.max(weeklyMetrics.totalExercises - weeklyMetrics.completedExercises, 0);
   const setCompletionPct = weeklyMetrics.totalSets > 0 ? Math.round((weeklySetProgress / weeklyMetrics.totalSets) * 100) : 0;
@@ -2542,9 +2549,14 @@ export default function AtlasLuthor() {
         }
 
         .page-shell { width: 100%; position: relative; z-index: 1; }
-        .app-header { position: relative; padding: calc(16px + env(safe-area-inset-top)) 64px 14px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.07); }
-        .menu-button { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 14px; width: 44px; height: 44px; border-radius: 13px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(12,12,16,0.72); backdrop-filter: blur(18px); display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex-direction: column; cursor: pointer; }
-        .menu-button span { width: 18px; height: 2px; border-radius: 2px; background: #FFFFFF; display: block; }
+        .app-header { display: flex; align-items: center; padding: calc(14px + env(safe-area-inset-top)) 14px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); gap: 0; }
+        .app-header-title { flex: 1; text-align: center; }
+        .app-header-side { width: 44px; flex-shrink: 0; }
+        .menu-button { width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.13); background: rgba(255,255,255,0.05); backdrop-filter: blur(18px); display: flex; align-items: center; justify-content: center; gap: 4px; flex-direction: column; cursor: pointer; padding: 0; transition: background 0.2s, border-color 0.2s; }
+        .menu-button:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); }
+        .menu-button span { width: 16px; height: 1.5px; border-radius: 2px; background: #FFFFFF; display: block; transition: width 0.2s; }
+        .menu-button span:first-child { width: 20px; }
+        .menu-button span:last-child { width: 12px; }
         .day-pill { cursor: pointer; flex: 1; padding: 10px 4px; border-radius: 10px; text-align: center; border: 1px solid transparent; transition: all 0.2s; background: transparent; font-family: inherit; }
         .day-pill:focus-visible, .ex-card:focus-visible, .session-tab:focus-visible, .dark-btn:focus-visible, .primary-btn:focus-visible, .edit-btn:focus-visible, .menu-button:focus-visible, .album-chip:focus-visible { outline: 2px solid #90C8FF; outline-offset: 2px; }
         button, [role="button"], .day-pill, label.dark-btn { transition: transform 0.09s ease, border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease; }
@@ -2789,15 +2801,22 @@ export default function AtlasLuthor() {
 
       <div className="page-shell">
         <div className="app-header">
-          <button className="menu-button" type="button" aria-label="Open settings menu" onClick={() => setShowMenu(true)} style={!activeUserId ? { display: "none" } : {}}>
-            <span />
-            <span />
-            <span />
-          </button>
-          <h1 style={{ fontSize: 22, fontWeight: 900, letterSpacing: 4, lineHeight: 1, fontFamily: "'Orbitron', monospace" }}>
-            <span style={{ color: isLightMode ? "#101015" : "#FFFFFF" }}>ATLAS</span>{" "}
-            <span style={{ color: "#90C8FF" }}>LUTHOR</span>
-          </h1>
+          <div className="app-header-side" />
+          <div className="app-header-title">
+            <h1 style={{ fontSize: 22, fontWeight: 900, letterSpacing: 4, lineHeight: 1, fontFamily: "'Orbitron', monospace" }}>
+              <span style={{ color: isLightMode ? "#101015" : "#FFFFFF" }}>ATLAS</span>{" "}
+              <span style={{ color: "#90C8FF" }}>LUTHOR</span>
+            </h1>
+          </div>
+          <div className="app-header-side" style={{ display: "flex", justifyContent: "flex-end" }}>
+            {activeUserId && (
+              <button className="menu-button" type="button" aria-label="Open settings menu" onClick={() => setShowMenu(true)}>
+                <span />
+                <span />
+                <span />
+              </button>
+            )}
+          </div>
         </div>
 
         {!activeUserId && authMode === "landing" && (
