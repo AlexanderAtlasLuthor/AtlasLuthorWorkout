@@ -3037,30 +3037,32 @@ export default function AtlasLuthor() {
                 </p>
               </div>
             )}
-            <div className="feature-hero" style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            <div style={{ marginBottom: 14, padding: "20px 20px 18px", background: isLightMode ? "rgba(255,255,255,0.92)" : "rgba(19,19,24,0.86)", border: `1.5px solid rgba(255,255,255,0.08)`, borderRadius: 18, backdropFilter: "blur(18px)" }}>
+              <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
                 <button
                   type="button"
                   aria-label="Open settings"
                   onClick={() => { setShowMenu(false); setShowSettings(true); }}
-                  style={{ width: 58, height: 58, borderRadius: 999, overflow: "hidden", padding: 0, border: `2px solid ${themeFor(weeklyMetrics.todayType).accent}`, background: isLightMode ? "#E9EAEE" : "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                  style={{ width: 80, height: 80, borderRadius: 999, overflow: "hidden", padding: 0, border: `3px solid ${themeFor(weeklyMetrics.todayType).accent}`, background: isLightMode ? "#E9EAEE" : "#0C0C14", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: `0 0 0 1px rgba(0,0,0,0.3)` }}
                 >
                   {userAvatar
                     ? <img src={userAvatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 22, color: "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
+                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 28, color: "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
                 </button>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace" }}>
-                    {language === "es"
-                      ? ({ dark: "MODO OSCURO", light: "MODO CLARO", auto: "MODO AUTO" }[activeThemeMode] || "MODO")
-                      : `${activeThemeMode.toUpperCase()} MODE`}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 9, letterSpacing: 4, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", marginBottom: 6, textTransform: "uppercase" }}>
+                    {greeting}
                   </p>
-                  <h2 className="feature-title" style={{ marginTop: 4 }}>
-                    {greeting}, {userName}
+                  <h2 style={{ fontSize: 36, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1, letterSpacing: 1, margin: 0 }}>
+                    {userName}
                   </h2>
+                  <p style={{ fontSize: 10, letterSpacing: 2, color: "#666", fontFamily: "'Orbitron', monospace", marginTop: 8 }}>
+                    {displayDayShort(weeklyMetrics.today, weeklyMetrics.todayLabel)} · {weeklyMetrics.todayType}
+                  </p>
                 </div>
               </div>
-              <p className="feature-copy" style={{ marginTop: 6 }}>
+              <div style={{ height: 1, background: isLightMode ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)", margin: "16px 0 12px" }} />
+              <p style={{ color: isLightMode ? "#5A6270" : "#9CA1AC", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
                 {homeMessage}
               </p>
             </div>
