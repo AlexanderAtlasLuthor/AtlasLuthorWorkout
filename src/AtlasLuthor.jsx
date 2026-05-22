@@ -1644,6 +1644,15 @@ export default function AtlasLuthor() {
   const ibwLb = calculateIBW(profile.height, profileSex);
   const leanMassLb = getLeanMass(profile.currentWeight, bodyFatPct);
   const daysToGoal = getDaysToGoal(goals.targetDate);
+  const goalProgressPct = (() => {
+    if (!goals.targetDate || !profile.startDate) return null;
+    const start = new Date(profile.startDate + "T00:00:00");
+    const target = new Date(goals.targetDate + "T00:00:00");
+    const now = new Date();
+    const total = target - start;
+    if (total <= 0) return 100;
+    return Math.min(100, Math.max(0, Math.round(((now - start) / total) * 100)));
+  })();
   const homeMessage = getHomeMessage(weeklyMetrics.weeklyProgress, calendarLog, daysToGoal, language);
   const coachTips = getCoachTips(profileSex, profile.age, bmi, bodyFatPct, goals.bodyTypeGoal || "athletic", language);
   const remainingExercises = Math.max(weeklyMetrics.totalExercises - weeklyMetrics.completedExercises, 0);
@@ -2560,10 +2569,49 @@ export default function AtlasLuthor() {
           100% { transform: translateX(0) scaleY(1); }
         }
 
+        @keyframes waterWave2 {
+          0% { transform: translateX(0) scaleY(1); }
+          50% { transform: translateX(8%) scaleY(1.08); }
+          100% { transform: translateX(0) scaleY(1); }
+        }
+
         @keyframes countdownPulse {
           0% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.7; transform: scale(1.04); }
           100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @keyframes msgGlow {
+          0% { box-shadow: 0 0 0 0 rgba(144,200,255,0.25); }
+          50% { box-shadow: 0 0 18px 4px rgba(144,200,255,0.12); }
+          100% { box-shadow: 0 0 0 0 rgba(144,200,255,0.25); }
+        }
+
+        @keyframes dropIn {
+          0% { transform: translateY(-6px) scale(0.8); opacity: 0; }
+          70% { transform: translateY(2px) scale(1.05); opacity: 1; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        @keyframes shimmerSlide {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+
+        @keyframes ringPop {
+          0% { transform: scale(0.92); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes tipSlide {
+          0% { transform: translateX(-8px); opacity: 0; }
+          100% { transform: translateX(0); opacity: 1; }
         }
 
         .fade-up { animation: fadeUp 0.3s ease forwards; }
@@ -2995,9 +3043,11 @@ export default function AtlasLuthor() {
                   </h2>
                 </div>
               </div>
-              <p className="feature-copy">
-                {homeMessage}
-              </p>
+              <div style={{ marginTop: 8, padding: "11px 14px", borderRadius: 12, background: isLightMode ? "rgba(144,200,255,0.12)" : "rgba(144,200,255,0.07)", border: "1px solid rgba(144,200,255,0.22)", animation: "msgGlow 3s ease-in-out infinite" }}>
+                <p style={{ color: isLightMode ? "#1A3A5C" : "#B8D8FF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, lineHeight: 1.5, margin: 0 }}>
+                  {homeMessage}
+                </p>
+              </div>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14, borderColor: "#2A2A34" }}>
@@ -3018,73 +3068,107 @@ export default function AtlasLuthor() {
               </button>
             </div>
 
-            {typeof daysToGoal === "number" && (
-              <div className="home-card" style={{ marginBottom: 14, borderColor: daysToGoal <= 7 ? "#FFD06088" : daysToGoal <= 30 ? "#90C8FF44" : "rgba(255,255,255,0.075)", background: daysToGoal <= 7 ? (isLightMode ? "#FEFAE8" : "#1A1400") : undefined }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, color: daysToGoal <= 7 ? "#FFD060" : daysToGoal <= 30 ? "#90C8FF" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                  {text.countdownTitle.toUpperCase()}
-                </p>
-                <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-                  <div style={{ textAlign: "center", flexShrink: 0 }}>
-                    <p style={{ fontSize: 72, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: daysToGoal <= 7 ? "#FFD060" : daysToGoal <= 30 ? "#90C8FF" : isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1, animation: daysToGoal <= 7 ? "countdownPulse 2s ease-in-out infinite" : "none" }}>
-                      {daysToGoal}
-                    </p>
-                    <p style={{ fontSize: 9, letterSpacing: 3, color: daysToGoal <= 7 ? "#FFD060" : "#666", fontFamily: "'Orbitron', monospace", marginTop: 2 }}>
-                      {text.daysLeft}
-                    </p>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, lineHeight: 1.4 }}>
-                      {goals.focusGoal}
-                    </p>
-                    <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 12, marginTop: 6 }}>
-                      {language === "es" ? "Meta:" : "Target:"} {goals.targetDate}
-                    </p>
-                    {daysToGoal <= 7 && daysToGoal > 0 && (
-                      <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 12, marginTop: 6, fontWeight: 900, letterSpacing: 1 }}>
-                        {text.finalStretch}
+            {typeof daysToGoal === "number" && (() => {
+              const cdColor = daysToGoal <= 0 ? "#3FB98A" : daysToGoal <= 7 ? "#FFD060" : daysToGoal <= 30 ? "#90C8FF" : "#B8A0FF";
+              const cdBg = daysToGoal <= 7 ? (isLightMode ? "#FEFAE8" : "#1A1400") : daysToGoal <= 30 ? (isLightMode ? "#EAF4FF" : "#0A1520") : undefined;
+              const cdBorder = daysToGoal <= 0 ? "#3FB98A66" : daysToGoal <= 7 ? "#FFD06066" : daysToGoal <= 30 ? "#90C8FF44" : "#B8A0FF33";
+              const pct = goalProgressPct ?? 0;
+              const R = 42, circ = 2 * Math.PI * R;
+              const offset = circ * (1 - pct / 100);
+              return (
+                <div className="home-card" style={{ marginBottom: 14, borderColor: cdBorder, background: cdBg, overflow: "hidden", animation: daysToGoal <= 7 ? "ringPop 0.5s ease" : undefined }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: cdColor, fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
+                    {text.countdownTitle.toUpperCase()}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ position: "relative", flexShrink: 0, width: 96, height: 96 }}>
+                      <svg width="96" height="96" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
+                        <circle cx="50" cy="50" r={R} fill="none" stroke={isLightMode ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)"} strokeWidth="6" />
+                        <circle
+                          cx="50" cy="50" r={R} fill="none"
+                          stroke={cdColor} strokeWidth="6"
+                          strokeDasharray={circ} strokeDashoffset={offset}
+                          strokeLinecap="round"
+                          style={{ transition: "stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1)", filter: `drop-shadow(0 0 6px ${cdColor}88)` }}
+                        />
+                      </svg>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: daysToGoal >= 100 ? 22 : 28, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: cdColor, lineHeight: 1, animation: daysToGoal <= 7 && daysToGoal > 0 ? "countdownPulse 2s ease-in-out infinite" : "none" }}>
+                          {daysToGoal}
+                        </span>
+                        <span style={{ fontSize: 7, letterSpacing: 2, color: cdColor, fontFamily: "'Orbitron', monospace", marginTop: 2, opacity: 0.8 }}>
+                          {text.daysLeft}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 800, lineHeight: 1.4, marginBottom: 6 }}>
+                        {goals.focusGoal}
                       </p>
-                    )}
-                    {daysToGoal > 7 && daysToGoal <= 30 && (
-                      <p style={{ color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontSize: 12, marginTop: 6, fontWeight: 800 }}>
-                        {text.almostThere}
+                      <div style={{ width: "100%", height: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${cdColor}99, ${cdColor})`, borderRadius: 4, transition: "width 1s cubic-bezier(0.4,0,0.2,1)", boxShadow: `0 0 6px ${cdColor}88` }} />
+                      </div>
+                      <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, marginBottom: 4 }}>
+                        {pct}% {language === "es" ? "del camino recorrido" : "of journey complete"} · {language === "es" ? "Meta:" : "Target:"} {goals.targetDate}
                       </p>
-                    )}
+                      {daysToGoal <= 0 && (
+                        <p style={{ color: "#3FB98A", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900, letterSpacing: 1 }}>
+                          {language === "es" ? "¡Meta alcanzada!" : "Goal reached!"}
+                        </p>
+                      )}
+                      {daysToGoal <= 7 && daysToGoal > 0 && (
+                        <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900, letterSpacing: 1 }}>
+                          {text.finalStretch}
+                        </p>
+                      )}
+                      {daysToGoal > 7 && daysToGoal <= 30 && (
+                        <p style={{ color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800 }}>
+                          {text.almostThere}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
-            <div className="home-card" style={{ marginBottom: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div className="home-card" style={{ marginBottom: 14, borderColor: waterPct >= 100 ? "#3FB98A44" : "#90C8FF22" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: waterPct >= 100 ? "#3FB98A" : "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
                     {text.waterToday.toUpperCase()}
                   </p>
-                  <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: "#90C8FF", lineHeight: 1 }}>
-                    {waterGlasses}<span style={{ fontSize: 14, color: "#666" }}>/{waterGoalNum} {text.glasses}</span>
+                  <p style={{ fontSize: 26, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: waterPct >= 100 ? "#3FB98A" : "#90C8FF", lineHeight: 1 }}>
+                    {waterGlasses}<span style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>/{waterGoalNum}</span>
+                    <span style={{ fontSize: 11, color: "#666", fontWeight: 500, marginLeft: 4 }}>{text.glasses}</span>
                   </p>
                 </div>
-                <button className="edit-btn" onClick={() => openFeaturePage("water")} style={{ color: "#90C8FF" }}>
-                  {language === "es" ? "Ver" : "View"}
+                <button className="edit-btn" onClick={() => openFeaturePage("water")} style={{ color: "#90C8FF", padding: "7px 12px" }}>
+                  {language === "es" ? "Ver todo" : "Full view"} →
                 </button>
               </div>
-              <div style={{ width: "100%", height: 54, borderRadius: 14, overflow: "hidden", border: "1.5px solid #1A2A3A", background: isLightMode ? "#E8F4FF" : "#0A1520", position: "relative" }}>
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${waterPct}%`, background: "linear-gradient(180deg, #55AAEE 0%, #1E6FAA 100%)", transition: "height 0.6s cubic-bezier(0.4,0,0.2,1)", borderRadius: "0 0 12px 12px" }}>
-                  {waterGlasses > 0 && (
-                    <div style={{ position: "absolute", top: -6, left: "-50%", width: "200%", height: 12, background: "rgba(100,180,255,0.45)", borderRadius: "50%", animation: "waterWave 2s ease-in-out infinite" }} />
-                  )}
-                </div>
-                {waterPct >= 40 && (
-                  <p style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', monospace", fontSize: 13, fontWeight: 900, color: "#FFFFFF", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
-                    {waterPct}%
-                  </p>
-                )}
+              <div style={{ display: "flex", gap: 5, marginBottom: 10, flexWrap: "wrap" }}>
+                {Array.from({ length: waterGoalNum }).map((_, gi) => {
+                  const filled = gi < waterGlasses;
+                  return (
+                    <div
+                      key={gi}
+                      onClick={() => filled ? removeWater() : addWater()}
+                      style={{ width: `calc((100% - ${(waterGoalNum - 1) * 5}px) / ${waterGoalNum})`, minWidth: 18, height: 28, borderRadius: 6, background: filled ? (waterPct >= 100 ? "linear-gradient(180deg,#3FB98A,#1E7A56)" : "linear-gradient(180deg,#55AAEE,#1E6FAA)") : (isLightMode ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.06)"), border: `1px solid ${filled ? (waterPct >= 100 ? "#3FB98A66" : "#90C8FF44") : (isLightMode ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.08)")}`, cursor: "pointer", transition: "all 0.25s ease", animation: filled && gi === waterGlasses - 1 ? "dropIn 0.35s ease" : "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10 }}
+                    >
+                      {filled ? <span style={{ opacity: 0.7 }}>💧</span> : null}
+                    </div>
+                  );
+                })}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-                <button className="dark-btn" onClick={() => removeWater()} style={{ color: "#888" }}>
-                  – {text.glassWord}
+              <div style={{ width: "100%", height: 8, borderRadius: 8, overflow: "hidden", background: isLightMode ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.07)", marginBottom: 10 }}>
+                <div style={{ height: "100%", width: `${waterPct}%`, background: waterPct >= 100 ? "linear-gradient(90deg,#3FB98A,#6DD5A8)" : "linear-gradient(90deg,#1E6FAA,#55AAEE)", borderRadius: 8, transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)", boxShadow: `0 0 8px ${waterPct >= 100 ? "#3FB98A" : "#55AAEE"}66` }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <button className="dark-btn" onClick={() => removeWater()} style={{ color: "#8A8F99", fontSize: 15 }}>
+                  − {text.glassWord}
                 </button>
-                <button className="dark-btn" onClick={() => addWater()} style={{ color: "#90C8FF" }}>
+                <button className="dark-btn" onClick={() => addWater()} style={{ color: waterPct >= 100 ? "#3FB98A" : "#90C8FF", fontSize: 15, borderColor: waterPct >= 100 ? "#3FB98A33" : "#90C8FF33" }}>
                   + {text.glassWord}
                 </button>
               </div>
@@ -4006,162 +4090,269 @@ export default function AtlasLuthor() {
               </div>
             )}
 
-            {activeFeaturePage === "water" && (
-              <div className="detail-list">
-                <div style={{ textAlign: "center", marginBottom: 10 }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
-                    {text.waterToday.toUpperCase()}
-                  </p>
-                  <p style={{ fontSize: 64, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: waterPct >= 100 ? "#3FB98A" : "#90C8FF", lineHeight: 1 }}>
-                    {waterGlasses}
-                  </p>
-                  <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 14, marginTop: 4 }}>
-                    {language === "es" ? `de ${waterGoalNum} vasos` : `of ${waterGoalNum} glasses`}
-                  </p>
-                </div>
-
-                <div style={{ width: "100%", height: 120, borderRadius: 18, overflow: "hidden", border: "1.5px solid #1A2A3A", background: isLightMode ? "#E8F4FF" : "#0A1520", position: "relative", marginBottom: 4 }}>
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${waterPct}%`, background: waterPct >= 100 ? "linear-gradient(180deg, #3FB98A 0%, #1E7A56 100%)" : "linear-gradient(180deg, #55AAEE 0%, #1E6FAA 100%)", transition: "height 0.6s cubic-bezier(0.4,0,0.2,1)" }}>
-                    {waterGlasses > 0 && (
-                      <div style={{ position: "absolute", top: -8, left: "-50%", width: "200%", height: 16, background: "rgba(100,180,255,0.45)", borderRadius: "50%", animation: "waterWave 2s ease-in-out infinite" }} />
-                    )}
-                  </div>
-                  <p style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', monospace", fontSize: 22, fontWeight: 900, color: waterPct > 30 ? "#FFFFFF" : "#90C8FF", textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-                    {waterPct}%
-                  </p>
-                </div>
-
-                {waterPct >= 100 && (
-                  <div style={{ textAlign: "center", padding: "10px 0 4px" }}>
-                    <p style={{ color: "#3FB98A", fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 900 }}>
-                      {language === "es" ? "¡Meta de agua alcanzada! 💧" : "Daily water goal reached! 💧"}
-                    </p>
-                  </div>
-                )}
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <button className="dark-btn" onClick={() => removeWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: "#888" }}>
-                    – {text.glassWord}
-                  </button>
-                  <button className="primary-btn" onClick={() => addWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}>
-                    + {text.glassWord}
-                  </button>
-                </div>
-
-                <div className="detail-card">
-                  <p className="detail-label">{text.waterGoal.toUpperCase()}</p>
-                  <select
-                    className="input"
-                    value={String(waterGoalNum)}
-                    onChange={event => setWaterGoalForToday(event.target.value)}
-                    style={{ marginTop: 8 }}
-                  >
-                    {WATER_GOAL_OPTIONS.map(option => (
-                      <option key={option} value={option}>{option} {text.glasses}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="detail-grid">
-                  {Object.entries(waterLog)
-                    .sort((a, b) => b[0].localeCompare(a[0]))
-                    .slice(0, 8)
-                    .map(([date, entry]) => (
-                      <div key={date} className="detail-card">
-                        <p className="detail-label">{date}</p>
-                        <p className="detail-value">{Number(entry.glasses || 0)}/{Number(entry.goal || 8)}</p>
-                        <div style={{ height: 4, background: "#1E1E26", borderRadius: 4, overflow: "hidden", marginTop: 6 }}>
-                          <div style={{ width: `${Math.min(100, Math.round((Number(entry.glasses || 0) / Number(entry.goal || 8)) * 100))}%`, height: "100%", background: "#90C8FF", borderRadius: 4 }} />
-                        </div>
+            {activeFeaturePage === "water" && (() => {
+              const wColor = waterPct >= 100 ? "#3FB98A" : "#55AAEE";
+              const wColorDark = waterPct >= 100 ? "#1E7A56" : "#1E6FAA";
+              const hydrationStatus = waterPct >= 100 ? (language === "es" ? "ÓPTIMO" : "OPTIMAL") : waterPct >= 75 ? (language === "es" ? "CASI" : "ALMOST") : waterPct >= 50 ? (language === "es" ? "MODERADO" : "MODERATE") : waterPct >= 25 ? (language === "es" ? "BAJO" : "LOW") : (language === "es" ? "HIDRATARSE" : "HYDRATE");
+              const hydrationColor = waterPct >= 100 ? "#3FB98A" : waterPct >= 75 ? "#90C8FF" : waterPct >= 50 ? "#FFD060" : waterPct >= 25 ? "#FF9860" : "#FF6060";
+              const waterStreakDays = (() => {
+                const sortedKeys = Object.keys(waterLog).sort((a, b) => b.localeCompare(a));
+                let streak = 0;
+                const today2 = getDateKey();
+                for (let si = 0; si < sortedKeys.length; si++) {
+                  const d = sortedKeys[si];
+                  if (si === 0 && d !== today2) break;
+                  const e = waterLog[d];
+                  if (Number(e.glasses || 0) >= Number(e.goal || 8)) streak++;
+                  else break;
+                }
+                return streak;
+              })();
+              const R2 = 70, circ2 = 2 * Math.PI * R2;
+              const offset2 = circ2 * (1 - waterPct / 100);
+              return (
+                <div className="detail-list">
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 4 }}>
+                    <div style={{ position: "relative", width: 160, height: 160, flexShrink: 0, margin: "0 auto" }}>
+                      <svg width="160" height="160" viewBox="0 0 160 160" style={{ transform: "rotate(-90deg)" }}>
+                        <circle cx="80" cy="80" r={R2} fill="none" stroke={isLightMode ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"} strokeWidth="10" />
+                        <circle
+                          cx="80" cy="80" r={R2} fill="none"
+                          stroke={wColor} strokeWidth="10"
+                          strokeDasharray={circ2} strokeDashoffset={offset2}
+                          strokeLinecap="round"
+                          style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)", filter: `drop-shadow(0 0 8px ${wColor}AA)` }}
+                        />
+                      </svg>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontSize: 10, letterSpacing: 3, color: hydrationColor, fontFamily: "'Orbitron', monospace", marginBottom: 2 }}>{hydrationStatus}</span>
+                        <span style={{ fontSize: 48, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: wColor, lineHeight: 1 }}>{waterGlasses}</span>
+                        <span style={{ fontSize: 12, color: "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>/ {waterGoalNum} {text.glasses}</span>
+                        <span style={{ fontSize: 13, fontWeight: 900, color: wColor, fontFamily: "'Orbitron', monospace", marginTop: 4 }}>{waterPct}%</span>
                       </div>
-                    ))}
-                </div>
-
-                <div className="home-card">
-                  <p className="detail-label">{language === "es" ? "POR QUÉ IMPORTA" : "WHY IT MATTERS"}</p>
-                  <p className="detail-row-sub" style={{ marginTop: 6 }}>
-                    {language === "es"
-                      ? "El agua mejora el rendimiento muscular, la recuperación, el enfoque, y el metabolismo. Beber suficiente agua puede aumentar la fuerza y la resistencia hasta un 10-15%."
-                      : "Water improves muscle performance, recovery, focus, and metabolism. Proper hydration can boost strength and endurance by 10-15%."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {activeFeaturePage === "coach" && (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  {[
-                    { label: text.bmiLabel, val: bmi > 0 ? String(bmi) : "N/A" },
-                    { label: text.bodyFatLabel, val: bmi > 0 ? `${bodyFatPct}%` : "N/A" },
-                    { label: text.leanMassLabel, val: bmi > 0 ? `${leanMassLb} LB` : "N/A" },
-                    { label: text.ibwLabel, val: ibwLb > 0 ? `${ibwLb} LB` : "N/A" },
-                  ].map(item => (
-                    <div key={item.label} className="detail-card">
-                      <p className="detail-label">{item.label}</p>
-                      <p className="detail-value">{item.val}</p>
                     </div>
-                  ))}
-                </div>
+                  </div>
 
-                <div className="detail-card">
-                  <p className="detail-label">{language === "es" ? "PERFIL" : "PROFILE"}</p>
-                  <div style={{ display: "flex", gap: 14, marginTop: 8, flexWrap: "wrap" }}>
+                  {waterPct >= 100 && (
+                    <div style={{ textAlign: "center", padding: "6px 16px 2px", background: "linear-gradient(135deg, rgba(63,185,138,0.15), rgba(30,122,86,0.1))", borderRadius: 12, border: "1px solid #3FB98A44" }}>
+                      <p style={{ color: "#3FB98A", fontFamily: "'Orbitron', monospace", fontSize: 13, fontWeight: 900, letterSpacing: 2 }}>
+                        {language === "es" ? "¡META ALCANZADA!" : "GOAL ACHIEVED!"}
+                        {waterStreakDays > 1 && <span style={{ fontSize: 11, color: "#FFD060", marginLeft: 8 }}>🔥 {waterStreakDays} {language === "es" ? "días seguidos" : "day streak"}</span>}
+                      </p>
+                    </div>
+                  )}
+
+                  {waterStreakDays > 0 && waterPct < 100 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: isLightMode ? "rgba(255,208,96,0.1)" : "rgba(255,208,96,0.08)", borderRadius: 10, border: "1px solid rgba(255,208,96,0.25)" }}>
+                      <span style={{ fontSize: 18 }}>🔥</span>
+                      <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800 }}>
+                        {waterStreakDays} {language === "es" ? `día${waterStreakDays > 1 ? "s" : ""} de racha consecutiva` : `day hydration streak`}
+                      </p>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {Array.from({ length: waterGoalNum }).map((_, gi) => {
+                      const filled = gi < waterGlasses;
+                      return (
+                        <div
+                          key={gi}
+                          onClick={() => filled ? removeWater() : addWater()}
+                          title={filled ? (language === "es" ? "Quitar vaso" : "Remove glass") : (language === "es" ? "Agregar vaso" : "Add glass")}
+                          style={{ flex: "1 0 auto", minWidth: 32, maxWidth: 48, height: 44, borderRadius: 8, cursor: "pointer", position: "relative", overflow: "hidden", border: `1.5px solid ${filled ? wColor + "55" : (isLightMode ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.08)")}`, background: filled ? (isLightMode ? "rgba(85,170,238,0.15)" : "rgba(85,170,238,0.12)") : (isLightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)"), transition: "all 0.2s ease", animation: filled && gi === waterGlasses - 1 ? "dropIn 0.35s ease" : "none", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+                        >
+                          {filled && (
+                            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "70%", background: `linear-gradient(180deg, ${wColor}66, ${wColorDark}99)`, borderRadius: "0 0 6px 6px" }}>
+                              <div style={{ position: "absolute", top: -4, left: "-50%", width: "200%", height: 8, background: `${wColor}55`, borderRadius: "50%", animation: "waterWave 2s ease-in-out infinite" }} />
+                            </div>
+                          )}
+                          <span style={{ position: "relative", fontSize: 14, zIndex: 1, paddingBottom: 4 }}>{filled ? "💧" : ""}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <button className="dark-btn" onClick={() => removeWater()} style={{ padding: "16px 10px", fontSize: 18, fontWeight: 900, color: "#8A8F99" }}>
+                      − {text.glassWord}
+                    </button>
+                    <button className="primary-btn" onClick={() => addWater()} style={{ padding: "16px 10px", fontSize: 18, fontWeight: 900, background: waterPct >= 100 ? "#3FB98A" : "#FFFFFF", color: "#050507" }}>
+                      + {text.glassWord}
+                    </button>
+                  </div>
+
+                  <div className="detail-card">
+                    <p className="detail-label">{text.waterGoal.toUpperCase()}</p>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                      {WATER_GOAL_OPTIONS.map(option => {
+                        const sel = String(waterGoalNum) === option;
+                        return (
+                          <button
+                            key={option}
+                            onClick={() => setWaterGoalForToday(option)}
+                            style={{ padding: "8px 14px", borderRadius: 10, border: `1.5px solid ${sel ? "#90C8FF88" : (isLightMode ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)")}`, background: sel ? (isLightMode ? "rgba(144,200,255,0.15)" : "rgba(144,200,255,0.12)") : "transparent", color: sel ? "#90C8FF" : "#888", fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 900, cursor: "pointer", boxShadow: sel ? "0 0 8px #90C8FF33" : "none" }}
+                          >
+                            {option}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                      {language === "es" ? "HISTORIAL RECIENTE" : "RECENT HISTORY"}
+                    </p>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {Object.entries(waterLog)
+                        .sort((a, b) => b[0].localeCompare(a[0]))
+                        .slice(0, 7)
+                        .map(([date, entry]) => {
+                          const g = Number(entry.glasses || 0);
+                          const gl = Number(entry.goal || 8);
+                          const pctH = Math.min(100, gl > 0 ? Math.round((g / gl) * 100) : 0);
+                          const hColor = pctH >= 100 ? "#3FB98A" : pctH >= 75 ? "#90C8FF" : pctH >= 50 ? "#FFD060" : "#FF9860";
+                          const isToday = date === getDateKey();
+                          return (
+                            <div key={date} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.035)" : "rgba(255,255,255,0.04)", border: `1px solid ${isToday ? "#90C8FF33" : "transparent"}` }}>
+                              <div style={{ minWidth: 68 }}>
+                                <p style={{ fontSize: 11, fontWeight: 700, color: isToday ? "#90C8FF" : "#888", fontFamily: "'DM Sans', sans-serif" }}>
+                                  {isToday ? (language === "es" ? "HOY" : "TODAY") : date}
+                                </p>
+                              </div>
+                              <div style={{ flex: 1, height: 6, borderRadius: 6, overflow: "hidden", background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)" }}>
+                                <div style={{ width: `${pctH}%`, height: "100%", background: `linear-gradient(90deg, ${hColor}88, ${hColor})`, borderRadius: 6, transition: "width 0.6s ease" }} />
+                              </div>
+                              <div style={{ minWidth: 52, textAlign: "right" }}>
+                                <p style={{ fontSize: 12, fontWeight: 900, color: hColor, fontFamily: "'Orbitron', monospace" }}>{g}/{gl}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  <div className="home-card" style={{ borderColor: "#90C8FF22", background: isLightMode ? "rgba(144,200,255,0.05)" : "rgba(144,200,255,0.04)" }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                      {language === "es" ? "POR QUÉ IMPORTA" : "WHY IT MATTERS"}
+                    </p>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {(language === "es" ? [
+                        { icon: "💪", text: "Mejora la fuerza y resistencia muscular hasta un 10-15%." },
+                        { icon: "⚡", text: "Aumenta el enfoque mental y reduce la fatiga durante el entrenamiento." },
+                        { icon: "🔥", text: "Acelera el metabolismo y optimiza la quema de grasa." },
+                        { icon: "🛌", text: "Mejora la recuperación muscular y el sueño reparador." },
+                      ] : [
+                        { icon: "💪", text: "Boosts muscle strength and endurance by up to 10-15%." },
+                        { icon: "⚡", text: "Improves mental focus and reduces fatigue during training." },
+                        { icon: "🔥", text: "Speeds up metabolism and optimizes fat burning." },
+                        { icon: "🛌", text: "Enhances muscle recovery and restorative sleep." },
+                      ]).map((item, ii) => (
+                        <div key={ii} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
+                          <p style={{ color: isLightMode ? "#2A3A4A" : "#B8D0E8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>{item.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {activeFeaturePage === "coach" && (() => {
+              const bmiCategory = bmi <= 0 ? null : bmi < 18.5 ? { label: language === "es" ? "Bajo Peso" : "Underweight", color: "#90C8FF" } : bmi < 25 ? { label: language === "es" ? "Normal" : "Normal", color: "#3FB98A" } : bmi < 30 ? { label: language === "es" ? "Sobrepeso" : "Overweight", color: "#FFD060" } : { label: language === "es" ? "Obeso" : "Obese", color: "#FF6060" };
+              const bfCategory = bodyFatPct <= 0 ? null : profileSex === "male"
+                ? (bodyFatPct < 6 ? { label: language === "es" ? "Atleta" : "Athletic", color: "#90C8FF" } : bodyFatPct < 14 ? { label: language === "es" ? "En Forma" : "Fit", color: "#3FB98A" } : bodyFatPct < 25 ? { label: language === "es" ? "Normal" : "Normal", color: "#FFD060" } : { label: language === "es" ? "Exceso" : "Excess", color: "#FF6060" })
+                : (bodyFatPct < 14 ? { label: language === "es" ? "Atleta" : "Athletic", color: "#90C8FF" } : bodyFatPct < 21 ? { label: language === "es" ? "En Forma" : "Fit", color: "#3FB98A" } : bodyFatPct < 32 ? { label: language === "es" ? "Normal" : "Normal", color: "#FFD060" } : { label: language === "es" ? "Exceso" : "Excess", color: "#FF6060" });
+              const bodyTypeConfig = {
+                lean: { icon: "🔥", desc: language === "es" ? "Déficit calórico + cardio HIIT" : "Caloric deficit + HIIT cardio", color: "#FF9860" },
+                athletic: { icon: "⚡", desc: language === "es" ? "Mantenimiento + alta proteína" : "Maintenance + high protein", color: "#90C8FF" },
+                muscular: { icon: "💪", desc: language === "es" ? "Superávit + compuestos pesados" : "Caloric surplus + heavy compounds", color: "#B8A0FF" },
+                maintain: { icon: "🎯", desc: language === "es" ? "Consistencia y balance calórico" : "Consistency and caloric balance", color: "#3FB98A" },
+              };
+              const selectedGoal = goals.bodyTypeGoal || "athletic";
+              const tipIcons = ["💡", "🥩", "🏋️", "😴", "🧠", "⚡", "🔥", "🎯"];
+              return (
+                <div className="detail-list">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     {[
-                      { label: text.sexLabel, val: profileSex === "male" ? text.maleLabel : text.femaleLabel },
-                      { label: text.ageLabel, val: `${profile.age || "--"} ${language === "es" ? "años" : "yrs"}` },
-                      { label: text.bodyTypeLabel, val: (BODY_TYPE_GOAL_OPTIONS.find(o => o.value === (goals.bodyTypeGoal || "athletic"))?.label || "Athletic") },
+                      { label: text.bmiLabel, val: bmi > 0 ? String(bmi) : "N/A", sub: bmiCategory?.label, color: bmiCategory?.color || "#8A8F99" },
+                      { label: text.bodyFatLabel, val: bmi > 0 ? `${bodyFatPct}%` : "N/A", sub: bfCategory?.label, color: bfCategory?.color || "#8A8F99" },
+                      { label: text.leanMassLabel, val: bmi > 0 ? `${leanMassLb} lb` : "N/A", sub: language === "es" ? "masa activa" : "active mass", color: "#90C8FF" },
+                      { label: text.ibwLabel, val: ibwLb > 0 ? `${ibwLb} lb` : "N/A", sub: language === "es" ? "objetivo Devine" : "Devine formula", color: "#B8A0FF" },
                     ].map(item => (
-                      <div key={item.label} style={{ textAlign: "center" }}>
-                        <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 900 }}>{item.val}</p>
-                        <p style={{ color: "#666", fontFamily: "'Orbitron', monospace", fontSize: 9, letterSpacing: 1, marginTop: 3 }}>{item.label}</p>
+                      <div key={item.label} style={{ padding: "16px 14px", borderRadius: 14, background: isLightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: `1.5px solid ${item.color}33` }}>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>{item.label}</p>
+                        <p style={{ fontSize: 26, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: item.color, lineHeight: 1, marginBottom: 4 }}>{item.val}</p>
+                        {item.sub && <p style={{ fontSize: 10, color: item.color, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, opacity: 0.85 }}>{item.sub}</p>}
                       </div>
                     ))}
                   </div>
-                </div>
 
-                <div style={{ display: "grid", gap: 8 }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#B8A0FF", fontFamily: "'Orbitron', monospace" }}>{text.bodyTypeLabel.toUpperCase()}</p>
-                  {BODY_TYPE_GOAL_OPTIONS.map(option => {
-                    const selected = (goals.bodyTypeGoal || "athletic") === option.value;
-                    const label = language === "es"
-                      ? ({ lean: "Definir / Cortar", athletic: "Recomposición Atlética", muscular: "Ganar Músculo / Volumen", maintain: "Mantener & Tonificar" }[option.value] || option.label)
-                      : option.label;
-                    return (
-                      <button
-                        key={option.value}
-                        className="dark-btn"
-                        onClick={() => setGoals(prev => ({ ...prev, bodyTypeGoal: option.value }))}
-                        style={{ textAlign: "left", boxShadow: selected ? "0 0 0 2px #B8A0FF" : "none", borderColor: selected ? "#B8A0FF66" : undefined }}
-                      >
-                        <span style={{ display: "block", fontWeight: 900, color: selected ? "#B8A0FF" : "#FFFFFF" }}>{label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="home-card" style={{ borderColor: "#B8A0FF33" }}>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#B8A0FF", fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
-                    {text.tipsTitle.toUpperCase()}
-                  </p>
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {coachTips.map((tip, index) => (
-                      <div key={index} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#B8A0FF", marginTop: 5, flexShrink: 0 }} />
-                        <p style={{ color: isLightMode ? "#1A1A2E" : "#D0D0E0", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.55 }}>{tip}</p>
-                      </div>
-                    ))}
+                  <div style={{ display: "flex", gap: 10, padding: "12px 14px", borderRadius: 14, background: isLightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", alignItems: "center" }}>
+                    <span style={{ fontSize: 28 }}>{profileSex === "male" ? "♂️" : "♀️"}</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 16, fontWeight: 900, color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'DM Sans', sans-serif" }}>
+                        {profileSex === "male" ? text.maleLabel : text.femaleLabel} · {profile.age || "--"} {language === "es" ? "años" : "yrs"}
+                      </p>
+                      <p style={{ fontSize: 11, color: "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
+                        {profile.height} · {profile.currentWeight} lb
+                      </p>
+                    </div>
+                    <button className="edit-btn" onClick={() => setEditingProfile({ ...profile })} style={{ padding: "7px 12px" }}>
+                      {text.edit}
+                    </button>
                   </div>
-                </div>
 
-                <button className="dark-btn" onClick={() => setEditingProfile({ ...profile })}>
-                  {language === "es" ? "Editar Perfil Corporal" : "Edit Body Profile"}
-                </button>
-                <button className="dark-btn" onClick={() => setEditingGoals({ ...goals })}>
-                  {language === "es" ? "Cambiar Meta de Cuerpo" : "Change Body Type Goal"}
-                </button>
-              </div>
-            )}
+                  <div>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#B8A0FF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                      {text.bodyTypeLabel.toUpperCase()}
+                    </p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {BODY_TYPE_GOAL_OPTIONS.map(option => {
+                        const selected = selectedGoal === option.value;
+                        const cfg = bodyTypeConfig[option.value];
+                        const label = language === "es"
+                          ? ({ lean: "Definir", athletic: "Atlético", muscular: "Muscular", maintain: "Mantener" }[option.value] || option.label)
+                          : ({ lean: "Lean Cut", athletic: "Athletic", muscular: "Bulk", maintain: "Maintain" }[option.value] || option.label);
+                        return (
+                          <button
+                            key={option.value}
+                            onClick={() => setGoals(prev => ({ ...prev, bodyTypeGoal: option.value }))}
+                            style={{ padding: "14px 12px", borderRadius: 14, border: `2px solid ${selected ? cfg.color : (isLightMode ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.08)")}`, background: selected ? `${cfg.color}14` : "transparent", cursor: "pointer", textAlign: "left", boxShadow: selected ? `0 0 16px ${cfg.color}33` : "none", transition: "all 0.2s ease" }}
+                          >
+                            <span style={{ fontSize: 22, display: "block", marginBottom: 6 }}>{cfg.icon}</span>
+                            <p style={{ fontSize: 13, fontWeight: 900, color: selected ? cfg.color : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif", marginBottom: 3 }}>{label}</p>
+                            <p style={{ fontSize: 10, color: selected ? cfg.color : "#888", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.3, opacity: selected ? 0.9 : 0.7 }}>{cfg.desc}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div style={{ background: isLightMode ? "rgba(184,160,255,0.06)" : "rgba(184,160,255,0.05)", borderRadius: 16, border: "1px solid #B8A0FF33", padding: "16px 14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                      <span style={{ fontSize: 20 }}>{bodyTypeConfig[selectedGoal]?.icon}</span>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#B8A0FF", fontFamily: "'Orbitron', monospace" }}>
+                        {text.tipsTitle.toUpperCase()}
+                      </p>
+                    </div>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {coachTips.map((tip, index) => (
+                        <div key={index} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 12px", borderRadius: 12, background: isLightMode ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.03)", border: `1px solid ${isLightMode ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`, animation: `tipSlide 0.3s ease ${index * 0.06}s both` }}>
+                          <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{tipIcons[index % tipIcons.length]}</span>
+                          <p style={{ color: isLightMode ? "#1A1A2E" : "#D0D0E0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.6 }}>{tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button className="dark-btn" onClick={() => setEditingGoals({ ...goals })} style={{ borderColor: "#B8A0FF33", color: "#B8A0FF" }}>
+                    {language === "es" ? "Cambiar Meta de Cuerpo" : "Change Body Type Goal"}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -4462,45 +4653,59 @@ export default function AtlasLuthor() {
                 const isExpanded = expandedExerciseIndex === i && !isDone;
 
                 if (isExpanded) {
+                  const setCompPct2 = totalExerciseSets > 0 ? Math.round((setsDone / totalExerciseSets) * 100) : 0;
                   return (
                     <div
                       key={i}
                       className="home-card fade-up"
-                      style={{ marginBottom: 12, borderColor: theme.accent, boxShadow: `0 0 28px ${theme.accent}33`, padding: 20 }}
+                      style={{ marginBottom: 12, borderColor: theme.accent, boxShadow: `0 0 32px ${theme.accent}2A, inset 0 0 0 1px ${theme.accent}22`, padding: "18px 18px 16px", background: isLightMode ? "#FFFFFF" : `linear-gradient(135deg, rgba(19,19,24,0.98) 0%, rgba(12,12,16,0.99) 100%)` }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
-                            {language === "es" ? "EJERCICIO ACTIVO" : "ACTIVE EXERCISE"}
-                          </p>
-                          <h3 style={{ fontSize: 22, fontWeight: 900, fontFamily: "'DM Sans', sans-serif", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1.2 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: "50%", background: theme.accent, boxShadow: `0 0 8px ${theme.accent}` }} />
+                            <p style={{ fontSize: 9, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
+                              {language === "es" ? "EJERCICIO ACTIVO" : "ACTIVE EXERCISE"}
+                            </p>
+                          </div>
+                          <h3 style={{ fontSize: 21, fontWeight: 900, fontFamily: "'DM Sans', sans-serif", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1.2 }}>
                             {ex.name}
                           </h3>
                         </div>
-                        <button className="edit-btn" onClick={() => setExpandedExerciseIndex(null)} style={{ flexShrink: 0, marginLeft: 8 }}>
+                        <button className="edit-btn" onClick={() => setExpandedExerciseIndex(null)} style={{ flexShrink: 0, marginLeft: 10, color: "#888" }}>
                           ↑ {language === "es" ? "Colapsar" : "Collapse"}
                         </button>
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 16 }}>
-                        <div className="stat-box" style={{ padding: 14 }}>
-                          <p style={{ fontSize: 28, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.weight}</p>
-                          <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 6, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
+                        <div style={{ padding: "12px 8px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.04)" : `${theme.accent}10`, border: `1px solid ${theme.accent}33`, textAlign: "center" }}>
+                          <p style={{ fontSize: 22, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.weight}</p>
+                          <p style={{ fontSize: 8, letterSpacing: 2, color: "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
                         </div>
-                        <div className="stat-box" style={{ padding: 14 }}>
-                          <p style={{ fontSize: 28, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.sets}×{ex.reps}</p>
-                          <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 6, fontFamily: "'Orbitron', monospace" }}>{text.mSets} × {text.repsWord}</p>
+                        <div style={{ padding: "12px 8px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.04)" : `${theme.accent}10`, border: `1px solid ${theme.accent}33`, textAlign: "center" }}>
+                          <p style={{ fontSize: 22, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.sets}×{ex.reps}</p>
+                          <p style={{ fontSize: 8, letterSpacing: 2, color: "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{text.mSets}×{text.repsWord}</p>
+                        </div>
+                        <div style={{ padding: "12px 8px", borderRadius: 12, background: setsDone === totalExerciseSets && totalExerciseSets > 0 ? `${theme.accent}22` : (isLightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"), border: `1px solid ${setsDone === totalExerciseSets && totalExerciseSets > 0 ? theme.accent : "rgba(255,255,255,0.07)"}`, textAlign: "center" }}>
+                          <p style={{ fontSize: 22, fontWeight: 900, color: setsDone === totalExerciseSets && totalExerciseSets > 0 ? theme.accent : "#FFFFFF", fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{setCompPct2}%</p>
+                          <p style={{ fontSize: 8, letterSpacing: 2, color: "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{language === "es" ? "HECHO" : "DONE"}</p>
                         </div>
                       </div>
 
                       <div style={{ marginBottom: 16 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700 }}>{text.mSets}: {setsDone}/{totalExerciseSets}</span>
-                          <span style={{ color: setsLeft === 0 ? theme.accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 900 }}>{setsLeft} {text.leftWord}</span>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                          <span style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700 }}>{text.mSets} {setsDone}/{totalExerciseSets}</span>
+                          <span style={{ color: setsLeft === 0 ? "#3FB98A" : theme.accent, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900 }}>
+                            {setsLeft === 0 ? (language === "es" ? "✓ COMPLETO" : "✓ COMPLETE") : `${setsLeft} ${text.leftWord}`}
+                          </span>
                         </div>
                         <div style={{ display: "flex", gap: 5 }}>
                           {Array.from({ length: totalExerciseSets }).map((_, si) => (
-                            <div key={si} style={{ flex: 1, height: 8, borderRadius: 4, background: si < setsDone ? theme.accent : (isLightMode ? "#E2E4E9" : "#2A2A34"), transition: "background 0.3s ease" }} />
+                            <div
+                              key={si}
+                              onClick={() => updateSetCount(i, si < setsDone ? -1 : 1)}
+                              style={{ flex: 1, height: 10, borderRadius: 6, background: si < setsDone ? theme.accent : (isLightMode ? "#E2E4E9" : "#2A2A34"), transition: "background 0.3s ease", cursor: "pointer", boxShadow: si < setsDone ? `0 0 6px ${theme.accent}88` : "none" }}
+                            />
                           ))}
                         </div>
                       </div>
@@ -4509,14 +4714,13 @@ export default function AtlasLuthor() {
                         <button
                           className="dark-btn"
                           onClick={() => updateSetCount(i, -1)}
-                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}
+                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: "#8A8F99" }}
                         >
                           {text.minusSet}
                         </button>
                         <button
-                          className="primary-btn"
+                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, borderRadius: 14, border: 0, background: theme.accent, color: isLightMode ? "#FFFFFF" : "#050507", fontFamily: "'Orbitron', monospace", cursor: "pointer", letterSpacing: 1 }}
                           onClick={() => updateSetCount(i, 1)}
-                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}
                         >
                           {text.plusSet}
                         </button>
@@ -4526,22 +4730,24 @@ export default function AtlasLuthor() {
                         <button
                           className="dark-btn"
                           onClick={() => setEditingNote({ key, name: ex.name, pain: note?.pain || "", difficulty: note?.difficulty || "", pr: !!note?.pr, technique: note?.technique || "" })}
-                          style={{ color: hasNote ? theme.accent : "#888" }}
+                          style={{ color: hasNote ? theme.accent : "#666", borderColor: hasNote ? `${theme.accent}44` : undefined }}
                         >
                           {text.notesWord} {hasNote ? "✓" : ""}
                         </button>
                         <button
                           className="dark-btn"
                           onClick={() => toggleExercise(i)}
-                          style={{ color: "#3FB98A" }}
+                          style={{ color: "#3FB98A", borderColor: "#3FB98A33" }}
                         >
                           {text.markExerciseDone}
                         </button>
                       </div>
                       {hasNote && (
-                        <p style={{ color: theme.accent, fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800, marginTop: 10 }}>
-                          {note.pr ? "PR · " : ""}{note.difficulty ? `RPE ${note.difficulty} · ` : ""}{note.technique || note.pain}
-                        </p>
+                        <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 10, background: `${theme.accent}10`, border: `1px solid ${theme.accent}22` }}>
+                          <p style={{ color: theme.accent, fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800 }}>
+                            {note.pr ? "⭐ PR · " : ""}{note.difficulty ? `RPE ${note.difficulty} · ` : ""}{note.technique || note.pain}
+                          </p>
+                        </div>
                       )}
                     </div>
                   );
