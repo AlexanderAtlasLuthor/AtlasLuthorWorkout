@@ -52,8 +52,10 @@ export function exerciseVolume(sets, reps, weightStr) {
 }
 
 // True when a candidate lift beats the stored best 1RM for an exercise.
+// The first time an exercise is logged it only establishes the baseline,
+// so it does not count as a PR.
 export function isNewPR(candidate1RM, performanceRecord) {
   if (!candidate1RM || candidate1RM <= 0) return false;
-  if (!performanceRecord || !performanceRecord.best1RM) return true;
+  if (!performanceRecord || !performanceRecord.best1RM) return false;
   return candidate1RM > performanceRecord.best1RM + 0.5;
 }
