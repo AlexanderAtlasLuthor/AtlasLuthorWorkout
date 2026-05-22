@@ -2503,7 +2503,7 @@ export default function AtlasLuthor() {
   };
 
   return (
-    <div className={`app-root ${isLightMode ? "light-mode" : "dark-mode"}`} style={{ minHeight: "100dvh", background: isLightMode ? "#F3F4F6" : "#0C0C10", color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate" }}>
+    <div className={`app-root ${isLightMode ? "light-mode" : "dark-mode"}`} style={{ minHeight: "100dvh", background: isLightMode ? "#E8EDF5" : "#0C0C10", color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
@@ -2668,44 +2668,118 @@ export default function AtlasLuthor() {
         .detail-row-main { color: #FFFFFF; font-size: 14px; font-weight: 900; min-width: 0; overflow-wrap: anywhere; }
         .detail-row-sub { color: #9CA1AC; font-size: 12px; line-height: 1.35; margin-top: 3px; min-width: 0; overflow-wrap: anywhere; }
 
-        .light-mode .ambient-bg { background: #F3F4F6; }
+        /* ── LIGHT MODE ─────────────────────────────────── */
+        /* Page background — cool-white with a subtle blue-grey tint */
+        .light-mode .ambient-bg { background: #E8EDF5; }
         .light-mode .ambient-bg::before {
-          background: conic-gradient(from 145deg at 50% 50%, #F5F6F8 0deg, rgba(255,255,255,0.96) 66deg, rgba(176,186,202,0.38) 126deg, #EEF0F4 186deg, rgba(168,188,214,0.34) 252deg, rgba(255,255,255,0.82) 320deg, #F5F6F8 360deg);
-          opacity: 0.88;
-        }
-        .light-mode .ambient-bg::after {
           background:
-            linear-gradient(120deg, transparent 0%, rgba(12,12,16,0.045) 22%, transparent 39%, rgba(88,153,204,0.08) 58%, transparent 78%),
-            linear-gradient(235deg, rgba(255,255,255,0.45), transparent 34%, rgba(12,12,16,0.035) 72%, transparent);
+            radial-gradient(ellipse 90% 55% at 50% 0%, rgba(144,200,255,0.18) 0%, transparent 65%),
+            radial-gradient(ellipse 55% 40% at 85% 90%, rgba(184,160,255,0.1) 0%, transparent 55%),
+            linear-gradient(180deg, #ECF0F8 0%, #E4E9F3 100%);
+          opacity: 1;
         }
-        .light-mode .app-header,
-        .light-mode .home-card,
-        .light-mode .stat-box,
-        .light-mode .session-tab,
-        .light-mode .ex-card,
-        .light-mode .feature-hero,
-        .light-mode .detail-card,
-        .light-mode .detail-row,
-        .light-mode .setting-row,
-        .light-mode .photo-card,
-        .light-mode .photo-tile,
+        .light-mode .ambient-bg::after { background: none; }
+
+        /* ── Cards & surfaces ────────────────────────────── */
+        .light-mode .app-header {
+          background: rgba(236,240,248,0.96) !important;
+          border-bottom-color: rgba(0,0,0,0.08) !important;
+          box-shadow: 0 1px 0 rgba(0,0,0,0.06) !important;
+          backdrop-filter: blur(20px);
+        }
+        .light-mode .home-card {
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.07) !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04) !important;
+        }
+        .light-mode .stat-box {
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.07) !important;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.07) !important;
+        }
+        .light-mode .feature-hero {
+          background: #FFFFFF !important;
+          border-width: 2px !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+        }
+        .light-mode .detail-card {
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.07) !important;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+        }
+        .light-mode .detail-row {
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.07) !important;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+        }
+        .light-mode .setting-row {
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.07) !important;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.05) !important;
+        }
+        .light-mode .photo-card, .light-mode .photo-tile {
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.08) !important;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.07) !important;
+        }
         .light-mode .modal {
-          background: rgba(255,255,255,0.92) !important;
-          border-color: rgba(15,18,26,0.12) !important;
-          box-shadow: 0 16px 44px rgba(20,24,36,0.08);
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.1) !important;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.2) !important;
         }
-        .light-mode .dark-btn,
-        .light-mode .edit-btn,
-        .light-mode .input,
-        .light-mode .menu-button {
-          background: rgba(255,255,255,0.78) !important;
-          border-color: rgba(15,18,26,0.14) !important;
+
+        /* ── Exercise & session tabs ─────────────────────── */
+        .light-mode .ex-card {
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.08) !important;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+        }
+        .light-mode .ex-card:hover { border-color: rgba(0,0,0,0.14) !important; background: #FAFBFF !important; }
+        .light-mode .ex-card.done { opacity: 0.42; }
+        .light-mode .session-tab {
+          background: rgba(0,0,0,0.04) !important;
+          border-color: rgba(0,0,0,0.09) !important;
+          color: #8A8F99 !important;
+        }
+        .light-mode .check { border-color: rgba(0,0,0,0.22) !important; background: transparent !important; }
+
+        /* ── Buttons ─────────────────────────────────────── */
+        .light-mode .primary-btn {
+          background: linear-gradient(135deg, #1A1D26 0%, #2C3044 100%) !important;
+          color: #FFFFFF !important;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.22) !important;
+        }
+        .light-mode .dark-btn {
+          background: rgba(0,0,0,0.05) !important;
+          border-color: rgba(0,0,0,0.12) !important;
+          color: #1E2030 !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .light-mode .edit-btn {
+          background: rgba(0,0,0,0.04) !important;
+          border-color: rgba(0,0,0,0.11) !important;
+          color: #5A6270 !important;
+        }
+        .light-mode .input {
+          background: rgba(0,0,0,0.03) !important;
+          border-color: rgba(0,0,0,0.14) !important;
           color: #101015 !important;
         }
-        .light-mode .primary-btn {
-          background: #101015 !important;
-          color: #FFFFFF !important;
+        .light-mode .menu-button {
+          background: rgba(0,0,0,0.05) !important;
+          border-color: rgba(0,0,0,0.12) !important;
         }
+        .light-mode .menu-button span { background: #1E2030; }
+
+        /* ── Album chips ─────────────────────────────────── */
+        .light-mode .album-chip {
+          background: rgba(255,255,255,0.9);
+          border-color: rgba(0,0,0,0.12);
+          color: #1E2030;
+        }
+        .light-mode .album-chip.active { background: #1E2030; color: #FFFFFF; border-color: #1E2030; }
+
+        /* ── Text hierarchy ──────────────────────────────── */
         .light-mode p,
         .light-mode h1,
         .light-mode h2,
@@ -2713,29 +2787,20 @@ export default function AtlasLuthor() {
         .light-mode span,
         .light-mode .detail-value,
         .light-mode .detail-row-main,
-        .light-mode .setting-title {
-          color: #101015 !important;
-        }
+        .light-mode .setting-title { color: #1E2030 !important; }
         .light-mode .detail-label,
         .light-mode .detail-row-sub,
         .light-mode .setting-sub,
-        .light-mode .photo-sub {
-          color: #5A6270 !important;
-        }
-        .light-mode .photo-note { color: #101015 !important; }
-        .light-mode .album-chip {
-          background: rgba(255,255,255,0.78);
-          border-color: rgba(15,18,26,0.16);
-          color: #101015;
-        }
-        .light-mode .album-chip.active {
-          background: #101015;
-          color: #FFFFFF;
-          border-color: #101015;
-        }
-        .light-mode .menu-button span {
-          background: #101015;
-        }
+        .light-mode .photo-sub,
+        .light-mode .feature-copy { color: #5A6270 !important; }
+        .light-mode .feature-title { color: #1E2030 !important; }
+        .light-mode .photo-note { color: #1E2030 !important; }
+        .light-mode .field-label,
+        .light-mode .menu-section-label,
+        .light-mode .industry-mark,
+        .light-mode .detail-label { color: #7A8090 !important; }
+
+        /* ── Dark background overrides ───────────────────── */
         .light-mode [style*="#101015"],
         .light-mode [style*="#0F0F14"],
         .light-mode [style*="#111115"],
@@ -2750,30 +2815,16 @@ export default function AtlasLuthor() {
         .light-mode [style*="rgb(21, 18, 7)"],
         .light-mode [style*="rgb(26, 26, 34)"],
         .light-mode [style*="rgb(30, 30, 38)"] {
-          background: rgba(255,255,255,0.92) !important;
-          border-color: rgba(15,18,26,0.13) !important;
+          background: #FFFFFF !important;
+          border-color: rgba(0,0,0,0.07) !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
         }
-        .light-mode .industry-mark,
-        .light-mode .field-label,
-        .light-mode .menu-section-label,
-        .light-mode .detail-label { color: #5A6270 !important; }
         .light-mode img + p,
         .light-mode button span,
         .light-mode [style*="#101015"] p,
         .light-mode [style*="#101015"] span,
         .light-mode [style*="rgb(16, 16, 21)"] p,
-        .light-mode [style*="rgb(16, 16, 21)"] span {
-          color: #101015 !important;
-        }
-
-        /* Enhanced light mode — workout screen components */
-        .light-mode .session-tab { background: rgba(0,0,0,0.04) !important; border-color: rgba(0,0,0,0.1) !important; color: #8A8F99 !important; }
-        .light-mode .dark-btn { background: rgba(0,0,0,0.05) !important; border-color: rgba(0,0,0,0.14) !important; }
-        .light-mode .edit-btn { background: rgba(0,0,0,0.05) !important; border-color: rgba(0,0,0,0.13) !important; }
-        .light-mode .check { border-color: rgba(0,0,0,0.22) !important; background: transparent !important; }
-        .light-mode .ex-card { border-color: rgba(0,0,0,0.09) !important; box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important; }
-        .light-mode .ex-card:hover { border-color: rgba(0,0,0,0.16) !important; }
-        .light-mode .ex-card.done { opacity: 0.45; }
+        .light-mode [style*="rgb(16, 16, 21)"] span { color: #1E2030 !important; }
 
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 20; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
         .modal { width: 100%; max-width: 520px; max-height: 82vh; overflow: auto; background: #101015; border: 1.5px solid #2A2A34; border-radius: 22px; padding: 18px; box-shadow: 0 20px 80px rgba(0,0,0,0.4); }
@@ -2862,7 +2913,7 @@ export default function AtlasLuthor() {
                   <div style={{ width: 9, height: 9, borderRadius: 999, background: "#90C8FF", marginTop: 6, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: 15, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{item.title}</p>
-                    <p style={{ fontSize: 13, color: "#888", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginTop: 3 }}>{item.copy}</p>
+                    <p style={{ fontSize: 13, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginTop: 3 }}>{item.copy}</p>
                   </div>
                 </div>
               ))}
@@ -2960,7 +3011,7 @@ export default function AtlasLuthor() {
                             ? (option.value === "atlas" ? "Usar el protocolo Atlas" : "Empezar con rutina vacía")
                             : option.label}
                         </span>
-                        <span style={{ display: "block", fontSize: 12, color: "#888", marginTop: 3, fontWeight: 500 }}>
+                        <span style={{ display: "block", fontSize: 12, color: isLightMode ? "#7A8090" : "#888", marginTop: 3, fontWeight: 500 }}>
                           {signupDraft.language === "es"
                             ? (option.value === "atlas"
                               ? "División Push / Pull / Legs precargada, lista para entrenar hoy."
@@ -3046,7 +3097,7 @@ export default function AtlasLuthor() {
                 </p>
               </div>
             )}
-            <div style={{ marginBottom: 14, padding: "20px 20px 18px", background: isLightMode ? "rgba(255,255,255,0.92)" : "rgba(19,19,24,0.86)", border: `1.5px solid rgba(255,255,255,0.08)`, borderRadius: 18, backdropFilter: "blur(18px)" }}>
+            <div style={{ marginBottom: 14, padding: "20px 20px 18px", background: isLightMode ? "#FFFFFF" : "rgba(19,19,24,0.86)", border: isLightMode ? `1.5px solid ${themeFor(weeklyMetrics.todayType).accent}` : `1.5px solid rgba(255,255,255,0.08)`, borderRadius: 18, backdropFilter: "blur(18px)", boxShadow: isLightMode ? `0 4px 20px rgba(0,0,0,0.08), inset 0 0 0 1px ${themeFor(weeklyMetrics.todayType).accent}22` : "none" }}>
               <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
                 <button
                   type="button"
@@ -3056,7 +3107,7 @@ export default function AtlasLuthor() {
                 >
                   {userAvatar
                     ? <img src={userAvatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 28, color: "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
+                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 28, color: isLightMode ? "#7A8090" : "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
                 </button>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 9, letterSpacing: 4, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", marginBottom: 6, textTransform: "uppercase" }}>
@@ -3073,7 +3124,7 @@ export default function AtlasLuthor() {
               </p>
             </div>
 
-            <div className="home-card" style={{ marginBottom: 14, borderColor: "#2A2A34" }}>
+            <div className="home-card" style={{ marginBottom: 14, borderColor: isLightMode ? `${themeFor(weeklyMetrics.todayType).accent}60` : "#2A2A34", borderTopWidth: isLightMode ? 3 : 1.5, borderTopColor: isLightMode ? themeFor(weeklyMetrics.todayType).accent : undefined }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
                 {text.today} - {displayDayShort(weeklyMetrics.today, weeklyMetrics.todayLabel)} / {weeklyMetrics.todayType}
               </p>
@@ -3082,7 +3133,7 @@ export default function AtlasLuthor() {
                 {todayDisplayName}
               </h2>
 
-              <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
+              <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
                 {text.weeklyProgressIs} <span style={{ color: isLightMode ? "#101015" : "#FFFFFF", fontWeight: 800 }}>{weeklyMetrics.weeklyProgress}%</span>. {text.keepMoving}
               </p>
 
@@ -3101,14 +3152,14 @@ export default function AtlasLuthor() {
                     <p style={{ fontSize: 10, letterSpacing: 3, color: daysToGoal <= 7 ? "#FFD060" : daysToGoal <= 30 ? "#90C8FF" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
                       {text.countdownTitle.toUpperCase()}
                     </p>
-                    <p style={{ fontSize: 10, color: "#666", fontFamily: "'Orbitron', monospace", letterSpacing: 1 }}>{goals.targetDate}</p>
+                    <p style={{ fontSize: 10, color: isLightMode ? "#7A8090" : "#666", fontFamily: "'Orbitron', monospace", letterSpacing: 1 }}>{goals.targetDate}</p>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 14 }}>
                     <div style={{ flexShrink: 0 }}>
                       <p style={{ fontSize: daysToGoal >= 100 ? 52 : 64, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: cdColor, lineHeight: 1, animation: daysToGoal <= 7 ? "countdownPulse 2s ease-in-out infinite" : "none" }}>
                         {daysToGoal}
                       </p>
-                      <p style={{ fontSize: 9, letterSpacing: 3, color: "#666", fontFamily: "'Orbitron', monospace", marginTop: 4 }}>
+                      <p style={{ fontSize: 9, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#666", fontFamily: "'Orbitron', monospace", marginTop: 4 }}>
                         {text.daysLeft}
                       </p>
                     </div>
@@ -3123,7 +3174,7 @@ export default function AtlasLuthor() {
                   <div style={{ width: "100%", height: 3, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ height: "100%", width: `${pct}%`, background: cdColor, borderRadius: 4, transition: "width 1s ease", opacity: 0.8 }} />
                   </div>
-                  <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 11, marginTop: 5 }}>
+                  <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 11, marginTop: 5 }}>
                     {pct}% {language === "es" ? "completado" : "complete"}
                   </p>
                 </div>
@@ -3133,11 +3184,11 @@ export default function AtlasLuthor() {
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
                     {text.waterToday.toUpperCase()}
                   </p>
                   <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: waterPct >= 100 ? "#3FB98A" : "#90C8FF", lineHeight: 1 }}>
-                    {waterGlasses}<span style={{ fontSize: 14, color: "#666", fontWeight: 400 }}>/{waterGoalNum}</span>
+                    {waterGlasses}<span style={{ fontSize: 14, color: isLightMode ? "#7A8090" : "#666", fontWeight: 400 }}>/{waterGoalNum}</span>
                   </p>
                 </div>
                 <button className="edit-btn" onClick={() => openFeaturePage("water")} style={{ color: "#90C8FF" }}>
@@ -3158,7 +3209,7 @@ export default function AtlasLuthor() {
                 })}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <button className="dark-btn" onClick={() => removeWater()} style={{ color: "#8A8F99" }}>
+                <button className="dark-btn" onClick={() => removeWater()} style={{ color: isLightMode ? "#7A8090" : "#8A8F99" }}>
                   − {text.glassWord}
                 </button>
                 <button className="dark-btn" onClick={() => addWater()} style={{ color: waterPct >= 100 ? "#3FB98A" : "#90C8FF" }}>
@@ -3170,7 +3221,7 @@ export default function AtlasLuthor() {
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
                     {text.bodyStatus.toUpperCase()}
                   </p>
                   <p style={{ fontSize: 28, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
@@ -3194,7 +3245,7 @@ export default function AtlasLuthor() {
                     <p style={{ fontSize: 17, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                       {metric.val}
                     </p>
-                    <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                    <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                       {metric.label}
                     </p>
                   </div>
@@ -3203,18 +3254,18 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                 {text.atlasScore.toUpperCase()}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 92, height: 92, borderRadius: "50%", border: `8px solid ${isLightMode ? "#101015" : "#FFFFFF"}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isLightMode ? "0 0 18px rgba(20,24,36,0.12)" : "0 0 24px rgba(255,255,255,0.12)" }}>
+                <div style={{ width: 92, height: 92, borderRadius: "50%", border: `8px solid ${isLightMode ? themeFor(weeklyMetrics.todayType).accent : "#FFFFFF"}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isLightMode ? `0 0 20px ${themeFor(weeklyMetrics.todayType).accent}44` : "0 0 24px rgba(255,255,255,0.12)" }}>
                   <span style={{ fontSize: 25, fontWeight: 900, fontFamily: "'Orbitron', monospace" }}>{atlasScore}</span>
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 800 }}>
                     {deloadWarning ? text.deloadActive : text.protocolStable}
                   </p>
-                  <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
+                  <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
                     {text.avgRpe} {averageRpe || "N/A"} · PRs {prEntries.length} · {text.streak} {weeklyStreak}
                   </p>
                 </div>
@@ -3222,12 +3273,12 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                 {text.monthCalendar.toUpperCase()}
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, marginBottom: 10 }}>
                 {weekHeaderLabels.map((label, index) => (
-                  <p key={`${label}-${index}`} style={{ color: "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
+                  <p key={`${label}-${index}`} style={{ color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
                 ))}
                 {calendarCells.map((cell, index) => {
                   if (!cell) return <div key={`blank-${index}`} />;
@@ -3248,7 +3299,7 @@ export default function AtlasLuthor() {
                 {["completed", "trained", "missed", "rest"].map(status => {
                   const visual = getCalendarVisual(status, isLightMode);
                   return (
-                    <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
+                    <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
                       <span style={{ width: 11, height: 11, borderRadius: 3, background: visual.bg, display: "inline-block" }} />
                       {calendarLabels[status]}
                     </span>
@@ -3258,14 +3309,14 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                 {text.prTracker.toUpperCase()}
               </p>
               <div style={{ display: "grid", gap: 8 }}>
                 {(prEntries.length ? prEntries.slice(0, 5) : [{ key: "empty", exerciseName: text.noPrsYet, sessionName: text.markPrHint, weight: "", date: "" }]).map(entry => (
                   <div key={entry.key} style={{ display: "flex", justifyContent: "space-between", gap: 10, background: "#101015", border: "1px solid #24242E", borderRadius: 10, padding: 10, fontFamily: "'DM Sans', sans-serif" }}>
                     <span style={{ color: "#FFFFFF", fontSize: 13, fontWeight: 800 }}>{entry.exerciseName}</span>
-                    <span style={{ color: "#888", fontSize: 12, fontWeight: 700 }}>{entry.weight} {entry.date}</span>
+                    <span style={{ color: isLightMode ? "#7A8090" : "#888", fontSize: 12, fontWeight: 700 }}>{entry.weight} {entry.date}</span>
                   </div>
                 ))}
               </div>
@@ -3286,7 +3337,7 @@ export default function AtlasLuthor() {
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
                     {text.myGoals.toUpperCase()}
                   </p>
                   <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 700 }}>
@@ -3320,10 +3371,10 @@ export default function AtlasLuthor() {
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
                     {text.progressMemory.toUpperCase()}
                   </p>
-                  <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                  <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
                     {latestProgress
                       ? `${text.lastSaved} ${latestProgress.date}: ${latestProgress.weight} LB, ${latestProgress.weeklyProgress}%`
                       : text.noProgressSaved}
@@ -3344,7 +3395,7 @@ export default function AtlasLuthor() {
               <div style={{ display: "grid", gap: 8 }}>
                 {progressEntries.slice(0, 3).map(entry => (
                   <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, background: "#101015", border: "1px solid #20202A", borderRadius: 10, padding: 10, fontFamily: "'DM Sans', sans-serif" }}>
-                    <span style={{ color: "#888", fontSize: 12, fontWeight: 700 }}>
+                    <span style={{ color: isLightMode ? "#7A8090" : "#888", fontSize: 12, fontWeight: 700 }}>
                       {entry.date} {entry.type === "manual" ? text.savedTag : text.autoTag}
                     </span>
                     <span style={{ color: "#FFFFFF", fontSize: 12, fontWeight: 800 }}>
@@ -3363,7 +3414,7 @@ export default function AtlasLuthor() {
                     return (
                       <div key={`${entry.id}-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
                         <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)", boxShadow: isLightMode ? "none" : "0 0 22px rgba(255,255,255,0.14)" }} />
-                        <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {entry.weight}
                         </p>
                       </div>
@@ -3383,7 +3434,7 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                 {text.streakBadges.toUpperCase()}
               </p>
               <div className="metric-grid" style={{ marginBottom: 12 }}>
@@ -3391,7 +3442,7 @@ export default function AtlasLuthor() {
                   <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {weeklyStreak}
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                     {text.weekStreak}
                   </p>
                 </div>
@@ -3399,7 +3450,7 @@ export default function AtlasLuthor() {
                   <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {weeklyMetrics.completedDays}/7
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                     {text.daysClear}
                   </p>
                 </div>
@@ -3407,7 +3458,7 @@ export default function AtlasLuthor() {
                   <p style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {currentWeekKey.slice(5)}
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                     {text.weekOf}
                   </p>
                 </div>
@@ -3423,7 +3474,7 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                 {text.progressPhotos.toUpperCase()}
               </p>
               <div style={{ display: "grid", gridTemplateColumns: latestPhoto ? "1.15fr 0.85fr" : "1fr", gap: 12, alignItems: "stretch", marginBottom: 12 }}>
@@ -3534,7 +3585,7 @@ export default function AtlasLuthor() {
                   <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {metric.val}
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                     {metric.label}
                   </p>
                 </div>
@@ -3542,7 +3593,7 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card">
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
                 {text.weekPlan.toUpperCase()}
               </p>
 
@@ -3562,7 +3613,7 @@ export default function AtlasLuthor() {
                         <span style={{ display: "block", fontFamily: "'Orbitron', monospace", letterSpacing: 1 }}>
                           {displayDayShort(dayName, currentDay.label)} - {displayDay(dayName)}
                         </span>
-                        <span style={{ display: "block", color: "#888", fontSize: 12, marginTop: 3 }}>
+                        <span style={{ display: "block", color: isLightMode ? "#7A8090" : "#888", fontSize: 12, marginTop: 3 }}>
                           {currentDay.sessions.map(s => s.name).join(" / ")}
                         </span>
                       </span>
@@ -3584,7 +3635,7 @@ export default function AtlasLuthor() {
               {text.backHome}
             </button>
 
-            <div className="feature-hero" style={{ borderColor: `${activeFeature.accent}40` }}>
+            <div className="feature-hero" style={{ borderColor: isLightMode ? activeFeature.accent : `${activeFeature.accent}40` }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: activeFeature.accent, fontFamily: "'Orbitron', monospace" }}>
                 {language === "es" ? "MÓDULO ATLAS" : "ATLAS MODULE"}
               </p>
@@ -3758,7 +3809,7 @@ export default function AtlasLuthor() {
                 <div className="home-card">
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6 }}>
                     {weekHeaderLabels.map((label, index) => (
-                      <p key={`${label}-${index}`} style={{ color: "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
+                      <p key={`${label}-${index}`} style={{ color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
                     ))}
                     {calendarCells.map((cell, index) => {
                       if (!cell) return <div key={`blank-detail-${index}`} />;
@@ -3776,7 +3827,7 @@ export default function AtlasLuthor() {
                     {["completed", "trained", "missed", "rest", "planned"].map(status => {
                       const visual = getCalendarVisual(status, isLightMode);
                       return (
-                        <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
+                        <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
                           <span style={{ width: 11, height: 11, borderRadius: 3, background: visual.bg, display: "inline-block" }} />
                           {calendarLabels[status]}
                         </span>
@@ -3908,7 +3959,7 @@ export default function AtlasLuthor() {
                       return (
                         <div key={`${entry.id}-feature-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
                           <div title={`${entry.weight} LB`} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)" }} />
-                          <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{entry.weight}</p>
+                          <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{entry.weight}</p>
                         </div>
                       );
                     })}
@@ -4014,7 +4065,7 @@ export default function AtlasLuthor() {
                   if (shownPhotos.length === 0) {
                     return (
                       <div className="home-card">
-                        <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>
+                        <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>
                           {albumFilter ? "No photos in this album yet." : text.noPhotos}
                         </p>
                       </div>
@@ -4104,7 +4155,7 @@ export default function AtlasLuthor() {
                     <div className="detail-card">
                       <p className="detail-label">{text.waterToday.toUpperCase()}</p>
                       <p className="detail-value" style={{ color: wAccent }}>{waterGlasses}/{waterGoalNum}</p>
-                      <p style={{ fontSize: 10, color: "#666", fontFamily: "'Orbitron', monospace", marginTop: 4, letterSpacing: 1 }}>{text.glasses.toUpperCase()}</p>
+                      <p style={{ fontSize: 10, color: isLightMode ? "#7A8090" : "#666", fontFamily: "'Orbitron', monospace", marginTop: 4, letterSpacing: 1 }}>{text.glasses.toUpperCase()}</p>
                     </div>
                     <div className="detail-card">
                       <p className="detail-label">{language === "es" ? "COMPLETADO" : "COMPLETED"}</p>
@@ -4149,7 +4200,7 @@ export default function AtlasLuthor() {
                   )}
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <button className="dark-btn" onClick={() => removeWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: "#8A8F99" }}>
+                    <button className="dark-btn" onClick={() => removeWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: isLightMode ? "#7A8090" : "#8A8F99" }}>
                       − {text.glassWord}
                     </button>
                     <button className="primary-btn" onClick={() => addWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}>
@@ -4176,7 +4227,7 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div>
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                       {language === "es" ? "HISTORIAL RECIENTE" : "RECENT HISTORY"}
                     </p>
                     <div style={{ display: "grid", gap: 6 }}>
@@ -4207,7 +4258,7 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div className="home-card">
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                       {language === "es" ? "POR QUÉ IMPORTA" : "WHY IT MATTERS"}
                     </p>
                     <div style={{ display: "grid", gap: 8 }}>
@@ -4267,7 +4318,7 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div>
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                       {text.bodyTypeLabel.toUpperCase()}
                     </p>
                     <div style={{ display: "grid", gap: 8 }}>
@@ -4330,7 +4381,7 @@ export default function AtlasLuthor() {
 
             {!todayOnlyMode && (
             <div style={{ padding: "16px 16px 0" }}>
-              <div style={{ display: "flex", gap: 6, background: "#111115", borderRadius: 14, padding: "8px 8px" }}>
+              <div style={{ display: "flex", gap: 6, background: isLightMode ? "rgba(0,0,0,0.07)" : "#111115", borderRadius: 14, padding: "8px 8px" }}>
                 {days.map(d => {
                   const isActive = d === activeDay;
                   const t = themeFor(workoutData[d].type);
@@ -4349,10 +4400,10 @@ export default function AtlasLuthor() {
                         setExpandedExerciseIndex(null);
                       }}
                     >
-                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: isActive ? t.accent : "#6E7480", fontFamily: "'Orbitron', monospace" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: isActive ? t.accent : (isLightMode ? "#7A8090" : "#6E7480"), fontFamily: "'Orbitron', monospace" }}>
                         {displayDayShort(d, workoutData[d].label)}
                       </div>
-                      <div style={{ fontSize: 8, color: isActive ? t.sub : "#5A5F6A", marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                      <div style={{ fontSize: 8, color: isActive ? t.sub : (isLightMode ? "#9AA0AC" : "#5A5F6A"), marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                         {workoutData[d].type.slice(0, 3)}
                       </div>
                     </button>
@@ -4367,14 +4418,14 @@ export default function AtlasLuthor() {
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
                   {displayDay(activeDay).toUpperCase()}
                 </span>
-                <span style={{ fontSize: 11, letterSpacing: 2, color: "#7C828E", fontFamily: "'Orbitron', monospace" }}>
+                <span style={{ fontSize: 11, letterSpacing: 2, color: isLightMode ? "#9AA0AC" : "#7C828E", fontFamily: "'Orbitron', monospace" }}>
                   {" "}- {day.type}
                 </span>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 {total > 0 && (
-                  <div style={{ fontSize: 13, color: "#888", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                  <div style={{ fontSize: 13, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                     <span style={{ color: theme.accent, fontWeight: 700 }}>{done}</span> / {total} {text.doneWord}
                   </div>
                 )}
@@ -4412,7 +4463,7 @@ export default function AtlasLuthor() {
                       <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
                         {text.restTimer}
                       </p>
-                      <p style={{ fontSize: 13, color: "#888", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
+                      <p style={{ fontSize: 13, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
                         {restTimer.running ? text.recoverNext : text.startAfterSet}
                       </p>
                     </div>
@@ -4498,23 +4549,23 @@ export default function AtlasLuthor() {
                   <div className="metric-grid">
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.weight}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
                     </div>
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.sets}x{quickExercise.reps}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.mSets}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.mSets}</p>
                     </div>
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickSetsDone}/{quickTotalSets}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.mDone}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.mDone}</p>
                     </div>
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickSetsLeft}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.leftCap}</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.leftCap}</p>
                     </div>
                   </div>
                   {quickNote && (
-                    <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                    <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
                       {quickNote.pr ? "PR · " : ""}{quickNote.difficulty ? `RPE ${quickNote.difficulty} · ` : ""}{quickNote.technique || quickNote.pain}
                     </p>
                   )}
@@ -4562,7 +4613,7 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 9, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
+                    <p style={{ fontSize: 9, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
                       {text.cardioWarmup}
                     </p>
                     <p style={{ fontSize: 15, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
@@ -4594,11 +4645,15 @@ export default function AtlasLuthor() {
 
               {session.rest && (
                 <div style={{ textAlign: "center", padding: "50px 20px", border: "1.5px solid #1A1A22", borderRadius: 16, background: "#0F0F14" }}>
-                  <div style={{ fontSize: 42, marginBottom: 14 }}>🌙</div>
-                  <p style={{ fontSize: 14, letterSpacing: 4, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                  <div style={{ marginBottom: 14, display: "flex", justifyContent: "center" }}>
+                    <svg width="42" height="42" viewBox="0 0 24 24" fill={isLightMode ? "#6A4ACC" : "#B8A0FF"} xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                    </svg>
+                  </div>
+                  <p style={{ fontSize: 14, letterSpacing: 4, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
                     {text.recoveryMode}
                   </p>
-                  <p style={{ fontSize: 15, color: "#9CA1AC", fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>
+                  <p style={{ fontSize: 15, color: isLightMode ? "#7A8090" : "#9CA1AC", fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>
                     {text.restEatRebuild}
                   </p>
                 </div>
@@ -4634,7 +4689,7 @@ export default function AtlasLuthor() {
                             {ex.name}
                           </h3>
                         </div>
-                        <button className="edit-btn" onClick={() => setExpandedExerciseIndex(null)} style={{ flexShrink: 0, marginLeft: 10, color: "#888" }}>
+                        <button className="edit-btn" onClick={() => setExpandedExerciseIndex(null)} style={{ flexShrink: 0, marginLeft: 10, color: isLightMode ? "#7A8090" : "#888" }}>
                           ↑ {language === "es" ? "Colapsar" : "Collapse"}
                         </button>
                       </div>
@@ -4642,21 +4697,21 @@ export default function AtlasLuthor() {
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
                         <div style={{ padding: "12px 8px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.04)" : `${theme.accent}10`, border: `1px solid ${theme.accent}33`, textAlign: "center" }}>
                           <p style={{ fontSize: 22, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.weight}</p>
-                          <p style={{ fontSize: 8, letterSpacing: 2, color: "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
+                          <p style={{ fontSize: 8, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
                         </div>
                         <div style={{ padding: "12px 8px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.04)" : `${theme.accent}10`, border: `1px solid ${theme.accent}33`, textAlign: "center" }}>
                           <p style={{ fontSize: 22, fontWeight: 900, color: theme.accent, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{ex.sets}×{ex.reps}</p>
-                          <p style={{ fontSize: 8, letterSpacing: 2, color: "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{text.mSets}×{text.repsWord}</p>
+                          <p style={{ fontSize: 8, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{text.mSets}×{text.repsWord}</p>
                         </div>
                         <div style={{ padding: "12px 8px", borderRadius: 12, background: setsDone === totalExerciseSets && totalExerciseSets > 0 ? `${theme.accent}22` : (isLightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)"), border: `1px solid ${setsDone === totalExerciseSets && totalExerciseSets > 0 ? theme.accent : "rgba(255,255,255,0.07)"}`, textAlign: "center" }}>
                           <p style={{ fontSize: 22, fontWeight: 900, color: setsDone === totalExerciseSets && totalExerciseSets > 0 ? theme.accent : "#FFFFFF", fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{setCompPct2}%</p>
-                          <p style={{ fontSize: 8, letterSpacing: 2, color: "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{language === "es" ? "HECHO" : "DONE"}</p>
+                          <p style={{ fontSize: 8, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 5, fontFamily: "'Orbitron', monospace" }}>{language === "es" ? "HECHO" : "DONE"}</p>
                         </div>
                       </div>
 
                       <div style={{ marginBottom: 16 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <span style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700 }}>{text.mSets} {setsDone}/{totalExerciseSets}</span>
+                          <span style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700 }}>{text.mSets} {setsDone}/{totalExerciseSets}</span>
                           <span style={{ color: setsLeft === 0 ? "#3FB98A" : theme.accent, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900 }}>
                             {setsLeft === 0 ? (language === "es" ? "✓ COMPLETO" : "✓ COMPLETE") : `${setsLeft} ${text.leftWord}`}
                           </span>
@@ -4676,7 +4731,7 @@ export default function AtlasLuthor() {
                         <button
                           className="dark-btn"
                           onClick={() => updateSetCount(i, -1)}
-                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: "#8A8F99" }}
+                          style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: isLightMode ? "#7A8090" : "#8A8F99" }}
                         >
                           {text.minusSet}
                         </button>
@@ -4838,7 +4893,7 @@ export default function AtlasLuthor() {
                       <p style={{ fontSize: 22, fontWeight: 700, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
                         {s.val}
                       </p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                         {s.label}
                       </p>
                     </div>
@@ -4859,7 +4914,7 @@ export default function AtlasLuthor() {
                 <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
                   {text.atlasMenu}
                 </p>
-                <p style={{ fontSize: 12, color: "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
+                <p style={{ fontSize: 12, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
                   {text.signedInAs} {userName}
                 </p>
               </div>
@@ -4960,7 +5015,7 @@ export default function AtlasLuthor() {
                 <div style={{ width: 66, height: 66, borderRadius: 999, overflow: "hidden", border: "1.5px solid #2A2A34", background: "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {appSettings.avatar
                     ? <img src={appSettings.avatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 24, color: "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
+                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 24, color: isLightMode ? "#7A8090" : "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
                 </div>
                 <div style={{ display: "grid", gap: 8, flex: 1, minWidth: 0 }}>
                   <label className="dark-btn" style={{ textAlign: "center" }}>
@@ -5381,7 +5436,7 @@ export default function AtlasLuthor() {
                 </button>
               </div>
 
-              <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
+              <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
                 Cloud status: {cloudSettings.status}
               </p>
 
@@ -5406,7 +5461,7 @@ export default function AtlasLuthor() {
                 <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
                   MANAGE WORKOUTS
                 </p>
-                <p style={{ fontSize: 12, color: "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
+                <p style={{ fontSize: 12, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
                   Add, edit, or remove exercises and sessions.
                 </p>
               </div>
@@ -5478,7 +5533,7 @@ export default function AtlasLuthor() {
             <p className="menu-section-label">EXERCISES</p>
             <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
               {(routineSession?.exercises || []).length === 0 && (
-                <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: "10px 2px" }}>
+                <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: "10px 2px" }}>
                   No exercises in this session yet. Add one below.
                 </p>
               )}
@@ -5501,19 +5556,19 @@ export default function AtlasLuthor() {
                     <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} placeholder="Exercise name" style={{ marginBottom: 10, fontWeight: 600 }} />
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
                       <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>SETS</p>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>SETS</p>
                         <select className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })}>
                           {SET_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
                         </select>
                       </div>
                       <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>REPS</p>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>REPS</p>
                         <select className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })}>
                           {Array.from(new Set([String(exercise.reps), ...REP_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
                         </select>
                       </div>
                       <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>WEIGHT</p>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>WEIGHT</p>
                         <select className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })}>
                           {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
                         </select>
@@ -5681,7 +5736,7 @@ export default function AtlasLuthor() {
                     ].map(item => (
                       <div key={item.label} style={{ textAlign: "center" }}>
                         <p style={{ fontSize: 16, fontWeight: 900, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>{item.val}</p>
-                        <p style={{ fontSize: 9, letterSpacing: 1, color: "#666", fontFamily: "'Orbitron', monospace", marginTop: 3 }}>{item.label}</p>
+                        <p style={{ fontSize: 9, letterSpacing: 1, color: isLightMode ? "#7A8090" : "#666", fontFamily: "'Orbitron', monospace", marginTop: 3 }}>{item.label}</p>
                       </div>
                     ))}
                   </div>
