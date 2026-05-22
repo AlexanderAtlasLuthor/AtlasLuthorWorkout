@@ -2766,6 +2766,15 @@ export default function AtlasLuthor() {
           color: #101015 !important;
         }
 
+        /* Enhanced light mode — workout screen components */
+        .light-mode .session-tab { background: rgba(0,0,0,0.04) !important; border-color: rgba(0,0,0,0.1) !important; color: #8A8F99 !important; }
+        .light-mode .dark-btn { background: rgba(0,0,0,0.05) !important; border-color: rgba(0,0,0,0.14) !important; }
+        .light-mode .edit-btn { background: rgba(0,0,0,0.05) !important; border-color: rgba(0,0,0,0.13) !important; }
+        .light-mode .check { border-color: rgba(0,0,0,0.22) !important; background: transparent !important; }
+        .light-mode .ex-card { border-color: rgba(0,0,0,0.09) !important; box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important; }
+        .light-mode .ex-card:hover { border-color: rgba(0,0,0,0.16) !important; }
+        .light-mode .ex-card.done { opacity: 0.45; }
+
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 20; display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
         .modal { width: 100%; max-width: 520px; max-height: 82vh; overflow: auto; background: #101015; border: 1.5px solid #2A2A34; border-radius: 22px; padding: 18px; box-shadow: 0 20px 80px rgba(0,0,0,0.4); }
 
@@ -4333,7 +4342,7 @@ export default function AtlasLuthor() {
                       className="day-pill"
                       aria-label={`${displayDay(d)} - ${workoutData[d].type}`}
                       aria-pressed={isActive}
-                      style={isActive ? { background: t.badge, border: `1.5px solid ${t.accent}50` } : {}}
+                      style={isActive ? { background: t.badge, border: `1.5px solid ${isLightMode ? t.accent : t.accent + "50"}` } : {}}
                       onClick={() => {
                         setActiveDay(d);
                         setActiveSession(0);
@@ -4389,7 +4398,7 @@ export default function AtlasLuthor() {
 
             {total > 0 && (
               <div style={{ padding: "10px 20px 0" }}>
-                <div style={{ height: 4, background: "#1E1E26", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: 4, background: isLightMode ? "rgba(0,0,0,0.09)" : "#1E1E26", borderRadius: 4, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${pct}%`, background: theme.accent, borderRadius: 4, transition: "width 0.4s ease" }} />
                 </div>
               </div>
@@ -4415,7 +4424,7 @@ export default function AtlasLuthor() {
                           cy="56"
                           r={restTimerRadius}
                           fill="none"
-                          stroke="rgba(255,255,255,0.08)"
+                          stroke={isLightMode ? "rgba(0,0,0,0.09)" : "rgba(255,255,255,0.08)"}
                           strokeWidth="9"
                         />
                         <circle
@@ -4432,10 +4441,10 @@ export default function AtlasLuthor() {
                         />
                       </svg>
                       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                        <p style={{ fontSize: 23, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
+                        <p style={{ fontSize: 23, color: isLightMode ? "#101015" : "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
                           {formatTimer(restTimer.secondsLeft)}
                         </p>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#888", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#5A6270" : "#888", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                           {restTimer.running ? text.restWord : text.readyWord}
                         </p>
                       </div>
@@ -4466,7 +4475,9 @@ export default function AtlasLuthor() {
                     key={i}
                     className="session-tab"
                     onClick={() => setActiveSession(i)}
-                    style={activeSession === i ? { background: theme.badge, borderColor: theme.accent + "60", color: theme.accent } : {}}
+                    style={activeSession === i
+                      ? { background: theme.badge, borderColor: isLightMode ? theme.accent : theme.accent + "60", color: theme.accent, fontWeight: 700 }
+                      : { opacity: isLightMode ? 0.55 : 1 }}
                   >
                     <span style={{ fontSize: 11, letterSpacing: 2, fontFamily: "'Orbitron', monospace" }}>{s.time}</span>
                     <div style={{ marginTop: 3, fontSize: 13 }}>{s.name}</div>
@@ -4545,7 +4556,7 @@ export default function AtlasLuthor() {
               {session.warmup && (
                 <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, border: "1.5px solid #1E1E26", background: "#0F0F14", marginBottom: 16 }}>
                   <div style={{ width: 38, height: 38, borderRadius: 10, background: "#1A1A22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill={isLightMode ? "#4A5062" : "white"} xmlns="http://www.w3.org/2000/svg">
                       <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/>
                     </svg>
                   </div>
@@ -4738,13 +4749,13 @@ export default function AtlasLuthor() {
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: isDone ? "#555" : "#FFFFFF", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: isDone ? (isLightMode ? "#9CA1AC" : "#555") : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {ex.name}
                       </p>
-                      <p style={{ fontSize: 12, color: isDone ? "#6E7480" : "#888", marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
+                      <p style={{ fontSize: 12, color: isDone ? "#6E7480" : (isLightMode ? "#5A6270" : "#888"), marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
                         {ex.sets} {text.setsWord} x {ex.reps} {text.repsWord}
                       </p>
-                      <p style={{ fontSize: 11, color: isDone ? "#6E7480" : "#AAAAAA", marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
+                      <p style={{ fontSize: 11, color: isDone ? "#6E7480" : (isLightMode ? "#8A8F99" : "#AAAAAA"), marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
                         {text.mSets} {setsDone}/{totalExerciseSets} · {setsLeft} {text.leftWord}
                       </p>
                       {hasNote && (
