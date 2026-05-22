@@ -3403,7 +3403,7 @@ export default function AtlasLuthor() {
         }
 
         .fade-up { animation: fadeUp 0.3s ease forwards; }
-        .stat-box { flex: 1; background: rgba(20,20,24,0.78); border: 1.5px solid rgba(255,255,255,0.075); border-radius: 12px; padding: 14px 8px; text-align: center; backdrop-filter: blur(16px); }
+        .stat-box { flex: 1; background: linear-gradient(165deg, rgba(33,33,41,0.86) 0%, rgba(15,15,20,0.86) 100%); border: 1.5px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px 8px; text-align: center; backdrop-filter: blur(16px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
         .home-card { background: rgba(19,19,24,0.82); border: 1.5px solid rgba(255,255,255,0.075); border-radius: 16px; padding: 16px; backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 16px 48px rgba(0,0,0,0.22); }
         .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 
@@ -3438,7 +3438,7 @@ export default function AtlasLuthor() {
         .feature-title { font-size: 25px; color: #FFFFFF; font-weight: 900; font-family: 'Orbitron', monospace; letter-spacing: 2px; line-height: 1.05; margin-top: 8px; }
         .feature-copy { color: #9CA1AC; font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.55; margin-top: 10px; }
         .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-        .detail-card { border: 1px solid #24242E; background: #101015; border-radius: 12px; padding: 12px; min-width: 0; }
+        .detail-card { border: 1px solid #26262F; background: linear-gradient(165deg, #18181F 0%, #101015 100%); border-radius: 12px; padding: 12px; min-width: 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04); }
         .detail-label { color: #8C92A0; font-family: 'Orbitron', monospace; font-size: 9px; letter-spacing: 2px; margin-bottom: 5px; }
         .detail-value { color: #FFFFFF; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 900; overflow-wrap: anywhere; }
         .detail-list { display: grid; gap: 10px; }
@@ -3961,8 +3961,8 @@ export default function AtlasLuthor() {
                       {daysToGoal > 7 && daysToGoal <= 30 && <p style={{ color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700 }}>{text.almostThere}</p>}
                     </div>
                   </div>
-                  <div style={{ width: "100%", height: 3, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: cdColor, borderRadius: 4, transition: "width 1s ease", opacity: 0.8 }} />
+                  <div style={{ width: "100%", height: 8, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", borderRadius: 6, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: cdColor, borderRadius: 6, transition: "width 1s ease", boxShadow: `0 0 10px ${cdColor}77` }} />
                   </div>
                   <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 11, marginTop: 5 }}>
                     {pct}% {language === "es" ? "completado" : "complete"}
@@ -4173,18 +4173,18 @@ export default function AtlasLuthor() {
                 </button>
               </div>
 
-              <div style={{ display: "grid", gap: 12 }}>
+              <div style={{ display: "grid", gap: 14 }}>
                 {[
-                  { label: text.weeklyProtocol, current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct },
-                  { label: text.completedSessions, current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct },
+                  { label: text.weeklyProtocol, current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct, color: "#90C8FF" },
+                  { label: text.completedSessions, current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct, color: "#3FB98A" },
                 ].map(goal => (
                   <div key={goal.label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", color: "#777", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
-                      <span>{goal.label}</span>
-                      <span>{goal.current} / {goal.target}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, marginBottom: 7 }}>
+                      <span style={{ color: isLightMode ? "#5A6270" : "#9CA1AC" }}>{goal.label}</span>
+                      <span style={{ color: goal.color }}>{goal.current} / {goal.target}</span>
                     </div>
-                    <div style={{ height: 5, background: isLightMode ? "#E2E4E9" : "#1E1E26", borderRadius: 5, overflow: "hidden" }}>
-                      <div style={{ width: `${goal.pct}%`, height: "100%", background: isLightMode ? "#101015" : "#FFFFFF", borderRadius: 5, transition: "width 0.3s ease" }} />
+                    <div style={{ height: 9, background: isLightMode ? "#E2E4E9" : "rgba(255,255,255,0.07)", borderRadius: 6, overflow: "hidden" }}>
+                      <div style={{ width: `${goal.pct}%`, height: "100%", background: goal.color, borderRadius: 6, transition: "width 0.4s ease", boxShadow: `0 0 10px ${goal.color}77` }} />
                     </div>
                   </div>
                 ))}
@@ -4236,7 +4236,7 @@ export default function AtlasLuthor() {
 
                     return (
                       <div key={`${entry.id}-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-                        <div title={fmtW(entry.weight)} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)", boxShadow: isLightMode ? "none" : "0 0 22px rgba(255,255,255,0.14)" }} />
+                        <div title={fmtW(entry.weight)} style={{ height, maxWidth: 46, margin: "0 auto", borderRadius: "8px 8px 3px 3px", background: "linear-gradient(180deg, #90C8FF, #5C93C8)", boxShadow: "0 0 18px rgba(144,200,255,0.3)" }} />
                         <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {fmtW(entry.weight)}
                         </p>
@@ -4262,7 +4262,7 @@ export default function AtlasLuthor() {
               </p>
               <div className="metric-grid" style={{ marginBottom: 12 }}>
                 <div className="stat-box">
-                  <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 22, fontWeight: 900, color: "#FFD060", fontFamily: "'Orbitron', monospace" }}>
                     {weeklyStreak}
                   </p>
                   <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
@@ -4270,7 +4270,7 @@ export default function AtlasLuthor() {
                   </p>
                 </div>
                 <div className="stat-box">
-                  <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 22, fontWeight: 900, color: "#3FB98A", fontFamily: "'Orbitron', monospace" }}>
                     {weeklyMetrics.completedDays}/7
                   </p>
                   <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
@@ -4278,7 +4278,7 @@ export default function AtlasLuthor() {
                   </p>
                 </div>
                 <div className="stat-box">
-                  <p style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 16, fontWeight: 900, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>
                     {currentWeekKey.slice(5)}
                   </p>
                   <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
@@ -4289,7 +4289,7 @@ export default function AtlasLuthor() {
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {(earnedBadges.length ? earnedBadges : [text.protocolStarted]).map(badge => (
-                  <span key={badge} style={{ color: "#D8D8D8", background: "#101015", border: "1px solid #2A2A34", borderRadius: 999, padding: "7px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800 }}>
+                  <span key={badge} style={{ color: "#FFD060", background: "rgba(255,208,96,0.08)", border: "1px solid rgba(255,208,96,0.32)", borderRadius: 999, padding: "7px 11px", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800 }}>
                     {badge}
                   </span>
                 ))}
@@ -4395,17 +4395,17 @@ export default function AtlasLuthor() {
 
             <div className="metric-grid" style={{ marginBottom: 14 }}>
               {[
-                { label: text.mWeekly, val: `${weeklyMetrics.weeklyProgress}%` },
-                { label: text.mDone, val: weeklyMetrics.completedExercises },
-                { label: text.mExercises, val: weeklyMetrics.totalExercises },
-                { label: text.mSets, val: weeklyMetrics.totalSets },
-                { label: text.mSessions, val: weeklyMetrics.workoutSessions },
-                { label: text.mCompleted, val: weeklyMetrics.completedSessions },
-                { label: text.mCardio, val: weeklyMetrics.cardioSessions },
-                { label: text.mDays, val: "7" },
+                { label: text.mWeekly, val: `${weeklyMetrics.weeklyProgress}%`, color: "#90C8FF" },
+                { label: text.mDone, val: weeklyMetrics.completedExercises, color: "#3FB98A" },
+                { label: text.mExercises, val: weeklyMetrics.totalExercises, color: null },
+                { label: text.mSets, val: weeklyMetrics.totalSets, color: null },
+                { label: text.mSessions, val: weeklyMetrics.workoutSessions, color: null },
+                { label: text.mCompleted, val: weeklyMetrics.completedSessions, color: "#3FB98A" },
+                { label: text.mCardio, val: weeklyMetrics.cardioSessions, color: "#FF9860" },
+                { label: text.mDays, val: "7", color: "#FFD060" },
               ].map(metric => (
                 <div key={metric.label} className="stat-box">
-                  <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 22, fontWeight: 900, color: metric.color || (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'Orbitron', monospace" }}>
                     {metric.val}
                   </p>
                   <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
@@ -4488,24 +4488,24 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-grid">
                   <div className="detail-card">
-                    <p className="detail-label">DAY</p>
-                    <p className="detail-value">{todayDisplayName} - {weeklyMetrics.todayType}</p>
+                    <p className="detail-label">{text.daySection}</p>
+                    <p className="detail-value" style={{ color: themeFor(weeklyMetrics.todayType).accent }}>{todayDisplayName} - {weeklyMetrics.todayType}</p>
                   </div>
                   <div className="detail-card">
-                    <p className="detail-label">WEEKLY</p>
-                    <p className="detail-value">{weeklyMetrics.weeklyProgress}%</p>
+                    <p className="detail-label">{text.mWeekly}</p>
+                    <p className="detail-value" style={{ color: "#90C8FF" }}>{weeklyMetrics.weeklyProgress}%</p>
                   </div>
                   <div className="detail-card">
-                    <p className="detail-label">DONE</p>
-                    <p className="detail-value">{weeklyMetrics.completedExercises}/{weeklyMetrics.totalExercises}</p>
+                    <p className="detail-label">{text.mDone}</p>
+                    <p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedExercises}/{weeklyMetrics.totalExercises}</p>
                   </div>
                   <div className="detail-card">
-                    <p className="detail-label">SESSIONS</p>
-                    <p className="detail-value">{weeklyMetrics.completedSessions}/{weeklyMetrics.workoutSessions}</p>
+                    <p className="detail-label">{text.mSessions}</p>
+                    <p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedSessions}/{weeklyMetrics.workoutSessions}</p>
                   </div>
                 </div>
                 <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
-                  START TODAY
+                  {text.startToday}
                 </button>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
                   <button className="dark-btn" onClick={resetWeek}>{text.resetWeek}</button>
@@ -4658,17 +4658,25 @@ export default function AtlasLuthor() {
 
             {activeFeaturePage === "score" && (
               <div className="detail-list">
-                <div className="detail-card" style={{ textAlign: "center", padding: 20 }}>
-                  <p style={{ color: "#FFFFFF", fontSize: 54, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{atlasScore}</p>
-                  <p className="detail-row-sub">{deloadWarning ? text.deloadActive : text.protocolStable}</p>
-                </div>
+                {(() => {
+                  const scoreColor = atlasScore >= 80 ? "#3FB98A" : atlasScore >= 50 ? "#90C8FF" : "#FFD060";
+                  return (
+                    <div className="detail-card" style={{ textAlign: "center", padding: "24px 20px", borderColor: `${scoreColor}55` }}>
+                      <p style={{ color: scoreColor, fontSize: 58, fontFamily: "'Orbitron', monospace", fontWeight: 900, lineHeight: 1, textShadow: `0 0 28px ${scoreColor}55` }}>{atlasScore}</p>
+                      <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", margin: "12px auto 10px", maxWidth: 220 }}>
+                        <div style={{ width: `${atlasScore}%`, height: "100%", background: scoreColor, borderRadius: 4, boxShadow: `0 0 10px ${scoreColor}88` }} />
+                      </div>
+                      <p className="detail-row-sub">{deloadWarning ? text.deloadActive : text.protocolStable}</p>
+                    </div>
+                  );
+                })()}
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.mWeekly}</p><p className="detail-value">{weeklyMetrics.weeklyProgress}%</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.mSessions}</p><p className="detail-value">{weeklyMetrics.completedSessions}/{weeklySessionsGoal}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.streakLabel}</p><p className="detail-value">{weeklyStreak}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.prsLabel}</p><p className="detail-value">{prEntries.length}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.mWeekly}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{weeklyMetrics.weeklyProgress}%</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.mSessions}</p><p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedSessions}/{weeklySessionsGoal}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.streakLabel}</p><p className="detail-value" style={{ color: "#FFD060" }}>{weeklyStreak}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.prsLabel}</p><p className="detail-value" style={{ color: "#FFD060" }}>{prEntries.length}</p></div>
                   <div className="detail-card"><p className="detail-label">{text.avgRpeLabel}</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.deloadLabel}</p><p className="detail-value">{deloadWarning ? "-10" : "+5"}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.deloadLabel}</p><p className="detail-value" style={{ color: deloadWarning ? "#E5604D" : "#3FB98A" }}>{deloadWarning ? "-10" : "+5"}</p></div>
                 </div>
                 <div className="home-card">
                   <p className="detail-label">{text.scoreBreakdown}</p>
@@ -4809,12 +4817,12 @@ export default function AtlasLuthor() {
                   <p className="detail-row-main">{goals.focusGoal}</p>
                   <p className="detail-row-sub">{text.targetDateSub} {goals.targetDate}</p>
                 </div>
-                {[{ label: text.weeklyProtocol, current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct }, { label: text.completedSessions, current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct }].map(goal => (
+                {[{ label: text.weeklyProtocol, current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct, color: "#90C8FF" }, { label: text.completedSessions, current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct, color: "#3FB98A" }].map(goal => (
                   <div key={goal.label} className="detail-card">
                     <p className="detail-label">{goal.label.toUpperCase()}</p>
-                    <p className="detail-value">{goal.current} / {goal.target}</p>
-                    <div style={{ height: 6, background: isLightMode ? "#E2E4E9" : "#1E1E26", borderRadius: 6, overflow: "hidden", marginTop: 10 }}>
-                      <div style={{ width: `${goal.pct}%`, height: "100%", background: isLightMode ? "#101015" : "#FFFFFF", borderRadius: 6 }} />
+                    <p className="detail-value" style={{ color: goal.color }}>{goal.current} / {goal.target}</p>
+                    <div style={{ height: 9, background: isLightMode ? "#E2E4E9" : "rgba(255,255,255,0.07)", borderRadius: 6, overflow: "hidden", marginTop: 10 }}>
+                      <div style={{ width: `${goal.pct}%`, height: "100%", background: goal.color, borderRadius: 6, transition: "width 0.4s ease", boxShadow: `0 0 10px ${goal.color}77` }} />
                     </div>
                   </div>
                 ))}
@@ -4840,7 +4848,7 @@ export default function AtlasLuthor() {
                       const height = 34 + ((entry.weightNumber - minChartWeight) / range) * 66;
                       return (
                         <div key={`${entry.id}-feature-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-                          <div title={fmtW(entry.weight)} style={{ height, borderRadius: "8px 8px 3px 3px", background: isLightMode ? "linear-gradient(180deg, #3A3F49, #9AA0AC)" : "linear-gradient(180deg, #FFFFFF, #777B86)" }} />
+                          <div title={fmtW(entry.weight)} style={{ height, maxWidth: 52, margin: "0 auto", borderRadius: "8px 8px 3px 3px", background: "linear-gradient(180deg, #90C8FF, #5C93C8)", boxShadow: "0 0 18px rgba(144,200,255,0.3)" }} />
                           <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{fmtW(entry.weight)}</p>
                         </div>
                       );
@@ -4853,7 +4861,7 @@ export default function AtlasLuthor() {
                       <p className="detail-row-main">{entry.date} - {entry.type === "manual" ? text.manualSave : text.autoSnapshot}</p>
                       <p className="detail-row-sub">{entry.completedExercises} {text.exercisesWord} - {entry.completedSessions} {text.sessionsWord} - {text.weekWord} {entry.weekKey}</p>
                     </div>
-                    <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{entry.weight} LB</span>
+                    <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtW(entry.weight)}</span>
                   </div>
                 ))}
               </div>
@@ -4862,14 +4870,14 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "badges" && (
               <div className="detail-list">
                 <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.weekStreak}</p><p className="detail-value">{weeklyStreak}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.daysClear}</p><p className="detail-value">{weeklyMetrics.completedDays}/7</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.weekOf}</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.badgesLabel}</p><p className="detail-value">{earnedBadges.length || 1}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.weekStreak}</p><p className="detail-value" style={{ color: "#FFD060" }}>{weeklyStreak}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.daysClear}</p><p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedDays}/7</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.weekOf}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{currentWeekKey.slice(5)}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.badgesLabel}</p><p className="detail-value" style={{ color: "#B8A0FF" }}>{earnedBadges.length || 1}</p></div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {(earnedBadges.length ? earnedBadges : [text.protocolStarted]).map(badge => (
-                    <span key={badge} style={{ color: "#D8D8D8", background: "#101015", border: "1px solid #2A2A34", borderRadius: 999, padding: "9px 12px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 900 }}>
+                    <span key={badge} style={{ color: "#FFD060", background: "rgba(255,208,96,0.08)", border: "1px solid rgba(255,208,96,0.32)", borderRadius: 999, padding: "9px 13px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 900 }}>
                       {badge}
                     </span>
                   ))}
@@ -4975,18 +4983,18 @@ export default function AtlasLuthor() {
               <div className="detail-list">
                 <div className="detail-grid">
                   {[
-                    { label: text.mWeekly, val: `${weeklyMetrics.weeklyProgress}%` },
-                    { label: text.mDone, val: weeklyMetrics.completedExercises },
-                    { label: text.mExercises, val: weeklyMetrics.totalExercises },
-                    { label: text.mSets, val: weeklyMetrics.totalSets },
-                    { label: text.setProgressLabel, val: `${weeklySetProgress}/${weeklyMetrics.totalSets}` },
-                    { label: text.mSessions, val: weeklyMetrics.workoutSessions },
-                    { label: text.mCompleted, val: weeklyMetrics.completedSessions },
-                    { label: text.mCardio, val: weeklyMetrics.cardioSessions },
+                    { label: text.mWeekly, val: `${weeklyMetrics.weeklyProgress}%`, color: "#90C8FF" },
+                    { label: text.mDone, val: weeklyMetrics.completedExercises, color: "#3FB98A" },
+                    { label: text.mExercises, val: weeklyMetrics.totalExercises, color: null },
+                    { label: text.mSets, val: weeklyMetrics.totalSets, color: null },
+                    { label: text.setProgressLabel, val: `${weeklySetProgress}/${weeklyMetrics.totalSets}`, color: "#90C8FF" },
+                    { label: text.mSessions, val: weeklyMetrics.workoutSessions, color: null },
+                    { label: text.mCompleted, val: weeklyMetrics.completedSessions, color: "#3FB98A" },
+                    { label: text.mCardio, val: weeklyMetrics.cardioSessions, color: "#FF9860" },
                   ].map(metric => (
                     <div key={metric.label} className="detail-card">
                       <p className="detail-label">{metric.label}</p>
-                      <p className="detail-value">{metric.val}</p>
+                      <p className="detail-value" style={metric.color ? { color: metric.color } : undefined}>{metric.val}</p>
                     </div>
                   ))}
                 </div>
