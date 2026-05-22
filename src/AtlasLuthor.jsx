@@ -4,6 +4,7 @@ import {
   formatDistance, formatMeasure, parseHeightInches,
   getBodyWeightOptions, getHeightOptions, getExerciseWeightOptions,
   measureInputToInches, distanceInputToMiles, weightUnit, measureUnit, distanceUnit,
+  inToCm,
 } from "./lib/units.js";
 import {
   calcBMR, calcTDEE, goalCalorieTarget, macroSplit, sumDayMacros,
@@ -4437,6 +4438,56 @@ export default function AtlasLuthor() {
                     </div>
                   </div>
                 )}
+                <div className="home-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: latestMeasurement ? 10 : 0 }}>
+                    <p className="detail-label">{text.measurements.toUpperCase()}</p>
+                    <button
+                      className="edit-btn"
+                      onClick={() => {
+                        const draft = { date: getDateKey() };
+                        MEASUREMENT_FIELDS.forEach(field => {
+                          const inches = latestMeasurement?.[field] || 0;
+                          draft[field] = inches
+                            ? String(unitSystem === "metric" ? Math.round(inToCm(inches) * 10) / 10 : inches)
+                            : "";
+                        });
+                        setEditingMeasurements(draft);
+                      }}
+                    >
+                      {text.addMeasurement}
+                    </button>
+                  </div>
+                  {latestMeasurement ? (
+                    <>
+                      <div className="detail-grid">
+                        {MEASUREMENT_FIELDS.filter(field => latestMeasurement[field]).map(field => (
+                          <div key={field} className="detail-card">
+                            <p className="detail-label">{text[field].toUpperCase()}</p>
+                            <p className="detail-value">{fmtMeasure(latestMeasurement[field])}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {navyBodyFatPct > 0 && (
+                        <p style={{ marginTop: 10, fontSize: 13, color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
+                          {text.navyBodyFat}: {navyBodyFatPct}%
+                        </p>
+                      )}
+                      {measurementEntries.length > 1 && (
+                        <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+                          <p className="detail-label">{text.measurementHistory.toUpperCase()}</p>
+                          {measurementEntries.slice(0, 6).map(entry => (
+                            <div key={entry.date} style={{ display: "flex", justifyContent: "space-between", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
+                              <span style={{ color: "#8A8F99", fontWeight: 700 }}>{entry.date}</span>
+                              <span style={{ fontWeight: 800 }}>{entry.waist ? `${text.waist} ${fmtMeasure(entry.waist)}` : "--"}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>{text.noMeasurements}</p>
+                  )}
+                </div>
                 <button className="primary-btn" onClick={() => setEditingProfile({ ...profile })}>
                   {text.editBodyStatus}
                 </button>
@@ -4943,6 +4994,74 @@ export default function AtlasLuthor() {
                       </div>
                     </div>
                   )}
+                </div>
+              );
+            })()}
+
+            {activeFeaturePage === "cardio" && (() => {
+              const cardioDays = Object.entries(cardioLog).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+              const typeInfo = cardioTypeInfo(cardioDraft.type);
+              const draftDistance = distanceInputToMiles(cardioDraft.distance, unitSystem);
+              const draftDuration = Number(cardioDraft.durationMin) || 0;
+              return (
+                <div className="detail-list">
+                  <div className="detail-grid">
+                    <div className="detail-card"><p className="detail-label">{text.weeklyCardio.toUpperCase()}</p><p className="detail-value" style={{ color: "#FF9860" }}>{weeklyCardio.sessions}</p></div>
+                    <div className="detail-card"><p className="detail-label">{text.duration.toUpperCase()}</p><p className="detail-value">{weeklyCardio.minutes} {text.minutesShort}</p></div>
+                    <div className="detail-card"><p className="detail-label">{text.distance.toUpperCase()}</p><p className="detail-value">{fmtDist(weeklyCardio.distance)}</p></div>
+                    <div className="detail-card"><p className="detail-label">{text.caloriesBurned.toUpperCase()}</p><p className="detail-value" style={{ color: "#FF9860" }}>{weeklyCardio.calories}</p></div>
+                  </div>
+
+                  <div className="home-card">
+                    <p className="detail-label">{text.addCardioSession.toUpperCase()}</p>
+                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                      <select className="input" value={cardioDraft.type} onChange={event => setCardioDraft(prev => ({ ...prev, type: event.target.value }))}>
+                        {CARDIO_TYPES.map(option => <option key={option.id} value={option.id}>{cardioTypeLabel(option.id, language)}</option>)}
+                      </select>
+                      <div style={{ display: "grid", gridTemplateColumns: typeInfo.distance ? "1fr 1fr" : "1fr", gap: 8 }}>
+                        <label style={{ display: "block" }}>
+                          <span className="field-label">{text.duration.toUpperCase()} ({text.minutesShort})</span>
+                          <input className="input" type="number" inputMode="numeric" value={cardioDraft.durationMin} onChange={event => setCardioDraft(prev => ({ ...prev, durationMin: event.target.value }))} placeholder="20" />
+                        </label>
+                        {typeInfo.distance && (
+                          <label style={{ display: "block" }}>
+                            <span className="field-label">{text.distance.toUpperCase()} ({distanceUnit(unitSystem)})</span>
+                            <input className="input" type="number" inputMode="decimal" value={cardioDraft.distance} onChange={event => setCardioDraft(prev => ({ ...prev, distance: event.target.value }))} placeholder="3" />
+                          </label>
+                        )}
+                      </div>
+                      <input className="input" value={cardioDraft.note} onChange={event => setCardioDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={text.noteField} />
+                      {draftDuration > 0 && (
+                        <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
+                          ≈ {estimateCardioCalories(cardioDraft.type, draftDuration, profile.currentWeight)} kcal
+                          {typeInfo.distance && draftDistance > 0 ? ` · ${formatPace(draftDistance, draftDuration, unitSystem)}` : ""}
+                        </p>
+                      )}
+                      <button className="primary-btn" onClick={addCardioSession}>{text.addCardioSession}</button>
+                    </div>
+                  </div>
+
+                  {cardioDays.length === 0 && (
+                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>{text.noCardioYet}</p>
+                  )}
+                  {cardioDays.map(([date, list]) => (
+                    <div key={date} className="home-card">
+                      <p className="detail-label">{date === getDateKey() ? (language === "es" ? "HOY" : "TODAY") : date}</p>
+                      <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
+                        {(list || []).map(item => (
+                          <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: isLightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 10px" }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{cardioTypeLabel(item.type, language)}</p>
+                              <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
+                                {item.durationMin} {text.minutesShort}{item.distance > 0 ? ` · ${fmtDist(item.distance)} · ${formatPace(item.distance, item.durationMin, unitSystem)}` : ""} · {item.calories} kcal
+                              </p>
+                            </div>
+                            <button className="edit-btn" onClick={() => removeCardioSession(date, item.id)} style={{ color: "#E5604D", flexShrink: 0 }}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               );
             })()}
@@ -6763,6 +6882,41 @@ export default function AtlasLuthor() {
           </div>
         );
       })()}
+
+      {editingMeasurements && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              {text.addMeasurement.toUpperCase()}
+            </p>
+            <div style={{ display: "grid", gap: 10 }}>
+              <label style={{ display: "block" }}>
+                <span className="field-label">{text.dateField}</span>
+                <input className="input" type="date" value={editingMeasurements.date} onChange={event => setEditingMeasurements(prev => ({ ...prev, date: event.target.value }))} />
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {MEASUREMENT_FIELDS.map(field => (
+                  <label key={field} style={{ display: "block" }}>
+                    <span className="field-label">{text[field].toUpperCase()} ({measureUnit(unitSystem)})</span>
+                    <input
+                      className="input"
+                      type="number"
+                      inputMode="decimal"
+                      value={editingMeasurements[field] || ""}
+                      onChange={event => setEditingMeasurements(prev => ({ ...prev, [field]: event.target.value }))}
+                      placeholder="0"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingMeasurements(null)}>{text.cancel}</button>
+              <button className="primary-btn" style={{ flex: 1 }} onClick={() => saveMeasurements(editingMeasurements)}>{text.save}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {viewingPhoto && (
         <div className="modal-backdrop" onClick={() => setViewingPhoto(null)}>
