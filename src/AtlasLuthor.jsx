@@ -1705,6 +1705,45 @@ export default function AtlasLuthor() {
     }));
   };
 
+  // Records a completed exercise into per-exercise performance history and
+  // auto-flags a PR when the estimated 1RM beats the stored best.
+  const recordExerciseCompletion = (exercise, key) => {
+    if (!exercise || !exercise.name) return;
+    const est1RM = estimate1RMFromExercise(exercise.weight, exercise.reps);
+    if (est1RM <= 0) return;
+
+    const name = exercise.name;
+    const newRecord = isNewPR(est1RM, exercisePerformance[name]);
+    const historyEntry = {
+      date: getDateKey(),
+      weight: parseWeightNumber(exercise.weight),
+      reps: parseRepsNumber(exercise.reps),
+      est1RM,
+    };
+
+    setExercisePerformance(prev => {
+      const record = prev[name];
+      return {
+        ...prev,
+        [name]: {
+          best1RM: Math.max(est1RM, record?.best1RM || 0),
+          bestWeight: Math.max(historyEntry.weight, record?.bestWeight || 0),
+          bestReps: Math.max(historyEntry.reps, record?.bestReps || 0),
+          history: [historyEntry, ...((record && record.history) || [])].slice(0, 30),
+        },
+      };
+    });
+
+    if (newRecord) {
+      setExerciseNotes(prev => ({
+        ...prev,
+        [key]: { ...(prev[key] || {}), pr: true, updatedAt: new Date().toISOString() },
+      }));
+      setPrToast(name);
+      window.setTimeout(() => setPrToast(""), 2600);
+    }
+  };
+
   const updateSetCount = (exerciseIndex, delta) => {
     const key = getExerciseKey(activeDay, activeSession, exerciseIndex);
     const exercise = session.exercises[exerciseIndex];
@@ -1713,9 +1752,11 @@ export default function AtlasLuthor() {
     const nextSets = Math.max(0, Math.min(totalSets, currentSets + delta));
     const nextSetProgress = { ...setProgress, [key]: nextSets };
     const nextChecked = { ...checked };
+    const wasChecked = !!checked[key];
 
     if (totalSets > 0 && nextSets >= totalSets) {
       nextChecked[key] = true;
+      if (!wasChecked) recordExerciseCompletion(exercise, key);
       const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
       setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
       startRestTimer(90);
@@ -1740,6 +1781,7 @@ export default function AtlasLuthor() {
 
     if (!wasDone) {
       setSetProgress(prev => ({ ...prev, [key]: Number(session.exercises[exerciseIndex]?.sets || 0) }));
+      recordExerciseCompletion(session.exercises[exerciseIndex], key);
       const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
       setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
       startRestTimer(90);
@@ -3521,6 +3563,12 @@ export default function AtlasLuthor() {
 
       <div className="ambient-bg" aria-hidden="true" />
 
+      {prToast && (
+        <div style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(14px + env(safe-area-inset-top))", zIndex: 60, background: "#FFD060", color: "#1A1400", padding: "11px 18px", borderRadius: 999, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, letterSpacing: 1, boxShadow: "0 10px 34px rgba(0,0,0,0.45)", maxWidth: "90vw", textAlign: "center" }}>
+          ⭐ {text.newPR} · {prToast}
+        </div>
+      )}
+
       <div className="page-shell">
         <div className="app-header">
           <div className="app-header-side" />
@@ -4633,7 +4681,7 @@ export default function AtlasLuthor() {
                       <div key={`${row.key}-heavy`} className="detail-row">
                         <div>
                           <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName}</p>
+                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} · {text.estimatedOneRM} {fmtW(estimate1RMFromExercise(row.exercise.weight, row.exercise.reps))}</p>
                         </div>
                         <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtExW(row.exercise.weight)}</span>
                       </div>
@@ -4859,6 +4907,35 @@ export default function AtlasLuthor() {
                       <p className="detail-value">{metric.val}</p>
                     </div>
                   ))}
+                </div>
+
+                <div className="home-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <p className="detail-label">{text.muscleBalance.toUpperCase()}</p>
+                    <p style={{ fontSize: 11, color: "#B8A0FF", fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                      {text.totalVolume}: {Math.round(weeklyVolume).toLocaleString()}
+                    </p>
+                  </div>
+                  <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
+                    {Object.entries(volumeByGroup).sort((a, b) => b[1] - a[1]).map(([group, vol]) => {
+                      const pct = weeklyVolume > 0 ? Math.round((vol / weeklyVolume) * 100) : 0;
+                      return (
+                        <div key={group}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: isLightMode ? "#5A6270" : "#8A8F99", marginBottom: 4 }}>
+                            <span>{group}</span><span>{pct}%</span>
+                          </div>
+                          <div style={{ height: 7, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                            <div style={{ width: `${pct}%`, height: "100%", background: "#B8A0FF", borderRadius: 4, transition: "width 0.4s ease" }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {weeklyVolume === 0 && (
+                      <p style={{ color: "#8A8F99", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                        {language === "es" ? "Completa series para ver tu volumen y balance muscular." : "Complete sets to see your volume and muscle balance."}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -5698,6 +5775,42 @@ export default function AtlasLuthor() {
                           </p>
                         </div>
                       )}
+                      {(() => {
+                        const est = estimate1RMFromExercise(ex.weight, ex.reps);
+                        const perf = exercisePerformance[ex.name];
+                        const cues = getExerciseCues(ex.name, language);
+                        return (
+                          <>
+                            {est > 0 && (
+                              <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 11px", borderRadius: 10, background: isLightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)" }}>
+                                <span style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>{text.estimatedOneRM}</span>
+                                <span style={{ fontSize: 12, color: theme.accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                                  {fmtW(est)}{perf?.best1RM ? ` · ${text.personalBest} ${fmtW(perf.best1RM)}` : ""}
+                                </span>
+                              </div>
+                            )}
+                            {cues.length > 0 && (
+                              <button
+                                className="edit-btn"
+                                style={{ width: "100%", marginTop: 10, padding: 10 }}
+                                onClick={() => setCuesExerciseIndex(prev => (prev === i ? null : i))}
+                              >
+                                {text.formCues} {cuesExerciseIndex === i ? "▲" : "▼"}
+                              </button>
+                            )}
+                            {cuesExerciseIndex === i && cues.length > 0 && (
+                              <div style={{ marginTop: 8, display: "grid", gap: 7 }}>
+                                {cues.map((cue, cueIndex) => (
+                                  <div key={cueIndex} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: theme.accent, marginTop: 6, flexShrink: 0 }} />
+                                    <p style={{ fontSize: 12, color: isLightMode ? "#5A6270" : "#C8D0DC", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{cue}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   );
                 }
