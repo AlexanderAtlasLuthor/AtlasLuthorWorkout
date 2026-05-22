@@ -9,7 +9,19 @@ createRoot(document.getElementById("root")).render(
 );
 
 if ("serviceWorker" in navigator) {
+  // Reload once when a new service worker takes control so users always run
+  // the latest build instead of being trapped on a stale cached version.
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(registration => registration.update())
+      .catch(() => {});
   });
 }

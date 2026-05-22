@@ -1,5 +1,5 @@
-const CACHE_NAME = "atlas-luthor-v2";
-const APP_SHELL = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "atlas-luthor-v4";
+const APP_SHELL = ["/", "/manifest.json", "/favicon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -19,17 +19,34 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
+  const request = event.request;
+  const isHtml =
+    request.mode === "navigate" || (request.headers.get("accept") || "").includes("text/html");
 
-      return fetch(event.request)
+  if (isHtml) {
+    // Network-first for the HTML shell so app updates reach users automatically.
+    event.respondWith(
+      fetch(request)
         .then(response => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          caches.open(CACHE_NAME).then(cache => cache.put("/", copy));
           return response;
         })
-        .catch(() => caches.match("/"));
+        .catch(() => caches.match(request).then(cached => cached || caches.match("/")))
+    );
+    return;
+  }
+
+  // Cache-first for static assets (hashed filenames are safe to keep).
+  event.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+
+      return fetch(request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        return response;
+      });
     })
   );
 });
