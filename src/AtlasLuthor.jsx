@@ -3,8 +3,7 @@ import {
   formatWeight, formatWeightDelta, formatHeight, formatExerciseWeight,
   formatDistance, formatMeasure, parseHeightInches,
   getBodyWeightOptions, getHeightOptions, getExerciseWeightOptions,
-  measureInputToInches, distanceInputToMiles, weightUnit, measureUnit, distanceUnit,
-  inToCm,
+  measureInputToInches, distanceInputToMiles, measureUnit, distanceUnit, inToCm,
 } from "./lib/units.js";
 import {
   calcBMR, calcTDEE, goalCalorieTarget, macroSplit, sumDayMacros,
@@ -5115,7 +5114,7 @@ export default function AtlasLuthor() {
                                 <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}{item.qty > 1 ? ` ×${item.qty}` : ""}</p>
                                 <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>{Math.round(item.kcal * item.qty)} kcal · P{Math.round(item.protein * item.qty)} C{Math.round(item.carbs * item.qty)} F{Math.round(item.fat * item.qty)}</p>
                               </div>
-                              <button className="edit-btn" onClick={() => removeFoodEntry(getDateKey(), meal, item.entryId)} style={{ color: "#E5604D", flexShrink: 0 }}>✕</button>
+                              <button className="edit-btn" onClick={() => removeFoodEntry(getDateKey(), meal, item.entryId)} style={{ color: "#E5604D", flexShrink: 0 }}>{text.removeBtn}</button>
                             </div>
                           ))}
                         </div>
@@ -5193,7 +5192,7 @@ export default function AtlasLuthor() {
                       <input className="input" value={cardioDraft.note} onChange={event => setCardioDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={text.noteField} />
                       {draftDuration > 0 && (
                         <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
-                          ≈ {estimateCardioCalories(cardioDraft.type, draftDuration, profile.currentWeight)} kcal
+                          {estimateCardioCalories(cardioDraft.type, draftDuration, profile.currentWeight)} kcal
                           {typeInfo.distance && draftDistance > 0 ? ` · ${formatPace(draftDistance, draftDuration, unitSystem)}` : ""}
                         </p>
                       )}
@@ -5216,7 +5215,7 @@ export default function AtlasLuthor() {
                                 {item.durationMin} {text.minutesShort}{item.distance > 0 ? ` · ${fmtDist(item.distance)} · ${formatPace(item.distance, item.durationMin, unitSystem)}` : ""} · {item.calories} kcal
                               </p>
                             </div>
-                            <button className="edit-btn" onClick={() => removeCardioSession(date, item.id)} style={{ color: "#E5604D", flexShrink: 0 }}>✕</button>
+                            <button className="edit-btn" onClick={() => removeCardioSession(date, item.id)} style={{ color: "#E5604D", flexShrink: 0 }}>{text.removeBtn}</button>
                           </div>
                         ))}
                       </div>
@@ -5265,9 +5264,9 @@ export default function AtlasLuthor() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
                           <div style={{ minWidth: 0 }}>
                             <p className="detail-row-main">{challenge.title}</p>
-                            <p className="detail-row-sub">{metricLabels[challenge.metric]} · {challenge.startDate} → {challenge.endDate}</p>
+                            <p className="detail-row-sub">{metricLabels[challenge.metric]} · {challenge.startDate} - {challenge.endDate}</p>
                           </div>
-                          <button className="edit-btn" onClick={() => removeChallenge(challenge.id)} style={{ color: "#E5604D", flexShrink: 0 }}>✕</button>
+                          <button className="edit-btn" onClick={() => removeChallenge(challenge.id)} style={{ color: "#E5604D", flexShrink: 0 }}>{text.removeBtn}</button>
                         </div>
                         <div style={{ height: 8, borderRadius: 5, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
                           <div style={{ width: `${pct}%`, height: "100%", background: done ? "#3FB98A" : "#B8A0FF", borderRadius: 5, transition: "width 0.4s ease" }} />
@@ -5934,7 +5933,7 @@ export default function AtlasLuthor() {
                                 style={{ width: "100%", marginTop: 10, padding: 10 }}
                                 onClick={() => setCuesExerciseIndex(prev => (prev === i ? null : i))}
                               >
-                                {text.formCues} {cuesExerciseIndex === i ? "▲" : "▼"}
+                                {text.formCues}{cuesExerciseIndex === i ? " ↑" : ""}
                               </button>
                             )}
                             {cuesExerciseIndex === i && cues.length > 0 && (
