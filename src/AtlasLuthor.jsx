@@ -1648,6 +1648,7 @@ export default function AtlasLuthor() {
   const notifiedTimersRef = useRef(new Set());
   const loadedUserRef = useRef("");
   const tapFeedbackRef = useRef(true);
+  const pendingSaveRef = useRef(null);
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
@@ -1693,11 +1694,13 @@ export default function AtlasLuthor() {
   // Persists the signed-in account's data to its own namespaced key. It only
   // writes after that account's data has been loaded into state, so the
   // initial render cannot overwrite stored data with defaults, and logout
-  // (no active account) cannot leak or wipe anything.
+  // (no active account) cannot leak or wipe anything. The write is debounced
+  // so a burst of edits results in a single localStorage write.
   useEffect(() => {
-    if (!activeUserId || !users[activeUserId] || loadedUserRef.current !== activeUserId) return;
+    if (!activeUserId || !users[activeUserId] || loadedUserRef.current !== activeUserId) return undefined;
 
-    const saved = safeSave(STORAGE_KEYS.dataPrefix + activeUserId, {
+    const key = STORAGE_KEYS.dataPrefix + activeUserId;
+    const payload = {
       workoutData,
       checked,
       lastProgressionReview,
@@ -1720,9 +1723,16 @@ export default function AtlasLuthor() {
       measurementLog,
       exercisePerformance,
       challenges,
-    });
+    };
+    pendingSaveRef.current = { key, payload };
 
-    setStorageFull(!saved);
+    const timeoutId = window.setTimeout(() => {
+      const saved = safeSave(key, payload);
+      pendingSaveRef.current = null;
+      setStorageFull(!saved);
+    }, 800);
+
+    return () => window.clearTimeout(timeoutId);
   }, [
     activeUserId,
     users,
@@ -1749,6 +1759,26 @@ export default function AtlasLuthor() {
     exercisePerformance,
     challenges,
   ]);
+
+  // Flushes a pending debounced save immediately when the app is hidden or
+  // closed, so the last edits are never lost inside the debounce window.
+  useEffect(() => {
+    const flush = () => {
+      const pending = pendingSaveRef.current;
+      if (!pending) return;
+      safeSave(pending.key, pending.payload);
+      pendingSaveRef.current = null;
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, []);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setClockNow(new Date()), 60000);
@@ -3095,34 +3125,43 @@ export default function AtlasLuthor() {
 
     try {
       const response = await fetch(cloudSettings.endpoint);
+      if (!response.ok) {
+        setCloudSettings(prev => ({ ...prev, status: `Download failed ${response.status}` }));
+        return;
+      }
+
       const parsed = await response.json();
       const data = parsed && typeof parsed === "object" ? parsed.data || parsed : {};
 
-      if (!data || typeof data !== "object") {
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
         setCloudSettings(prev => ({ ...prev, status: "Download failed: invalid data" }));
         return;
       }
 
-      if (data.workoutData) setWorkoutData(data.workoutData);
-      if (data.checked) setChecked(data.checked);
-      if (data.profile) setProfile(data.profile);
-      if (data.goals) setGoals(data.goals);
-      if (data.progressLog) setProgressLog(data.progressLog);
-      if (data.exerciseNotes) setExerciseNotes(data.exerciseNotes);
-      if (data.calendarLog) setCalendarLog(data.calendarLog);
-      if (data.progressPhotos) setProgressPhotos(data.progressPhotos);
+      // Apply each slice only when it matches the expected shape, so a
+      // malformed or hostile endpoint cannot corrupt local state.
+      const isObject = value => !!value && typeof value === "object" && !Array.isArray(value);
+
+      if (isObject(data.workoutData)) setWorkoutData(data.workoutData);
+      if (isObject(data.checked)) setChecked(data.checked);
+      if (isObject(data.profile)) setProfile(data.profile);
+      if (isObject(data.goals)) setGoals(data.goals);
+      if (Array.isArray(data.progressLog)) setProgressLog(data.progressLog);
+      if (isObject(data.exerciseNotes)) setExerciseNotes(data.exerciseNotes);
+      if (isObject(data.calendarLog)) setCalendarLog(data.calendarLog);
+      if (Array.isArray(data.progressPhotos)) setProgressPhotos(data.progressPhotos);
       if (Array.isArray(data.photoAlbums)) setPhotoAlbums(data.photoAlbums);
-      if (data.appSettings) setAppSettings(withNameParts(data.appSettings));
-      if (data.notificationSettings) setNotificationSettings(data.notificationSettings);
-      if (data.setProgress) setSetProgress(data.setProgress);
-      if (data.lastProgressionReview !== undefined) setLastProgressionReview(data.lastProgressionReview);
-      if (data.waterLog) setWaterLog(data.waterLog);
-      if (data.foodLog) setFoodLog(data.foodLog);
+      if (isObject(data.appSettings)) setAppSettings(withNameParts(data.appSettings));
+      if (isObject(data.notificationSettings)) setNotificationSettings(data.notificationSettings);
+      if (isObject(data.setProgress)) setSetProgress(data.setProgress);
+      if (typeof data.lastProgressionReview === "string") setLastProgressionReview(data.lastProgressionReview);
+      if (isObject(data.waterLog)) setWaterLog(data.waterLog);
+      if (isObject(data.foodLog)) setFoodLog(data.foodLog);
       if (Array.isArray(data.customFoods)) setCustomFoods(data.customFoods);
       if (Array.isArray(data.recentFoods)) setRecentFoods(data.recentFoods);
-      if (data.cardioLog) setCardioLog(data.cardioLog);
-      if (data.measurementLog) setMeasurementLog(data.measurementLog);
-      if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
+      if (isObject(data.cardioLog)) setCardioLog(data.cardioLog);
+      if (isObject(data.measurementLog)) setMeasurementLog(data.measurementLog);
+      if (isObject(data.exercisePerformance)) setExercisePerformance(data.exercisePerformance);
       if (Array.isArray(data.challenges)) setChallenges(data.challenges);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
     } catch {
@@ -3132,6 +3171,17 @@ export default function AtlasLuthor() {
 
   const saveProgressPhoto = () => {
     if (!photoDraft.dataUrl) return;
+
+    if (
+      progressPhotos.length >= 24 &&
+      !window.confirm(
+        language === "es"
+          ? "Has alcanzado el límite de 24 fotos. Guardar esta reemplazará tu foto más antigua. ¿Continuar?"
+          : "You've reached the 24-photo limit. Saving this will replace your oldest photo. Continue?"
+      )
+    ) {
+      return;
+    }
 
     const typedWeight = String(photoDraft.weight).trim();
     const weightLb = typedWeight === ""
@@ -3901,6 +3951,12 @@ export default function AtlasLuthor() {
                 <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 800 }}>{authError}</p>
               </div>
             )}
+
+            <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 12, lineHeight: 1.5, marginBottom: 14, textAlign: "center" }}>
+              {language === "es"
+                ? "Tu cuenta y tus datos se guardan solo en este dispositivo. Usa Respaldo / Sincronización para conservarlos o pasarlos a otro dispositivo."
+                : "Your account and data are stored only on this device. Use Backup / Sync to keep them safe or move them to another device."}
+            </p>
 
             {authMode === "login" ? (
               <div className="home-card" style={{ display: "grid", gap: 12 }}>
@@ -5290,6 +5346,13 @@ export default function AtlasLuthor() {
                       <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6 }}>
                         {text.bmrLabel} {nutritionBMR} · {text.tdeeLabel} {nutritionTDEE}
                       </p>
+                      {calorieTarget <= 0 && (
+                        <p style={{ fontSize: 12, color: "#FFD060", fontFamily: "'DM Sans', sans-serif", marginTop: 6, lineHeight: 1.45 }}>
+                          {language === "es"
+                            ? "Completa tu peso, altura, edad y sexo en el perfil para calcular tu meta de calorías."
+                            : "Add your weight, height, age and sex in your profile to calculate your calorie target."}
+                        </p>
+                      )}
                     </div>
                   </div>
 
