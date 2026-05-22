@@ -924,7 +924,6 @@ function getAutoTheme(hour = new Date().getHours()) {
 
 function getGreetingKey(hour = new Date().getHours()) {
   if (hour >= 5 && hour < 12) return "goodMorning";
-  if (hour >= 22 || hour < 5) return "goodNight";
   return "goodEvening";
 }
 
