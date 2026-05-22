@@ -186,12 +186,17 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
   lastRestNotice: "",
 };
 
+function getDefaultLanguage() {
+  if (typeof navigator === "undefined") return "en";
+  return String(navigator.language || "en").toLowerCase().startsWith("es") ? "es" : "en";
+}
+
 const DEFAULT_APP_SETTINGS = {
   firstName: "",
   lastName: "",
   name: "Atlas",
   avatar: "",
-  language: "en",
+  language: getDefaultLanguage(),
   themeMode: "auto",
   tapFeedback: true,
 };
@@ -253,7 +258,7 @@ const DEFAULT_SIGNUP = {
   startDate: getDateKey(),
   targetDate: "2026-04-09",
   focusGoal: "Build strength and finish the protocol",
-  language: "en",
+  language: getDefaultLanguage(),
   trainingPlan: "blank",
 };
 
@@ -306,6 +311,103 @@ const UI_TEXT = {
     lightStarts: "Auto: light mode until 1:00 PM, dark mode from 1:00 PM to 11:59 PM.",
     openFullPhotos: "Open photo page",
     noPhotos: "No progress photos yet.",
+    modeSuffix: "MODE",
+    today: "TODAY",
+    weeklyProgressIs: "Weekly progress is at",
+    keepMoving: "Keep the protocol moving.",
+    startToday: "START TODAY",
+    edit: "Edit",
+    save: "Save",
+    set: "Set",
+    backup: "Backup",
+    resetWeek: "Reset Week",
+    start: "START",
+    target: "TARGET",
+    change: "CHANGE",
+    toGoal: "TO GOAL",
+    protocolStable: "Protocol status stable",
+    deloadActive: "Deload warning active",
+    avgRpe: "Avg RPE",
+    streak: "Streak",
+    noPrsYet: "No PRs marked yet",
+    markPrHint: "Use Notes > Mark as PR",
+    averageRpe: "Average RPE:",
+    noRpeNotes: "No RPE notes yet",
+    deloadAdvice: "Consider lowering load, adding rest, or keeping sets submaximal.",
+    noDeloadSignal: "No deload signal from current notes.",
+    weeklyProtocol: "Weekly protocol",
+    completedSessions: "Completed sessions",
+    lastSaved: "Last saved",
+    noProgressSaved: "No progress saved yet.",
+    progressSavedMsg: "Progress saved.",
+    savedTag: "SAVED",
+    autoTag: "AUTO",
+    exercisesWord: "exercises",
+    weekStreak: "WEEK STREAK",
+    daysClear: "DAYS CLEAR",
+    weekOf: "WEEK OF",
+    protocolStarted: "Protocol Started",
+    twoWeekUpgrade: "2-WEEK UPGRADE",
+    progressionLead: "Two weeks in. You can add +5 lb to all",
+    progressionTail: "exercises, or keep your current weights. Nothing changes unless you pick one.",
+    keepCurrent: "Keep current",
+    applyFive: "Apply +5 lb",
+    mWeekly: "WEEKLY",
+    mDone: "DONE",
+    mExercises: "EXERCISES",
+    mSets: "SETS",
+    mSessions: "SESSIONS",
+    mCompleted: "COMPLETED",
+    mCardio: "CARDIO",
+    mDays: "DAYS",
+    total: "TOTAL",
+    latest: "LATEST",
+    photoNote: "Photo note",
+    choosePhoto: "Choose Photo",
+    savePhoto: "Save Photo",
+    noNote: "No note",
+    calCompleted: "Completed",
+    calTrained: "Trained",
+    calMissed: "Missed",
+    calRest: "Rest",
+    calPlanned: "Planned",
+    backHome: "Back Home",
+    restTimer: "REST TIMER",
+    recoverNext: "Recover, then attack the next set.",
+    startAfterSet: "Start after a hard set.",
+    restWord: "REST",
+    readyWord: "READY",
+    stopTimer: "Stop Timer",
+    editDay: "Edit Day",
+    quick: "Quick",
+    full: "Full",
+    doneWord: "done",
+    setsWord: "sets",
+    repsWord: "reps",
+    leftWord: "left",
+    cardioWarmup: "CARDIO / WARM-UP",
+    recoveryMode: "RECOVERY MODE",
+    restEatRebuild: "Rest. Eat. Rebuild.",
+    quickSession: "QUICK SESSION",
+    weightWord: "WEIGHT",
+    leftCap: "LEFT",
+    markExerciseDone: "Mark Exercise Done",
+    notesWord: "Notes",
+    fullSession: "Full Session",
+    minusSet: "- Set",
+    plusSet: "+ Set",
+    totalSets: "TOTAL SETS",
+    progressWord: "PROGRESS",
+    atlasMenu: "ATLAS MENU",
+    signedInAs: "Signed in as",
+    workoutWord: "WORKOUT",
+    manageWorkouts: "Manage Workouts",
+    appWord: "APP",
+    backupSync: "Backup / Sync",
+    logout: "Logout",
+    close: "Close",
+    cancel: "Cancel",
+    doneBtn: "Done",
   },
   es: {
     goodMorning: "Buenos días",
@@ -315,7 +417,7 @@ const UI_TEXT = {
     atlasScore: "Puntaje Atlas",
     monthCalendar: "Calendario Mensual",
     prTracker: "Récords Personales",
-    fatigueDeload: "Fatiga / Deload",
+    fatigueDeload: "Fatiga / Descarga",
     myGoals: "Mis Metas",
     progressMemory: "Memoria de Progreso",
     streakBadges: "Racha / Insignias",
@@ -331,6 +433,103 @@ const UI_TEXT = {
     lightStarts: "Auto: modo claro hasta la 1:00 PM, modo oscuro de 1:00 PM a 11:59 PM.",
     openFullPhotos: "Abrir página de fotos",
     noPhotos: "Aún no hay fotos de progreso.",
+    modeSuffix: "",
+    today: "HOY",
+    weeklyProgressIs: "El progreso semanal está en",
+    keepMoving: "Sigue con el protocolo.",
+    startToday: "EMPEZAR HOY",
+    edit: "Editar",
+    save: "Guardar",
+    set: "Definir",
+    backup: "Respaldo",
+    resetWeek: "Reiniciar Semana",
+    start: "INICIO",
+    target: "META",
+    change: "CAMBIO",
+    toGoal: "A LA META",
+    protocolStable: "Protocolo estable",
+    deloadActive: "Aviso de descarga activo",
+    avgRpe: "RPE prom.",
+    streak: "Racha",
+    noPrsYet: "Aún no hay récords marcados",
+    markPrHint: "Usa Notas > Marcar récord",
+    averageRpe: "RPE promedio:",
+    noRpeNotes: "Aún no hay notas de RPE",
+    deloadAdvice: "Considera bajar la carga, descansar más o dejar las series submáximas.",
+    noDeloadSignal: "Sin señal de descarga en las notas actuales.",
+    weeklyProtocol: "Protocolo semanal",
+    completedSessions: "Sesiones completadas",
+    lastSaved: "Último guardado",
+    noProgressSaved: "Aún no hay progreso guardado.",
+    progressSavedMsg: "Progreso guardado.",
+    savedTag: "GUARDADO",
+    autoTag: "AUTO",
+    exercisesWord: "ejercicios",
+    weekStreak: "RACHA SEM.",
+    daysClear: "DÍAS LIMPIOS",
+    weekOf: "SEMANA DE",
+    protocolStarted: "Protocolo Iniciado",
+    twoWeekUpgrade: "MEJORA QUINCENAL",
+    progressionLead: "Ya van dos semanas. Puedes sumar +5 lb a los",
+    progressionTail: "ejercicios, o mantener tus pesos actuales. Nada cambia hasta que elijas.",
+    keepCurrent: "Mantener actual",
+    applyFive: "Aplicar +5 lb",
+    mWeekly: "SEMANAL",
+    mDone: "HECHO",
+    mExercises: "EJERCICIOS",
+    mSets: "SERIES",
+    mSessions: "SESIONES",
+    mCompleted: "COMPLETADAS",
+    mCardio: "CARDIO",
+    mDays: "DÍAS",
+    total: "TOTAL",
+    latest: "ÚLTIMA",
+    photoNote: "Nota de la foto",
+    choosePhoto: "Elegir foto",
+    savePhoto: "Guardar foto",
+    noNote: "Sin nota",
+    calCompleted: "Completado",
+    calTrained: "Entrenado",
+    calMissed: "Perdido",
+    calRest: "Descanso",
+    calPlanned: "Planeado",
+    backHome: "Volver al inicio",
+    restTimer: "TEMPORIZADOR",
+    recoverNext: "Recupérate y ataca la siguiente serie.",
+    startAfterSet: "Inícialo tras una serie dura.",
+    restWord: "DESC.",
+    readyWord: "LISTO",
+    stopTimer: "Detener",
+    editDay: "Editar día",
+    quick: "Rápido",
+    full: "Completo",
+    doneWord: "hechas",
+    setsWord: "series",
+    repsWord: "reps",
+    leftWord: "restan",
+    cardioWarmup: "CARDIO / CALENTAMIENTO",
+    recoveryMode: "MODO RECUPERACIÓN",
+    restEatRebuild: "Descansa. Come. Reconstruye.",
+    quickSession: "SESIÓN RÁPIDA",
+    weightWord: "PESO",
+    leftCap: "RESTAN",
+    markExerciseDone: "Marcar ejercicio hecho",
+    notesWord: "Notas",
+    fullSession: "Sesión completa",
+    minusSet: "- Serie",
+    plusSet: "+ Serie",
+    totalSets: "SERIES TOTALES",
+    progressWord: "PROGRESO",
+    atlasMenu: "MENÚ ATLAS",
+    signedInAs: "Sesión de",
+    workoutWord: "ENTRENO",
+    manageWorkouts: "Gestionar rutinas",
+    appWord: "APP",
+    backupSync: "Respaldo / Sync",
+    logout: "Cerrar sesión",
+    close: "Cerrar",
+    cancel: "Cancelar",
+    doneBtn: "Listo",
   },
 };
 
@@ -1204,6 +1403,13 @@ export default function AtlasLuthor() {
   const quickSetsLeft = Math.max(quickTotalSets - quickSetsDone, 0);
   const language = appSettings.language === "es" ? "es" : "en";
   const text = UI_TEXT[language];
+  const calendarLabels = {
+    completed: text.calCompleted,
+    trained: text.calTrained,
+    missed: text.calMissed,
+    rest: text.calRest,
+    planned: text.calPlanned,
+  };
   const activeThemeMode = appSettings.themeMode === "auto" ? getAutoTheme(clockNow.getHours()) : appSettings.themeMode;
   const isLightMode = activeThemeMode === "light";
   const themeFor = type => {
@@ -2244,8 +2450,14 @@ export default function AtlasLuthor() {
         .light-mode [style*="#151207"],
         .light-mode [style*="#1A1A22"],
         .light-mode [style*="#20202A"],
-        .light-mode [style*="#24242E"] {
-          background: rgba(255,255,255,0.86) !important;
+        .light-mode [style*="#24242E"],
+        .light-mode [style*="rgb(16, 16, 21)"],
+        .light-mode [style*="rgb(15, 15, 20)"],
+        .light-mode [style*="rgb(17, 17, 21)"],
+        .light-mode [style*="rgb(21, 18, 7)"],
+        .light-mode [style*="rgb(26, 26, 34)"],
+        .light-mode [style*="rgb(30, 30, 38)"] {
+          background: rgba(255,255,255,0.92) !important;
           border-color: rgba(15,18,26,0.13) !important;
         }
         .light-mode .industry-mark,
@@ -2303,34 +2515,40 @@ export default function AtlasLuthor() {
             <span style={{ color: isLightMode ? "#101015" : "#FFFFFF" }}>ATLAS</span>{" "}
             <span style={{ color: "#90C8FF" }}>LUTHOR</span>
           </h1>
-          {activeUserId && (
-            <p style={{ fontSize: 10, color: isLightMode ? "#5A6270" : "#7C828E", marginTop: 5, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.5 }}>
-              {profile.currentWeight} LB · {profile.height} · target {goals.targetDate}
-            </p>
-          )}
         </div>
 
         {!activeUserId && authMode === "landing" && (
           <div className="fade-up feature-page">
             <div className="feature-hero">
               <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>
-                WELCOME TO ATLAS LUTHOR
+                {language === "es" ? "BIENVENIDO A ATLAS LUTHOR" : "WELCOME TO ATLAS LUTHOR"}
               </p>
-              <h2 className="feature-title">Train With Purpose</h2>
+              <h2 className="feature-title">{language === "es" ? "Entrena con Propósito" : "Train With Purpose"}</h2>
               <p className="feature-copy">
-                Atlas Luthor turns your training into a clear daily mission. Follow a structured plan, log every set, and watch your strength, body, and consistency climb week after week.
+                {language === "es"
+                  ? "Atlas Luthor convierte tu entrenamiento en una misión diaria clara. Sigue un plan estructurado, registra cada serie y mira crecer tu fuerza, tu cuerpo y tu constancia semana tras semana."
+                  : "Atlas Luthor turns your training into a clear daily mission. Follow a structured plan, log every set, and watch your strength, body, and consistency climb week after week."}
               </p>
               <p className="feature-copy" style={{ marginTop: 8, fontWeight: 700 }}>
-                Create your free profile and start your first session today.
+                {language === "es"
+                  ? "Crea tu perfil gratis y empieza tu primera sesión hoy."
+                  : "Create your free profile and start your first session today."}
               </p>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14, display: "grid", gap: 14 }}>
-              {[
-                { title: "Build your routine", copy: "Start with the Atlas Push/Pull/Legs protocol or create your own split, then edit it any time." },
-                { title: "Track every workout", copy: "Check off sets, run rest timers, add notes, and mark personal records as you train." },
-                { title: "See your progress", copy: "Month calendar, weekly metrics, body status, progress photos, and a live Atlas Score." },
-              ].map(item => (
+              {(language === "es"
+                ? [
+                    { title: "Arma tu rutina", copy: "Empieza con el protocolo Push/Pull/Legs de Atlas o crea tu propia división, y edítala cuando quieras." },
+                    { title: "Registra cada entreno", copy: "Marca series, usa el temporizador de descanso, agrega notas y marca récords mientras entrenas." },
+                    { title: "Mira tu progreso", copy: "Calendario mensual, métricas semanales, estado corporal, fotos de progreso y un Puntaje Atlas en vivo." },
+                  ]
+                : [
+                    { title: "Build your routine", copy: "Start with the Atlas Push/Pull/Legs protocol or create your own split, then edit it any time." },
+                    { title: "Track every workout", copy: "Check off sets, run rest timers, add notes, and mark personal records as you train." },
+                    { title: "See your progress", copy: "Month calendar, weekly metrics, body status, progress photos, and a live Atlas Score." },
+                  ]
+              ).map(item => (
                 <div key={item.title} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ width: 9, height: 9, borderRadius: 999, background: "#90C8FF", marginTop: 6, flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
@@ -2342,8 +2560,8 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ display: "grid", gap: 10 }}>
-              <button className="primary-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>GET STARTED</button>
-              <button className="dark-btn" onClick={() => { setAuthMode("login"); setAuthError(""); }}>I already have an account</button>
+              <button className="primary-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>{language === "es" ? "EMPEZAR" : "GET STARTED"}</button>
+              <button className="dark-btn" onClick={() => { setAuthMode("login"); setAuthError(""); }}>{language === "es" ? "Ya tengo una cuenta" : "I already have an account"}</button>
             </div>
           </div>
         )}
@@ -2351,18 +2569,28 @@ export default function AtlasLuthor() {
         {!activeUserId && authMode !== "landing" && (
           <div className="fade-up feature-page">
             <button className="dark-btn" onClick={() => { setAuthMode("landing"); setAuthError(""); }} style={{ marginBottom: 14 }}>
-              Back
+              {language === "es" ? "Atrás" : "Back"}
             </button>
 
             <div className="feature-hero">
               <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>
-                {authMode === "signup" ? "CREATE PROFILE" : "WELCOME BACK"}
+                {authMode === "signup"
+                  ? (language === "es" ? "CREAR PERFIL" : "CREATE PROFILE")
+                  : (language === "es" ? "BIENVENIDO DE VUELTA" : "WELCOME BACK")}
               </p>
-              <h2 className="feature-title">{authMode === "signup" ? "Sign Up" : "Login"}</h2>
+              <h2 className="feature-title">
+                {authMode === "signup"
+                  ? (language === "es" ? "Registrarse" : "Sign Up")
+                  : (language === "es" ? "Iniciar sesión" : "Login")}
+              </h2>
               <p className="feature-copy">
                 {authMode === "signup"
-                  ? "Create a local Atlas profile so your workout data, goals, body status, photos, notes, language, and theme stay tied to you."
-                  : "Log back into your local Atlas profile and continue from your own protocol state."}
+                  ? (language === "es"
+                    ? "Crea un perfil Atlas local para que tus entrenamientos, metas, estado corporal, fotos, notas, idioma y tema queden ligados a ti."
+                    : "Create a local Atlas profile so your workout data, goals, body status, photos, notes, language, and theme stay tied to you.")
+                  : (language === "es"
+                    ? "Vuelve a entrar a tu perfil Atlas local y continúa desde tu propio estado del protocolo."
+                    : "Log back into your local Atlas profile and continue from your own protocol state.")}
               </p>
             </div>
 
@@ -2375,39 +2603,39 @@ export default function AtlasLuthor() {
             {authMode === "login" ? (
               <div className="home-card" style={{ display: "grid", gap: 12 }}>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">USER ID</span>
-                  <input className="input" value={loginDraft.userId} onChange={event => setLoginDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="User ID" />
+                  <span className="field-label">{language === "es" ? "USUARIO" : "USER ID"}</span>
+                  <input className="input" value={loginDraft.userId} onChange={event => setLoginDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder={language === "es" ? "Usuario" : "User ID"} />
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">PASSWORD</span>
-                  <input className="input" type="password" value={loginDraft.password} onChange={event => setLoginDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Password" />
+                  <span className="field-label">{language === "es" ? "CONTRASEÑA" : "PASSWORD"}</span>
+                  <input className="input" type="password" value={loginDraft.password} onChange={event => setLoginDraft(prev => ({ ...prev, password: event.target.value }))} placeholder={language === "es" ? "Contraseña" : "Password"} />
                 </label>
-                <button className="primary-btn" onClick={handleLogin}>LOGIN</button>
-                <button className="dark-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>Create new account</button>
+                <button className="primary-btn" onClick={handleLogin}>{language === "es" ? "ENTRAR" : "LOGIN"}</button>
+                <button className="dark-btn" onClick={() => { setAuthMode("signup"); setAuthError(""); }}>{language === "es" ? "Crear cuenta nueva" : "Create new account"}</button>
               </div>
             ) : (
               <div className="home-card" style={{ display: "grid", gap: 12 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <label style={{ display: "block" }}>
-                    <span className="field-label">FIRST NAME</span>
-                    <input className="input" value={signupDraft.firstName} onChange={event => setSignupDraft(prev => ({ ...prev, firstName: event.target.value }))} placeholder="First name" />
+                    <span className="field-label">{signupDraft.language === "es" ? "NOMBRE" : "FIRST NAME"}</span>
+                    <input className="input" value={signupDraft.firstName} onChange={event => setSignupDraft(prev => ({ ...prev, firstName: event.target.value }))} placeholder={signupDraft.language === "es" ? "Nombre" : "First name"} />
                   </label>
                   <label style={{ display: "block" }}>
-                    <span className="field-label">LAST NAME</span>
-                    <input className="input" value={signupDraft.lastName} onChange={event => setSignupDraft(prev => ({ ...prev, lastName: event.target.value }))} placeholder="Last name" />
+                    <span className="field-label">{signupDraft.language === "es" ? "APELLIDO" : "LAST NAME"}</span>
+                    <input className="input" value={signupDraft.lastName} onChange={event => setSignupDraft(prev => ({ ...prev, lastName: event.target.value }))} placeholder={signupDraft.language === "es" ? "Apellido" : "Last name"} />
                   </label>
                 </div>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">USER ID</span>
-                  <input className="input" value={signupDraft.userId} onChange={event => setSignupDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder="Choose a User ID" />
+                  <span className="field-label">{signupDraft.language === "es" ? "USUARIO" : "USER ID"}</span>
+                  <input className="input" value={signupDraft.userId} onChange={event => setSignupDraft(prev => ({ ...prev, userId: event.target.value }))} placeholder={signupDraft.language === "es" ? "Elige un usuario" : "Choose a User ID"} />
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">PASSWORD</span>
-                  <input className="input" type="password" value={signupDraft.password} onChange={event => setSignupDraft(prev => ({ ...prev, password: event.target.value }))} placeholder="Choose a password" />
+                  <span className="field-label">{signupDraft.language === "es" ? "CONTRASEÑA" : "PASSWORD"}</span>
+                  <input className="input" type="password" value={signupDraft.password} onChange={event => setSignupDraft(prev => ({ ...prev, password: event.target.value }))} placeholder={signupDraft.language === "es" ? "Elige una contraseña" : "Choose a password"} />
                 </label>
 
                 <div style={{ border: "1.5px solid #90C8FF55", borderRadius: 14, padding: 12, display: "grid", gap: 8 }}>
-                  <span className="field-label" style={{ color: "#90C8FF" }}>CHOOSE YOUR STARTING ROUTINE</span>
+                  <span className="field-label" style={{ color: "#90C8FF" }}>{signupDraft.language === "es" ? "ELIGE TU RUTINA INICIAL" : "CHOOSE YOUR STARTING ROUTINE"}</span>
                   {TRAINING_PLAN_OPTIONS.map(option => {
                     const selected = signupDraft.trainingPlan === option.value;
                     return (
@@ -2418,11 +2646,19 @@ export default function AtlasLuthor() {
                         onClick={() => setSignupDraft(prev => ({ ...prev, trainingPlan: option.value }))}
                         style={{ textAlign: "left", boxShadow: selected ? "0 0 0 2px #90C8FF" : "none" }}
                       >
-                        <span style={{ display: "block", fontWeight: 800 }}>{option.label}</span>
+                        <span style={{ display: "block", fontWeight: 800 }}>
+                          {signupDraft.language === "es"
+                            ? (option.value === "atlas" ? "Usar el protocolo Atlas" : "Empezar con rutina vacía")
+                            : option.label}
+                        </span>
                         <span style={{ display: "block", fontSize: 12, color: "#888", marginTop: 3, fontWeight: 500 }}>
-                          {option.value === "atlas"
-                            ? "Pre-loaded Push / Pull / Legs split, ready to train today."
-                            : "Empty week. Add your own exercises after sign up."}
+                          {signupDraft.language === "es"
+                            ? (option.value === "atlas"
+                              ? "División Push / Pull / Legs precargada, lista para entrenar hoy."
+                              : "Semana vacía. Agrega tus propios ejercicios después de registrarte.")
+                            : (option.value === "atlas"
+                              ? "Pre-loaded Push / Pull / Legs split, ready to train today."
+                              : "Empty week. Add your own exercises after sign up.")}
                         </span>
                       </button>
                     );
@@ -2430,43 +2666,43 @@ export default function AtlasLuthor() {
                 </div>
 
                 <label style={{ display: "block" }}>
-                  <span className="field-label">CURRENT WEIGHT</span>
+                  <span className="field-label">{signupDraft.language === "es" ? "PESO ACTUAL" : "CURRENT WEIGHT"}</span>
                   <select className="input" value={signupDraft.currentWeight} onChange={event => setSignupDraft(prev => ({ ...prev, currentWeight: event.target.value }))}>
                     {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB</option>)}
                   </select>
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">TARGET WEIGHT</span>
+                  <span className="field-label">{signupDraft.language === "es" ? "PESO META" : "TARGET WEIGHT"}</span>
                   <select className="input" value={signupDraft.targetWeight} onChange={event => setSignupDraft(prev => ({ ...prev, targetWeight: event.target.value }))}>
                     {BODY_WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option} LB</option>)}
                   </select>
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">HEIGHT</span>
+                  <span className="field-label">{signupDraft.language === "es" ? "ALTURA" : "HEIGHT"}</span>
                   <select className="input" value={signupDraft.height} onChange={event => setSignupDraft(prev => ({ ...prev, height: event.target.value }))}>
                     {HEIGHT_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">START DATE</span>
+                  <span className="field-label">{signupDraft.language === "es" ? "FECHA DE INICIO" : "START DATE"}</span>
                   <input className="input" type="date" value={signupDraft.startDate} onChange={event => setSignupDraft(prev => ({ ...prev, startDate: event.target.value }))} />
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">TARGET DATE</span>
+                  <span className="field-label">{signupDraft.language === "es" ? "FECHA META" : "TARGET DATE"}</span>
                   <input className="input" type="date" value={signupDraft.targetDate} onChange={event => setSignupDraft(prev => ({ ...prev, targetDate: event.target.value }))} />
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">MAIN GOAL</span>
-                  <input className="input" value={signupDraft.focusGoal} onChange={event => setSignupDraft(prev => ({ ...prev, focusGoal: event.target.value }))} placeholder="Main goal" />
+                  <span className="field-label">{signupDraft.language === "es" ? "META PRINCIPAL" : "MAIN GOAL"}</span>
+                  <input className="input" value={signupDraft.focusGoal} onChange={event => setSignupDraft(prev => ({ ...prev, focusGoal: event.target.value }))} placeholder={signupDraft.language === "es" ? "Meta principal" : "Main goal"} />
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">LANGUAGE</span>
+                  <span className="field-label">{signupDraft.language === "es" ? "IDIOMA" : "LANGUAGE"}</span>
                   <select className="input" value={signupDraft.language} onChange={event => setSignupDraft(prev => ({ ...prev, language: event.target.value }))}>
                     {LANGUAGE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
-                <button className="primary-btn" onClick={handleSignup}>SIGN UP</button>
-                <button className="dark-btn" onClick={() => { setAuthMode("login"); setAuthError(""); }}>I already have an account</button>
+                <button className="primary-btn" onClick={handleSignup}>{signupDraft.language === "es" ? "REGISTRARSE" : "SIGN UP"}</button>
+                <button className="dark-btn" onClick={() => { setAuthMode("login"); setAuthError(""); }}>{signupDraft.language === "es" ? "Ya tengo una cuenta" : "I already have an account"}</button>
               </div>
             )}
           </div>
@@ -2477,11 +2713,12 @@ export default function AtlasLuthor() {
             {storageFull && (
               <div className="home-card" style={{ marginBottom: 14, borderColor: "#E5604D88", background: isLightMode ? "#FBEAE8" : "#1C0D0A" }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, color: "#E5604D", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
-                  STORAGE FULL
+                  {language === "es" ? "ALMACENAMIENTO LLENO" : "STORAGE FULL"}
                 </p>
                 <p style={{ color: isLightMode ? "#7A2A20" : "#E59A8E", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
-                  This device's storage is full, so recent changes could not be saved. Export a
-                  backup, then remove some progress photos to free space.
+                  {language === "es"
+                    ? "El almacenamiento de este dispositivo está lleno y no se pudieron guardar los cambios recientes. Exporta un respaldo y elimina algunas fotos de progreso para liberar espacio."
+                    : "This device's storage is full, so recent changes could not be saved. Export a backup, then remove some progress photos to free space."}
                 </p>
               </div>
             )}
@@ -2499,7 +2736,9 @@ export default function AtlasLuthor() {
                 </button>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace" }}>
-                    {activeThemeMode.toUpperCase()} MODE
+                    {language === "es"
+                      ? ({ dark: "MODO OSCURO", light: "MODO CLARO", auto: "MODO AUTO" }[activeThemeMode] || "MODO")
+                      : `${activeThemeMode.toUpperCase()} MODE`}
                   </p>
                   <h2 className="feature-title" style={{ marginTop: 4 }}>
                     {greeting}, {userName}
@@ -2515,27 +2754,27 @@ export default function AtlasLuthor() {
 
             <div className="home-card" style={{ marginBottom: 14, borderColor: "#2A2A34" }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
-                TODAY - {displayDayShort(weeklyMetrics.today, weeklyMetrics.todayLabel)} / {weeklyMetrics.todayType}
+                {text.today} - {displayDayShort(weeklyMetrics.today, weeklyMetrics.todayLabel)} / {weeklyMetrics.todayType}
               </p>
 
               <h2 style={{ fontSize: 25, fontFamily: "'Orbitron', monospace", letterSpacing: 2, marginBottom: 8 }}>
                 {todayDisplayName}
               </h2>
 
-              <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
-                Weekly progress is at <span style={{ color: "#FFFFFF", fontWeight: 800 }}>{weeklyMetrics.weeklyProgress}%</span>. Keep the protocol moving.
+              <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
+                {text.weeklyProgressIs} <span style={{ color: isLightMode ? "#101015" : "#FFFFFF", fontWeight: 800 }}>{weeklyMetrics.weeklyProgress}%</span>. {text.keepMoving}
               </p>
 
               <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
-                START TODAY
+                {text.startToday}
               </button>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
-                    BODY STATUS
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    {text.bodyStatus.toUpperCase()}
                   </p>
                   <p style={{ fontSize: 28, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
                     {profile.currentWeight} LB
@@ -2543,16 +2782,16 @@ export default function AtlasLuthor() {
                 </div>
 
                 <button className="edit-btn" onClick={() => setEditingProfile({ ...profile })}>
-                  Edit
+                  {text.edit}
                 </button>
               </div>
 
               <div className="metric-grid">
                 {[
-                  { label: "START", val: `${profile.startWeight} LB` },
-                  { label: "TARGET", val: `${profile.targetWeight} LB` },
-                  { label: "CHANGE", val: `${signedNumber(weightChange)} LB` },
-                  { label: "TO GOAL", val: `${signedNumber(weightToGoal)} LB` },
+                  { label: text.start, val: `${profile.startWeight} LB` },
+                  { label: text.target, val: `${profile.targetWeight} LB` },
+                  { label: text.change, val: `${signedNumber(weightChange)} LB` },
+                  { label: text.toGoal, val: `${signedNumber(weightToGoal)} LB` },
                 ].map(metric => (
                   <div key={metric.label} className="stat-box">
                     <p style={{ fontSize: 17, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
@@ -2567,8 +2806,8 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                ATLAS SCORE
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                {text.atlasScore.toUpperCase()}
               </p>
               <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <div style={{ width: 92, height: 92, borderRadius: "50%", border: `8px solid ${isLightMode ? "#101015" : "#FFFFFF"}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isLightMode ? "0 0 18px rgba(20,24,36,0.12)" : "0 0 24px rgba(255,255,255,0.12)" }}>
@@ -2576,18 +2815,18 @@ export default function AtlasLuthor() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 800 }}>
-                    {deloadWarning ? "Deload warning active" : "Protocol status stable"}
+                    {deloadWarning ? text.deloadActive : text.protocolStable}
                   </p>
-                  <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
-                    Avg RPE {averageRpe || "N/A"} · PRs {prEntries.length} · Streak {weeklyStreak}
+                  <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
+                    {text.avgRpe} {averageRpe || "N/A"} · PRs {prEntries.length} · {text.streak} {weeklyStreak}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                MONTH CALENDAR
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                {text.monthCalendar.toUpperCase()}
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6, marginBottom: 10 }}>
                 {weekHeaderLabels.map((label, index) => (
@@ -2614,7 +2853,7 @@ export default function AtlasLuthor() {
                   return (
                     <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
                       <span style={{ width: 11, height: 11, borderRadius: 3, background: visual.bg, display: "inline-block" }} />
-                      {CALENDAR_STATUS[status].label}
+                      {calendarLabels[status]}
                     </span>
                   );
                 })}
@@ -2622,11 +2861,11 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                PR TRACKER
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                {text.prTracker.toUpperCase()}
               </p>
               <div style={{ display: "grid", gap: 8 }}>
-                {(prEntries.length ? prEntries.slice(0, 5) : [{ key: "empty", exerciseName: "No PRs marked yet", sessionName: "Use Notes > Mark as PR", weight: "", date: "" }]).map(entry => (
+                {(prEntries.length ? prEntries.slice(0, 5) : [{ key: "empty", exerciseName: text.noPrsYet, sessionName: text.markPrHint, weight: "", date: "" }]).map(entry => (
                   <div key={entry.key} style={{ display: "flex", justifyContent: "space-between", gap: 10, background: "#101015", border: "1px solid #24242E", borderRadius: 10, padding: 10, fontFamily: "'DM Sans', sans-serif" }}>
                     <span style={{ color: "#FFFFFF", fontSize: 13, fontWeight: 800 }}>{entry.exerciseName}</span>
                     <span style={{ color: "#888", fontSize: 12, fontWeight: 700 }}>{entry.weight} {entry.date}</span>
@@ -2636,22 +2875,22 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14, borderColor: deloadWarning ? "#FFD06066" : "rgba(255,255,255,0.075)" }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: deloadWarning ? "#FFD060" : "#777", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
-                FATIGUE / DELOAD
+              <p style={{ fontSize: 10, letterSpacing: 3, color: deloadWarning ? "#FFD060" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
+                {text.fatigueDeload.toUpperCase()}
               </p>
               <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 800 }}>
-                Average RPE: {averageRpe || "No RPE notes yet"}
+                {text.averageRpe} {averageRpe || text.noRpeNotes}
               </p>
-              <p style={{ color: deloadWarning ? "#FFD060" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
-                {deloadWarning ? "Consider lowering load, adding rest, or keeping sets submaximal." : "No deload signal from current notes."}
+              <p style={{ color: deloadWarning ? "#FFD060" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 5 }}>
+                {deloadWarning ? text.deloadAdvice : text.noDeloadSignal}
               </p>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
-                    MY GOALS
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    {text.myGoals.toUpperCase()}
                   </p>
                   <p style={{ color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, fontWeight: 700 }}>
                     {goals.focusGoal}
@@ -2659,14 +2898,14 @@ export default function AtlasLuthor() {
                 </div>
 
                 <button className="edit-btn" onClick={() => setEditingGoals({ ...goals })}>
-                  Set
+                  {text.set}
                 </button>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 {[
-                  { label: "Weekly protocol", current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct },
-                  { label: "Completed sessions", current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct },
+                  { label: text.weeklyProtocol, current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct },
+                  { label: text.completedSessions, current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct },
                 ].map(goal => (
                   <div key={goal.label}>
                     <div style={{ display: "flex", justifyContent: "space-between", color: "#777", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
@@ -2684,24 +2923,24 @@ export default function AtlasLuthor() {
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
-                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
-                    PROGRESS MEMORY
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                    {text.progressMemory.toUpperCase()}
                   </p>
-                  <p style={{ color: "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                  <p style={{ color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
                     {latestProgress
-                      ? `Last saved ${latestProgress.date}: ${latestProgress.weight} LB, ${latestProgress.weeklyProgress}% weekly.`
-                      : "No progress saved yet."}
+                      ? `${text.lastSaved} ${latestProgress.date}: ${latestProgress.weight} LB, ${latestProgress.weeklyProgress}%`
+                      : text.noProgressSaved}
                   </p>
                 </div>
 
                 <button className="edit-btn" onClick={rememberProgress}>
-                  Save
+                  {text.save}
                 </button>
               </div>
 
               {progressSaved && (
                 <p style={{ color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, marginBottom: 10 }}>
-                  Progress saved.
+                  {text.progressSavedMsg}
                 </p>
               )}
 
@@ -2709,10 +2948,10 @@ export default function AtlasLuthor() {
                 {progressEntries.slice(0, 3).map(entry => (
                   <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, background: "#101015", border: "1px solid #20202A", borderRadius: 10, padding: 10, fontFamily: "'DM Sans', sans-serif" }}>
                     <span style={{ color: "#888", fontSize: 12, fontWeight: 700 }}>
-                      {entry.date} {entry.type === "manual" ? "SAVED" : "AUTO"}
+                      {entry.date} {entry.type === "manual" ? text.savedTag : text.autoTag}
                     </span>
                     <span style={{ color: "#FFFFFF", fontSize: 12, fontWeight: 800 }}>
-                      {entry.weight} LB · {entry.completedExercises} exercises
+                      {entry.weight} LB · {entry.completedExercises} {text.exercisesWord}
                     </span>
                   </div>
                 ))}
@@ -2738,47 +2977,47 @@ export default function AtlasLuthor() {
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginTop: 12 }}>
                 <button className="dark-btn" onClick={() => setShowDataTools(true)}>
-                  Backup
+                  {text.backup}
                 </button>
                 <button className="dark-btn" onClick={resetWeek}>
-                  Reset Week
+                  {text.resetWeek}
                 </button>
               </div>
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                STREAK / BADGES
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                {text.streakBadges.toUpperCase()}
               </p>
               <div className="metric-grid" style={{ marginBottom: 12 }}>
                 <div className="stat-box">
                   <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {weeklyStreak}
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
-                    WEEK STREAK
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                    {text.weekStreak}
                   </p>
                 </div>
                 <div className="stat-box">
                   <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {weeklyMetrics.completedDays}/7
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
-                    DAYS CLEAR
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                    {text.daysClear}
                   </p>
                 </div>
                 <div className="stat-box">
                   <p style={{ fontSize: 16, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {currentWeekKey.slice(5)}
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
-                    WEEK OF
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                    {text.weekOf}
                   </p>
                 </div>
               </div>
 
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {(earnedBadges.length ? earnedBadges : ["Protocol Started"]).map(badge => (
+                {(earnedBadges.length ? earnedBadges : [text.protocolStarted]).map(badge => (
                   <span key={badge} style={{ color: "#D8D8D8", background: "#101015", border: "1px solid #2A2A34", borderRadius: 999, padding: "7px 10px", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 800 }}>
                     {badge}
                   </span>
@@ -2787,7 +3026,7 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card" style={{ marginBottom: 14 }}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#777", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                 {text.progressPhotos.toUpperCase()}
               </p>
               <div style={{ display: "grid", gridTemplateColumns: latestPhoto ? "1.15fr 0.85fr" : "1fr", gap: 12, alignItems: "stretch", marginBottom: 12 }}>
@@ -2805,11 +3044,11 @@ export default function AtlasLuthor() {
                 )}
                 <div style={{ display: "grid", gap: 10 }}>
                   <div className="detail-card">
-                    <p className="detail-label">TOTAL</p>
+                    <p className="detail-label">{text.total}</p>
                     <p className="detail-value">{totalPhotoCount}</p>
                   </div>
                   <div className="detail-card">
-                    <p className="detail-label">LATEST</p>
+                    <p className="detail-label">{text.latest}</p>
                     <p className="detail-value">{latestPhoto?.date || "--"}</p>
                   </div>
                   <button className="dark-btn" onClick={() => openFeaturePage("photos")}>
@@ -2828,10 +3067,10 @@ export default function AtlasLuthor() {
                   className="input"
                   value={photoDraft.note}
                   onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))}
-                  placeholder="Photo note"
+                  placeholder={text.photoNote}
                 />
                 <label className="dark-btn" style={{ textAlign: "center" }}>
-                  Choose Photo
+                  {text.choosePhoto}
                   <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
                 </label>
                 {photoDraft.dataUrl && (
@@ -2843,7 +3082,7 @@ export default function AtlasLuthor() {
                 )}
                 {photoDraft.dataUrl && (
                   <button className="primary-btn" onClick={saveProgressPhoto}>
-                    Save Photo
+                    {text.savePhoto}
                   </button>
                 )}
               </div>
@@ -2853,7 +3092,7 @@ export default function AtlasLuthor() {
                     <div key={photo.id} className="photo-card" onClick={() => setViewingPhoto(photo)}>
                       <img src={photo.dataUrl} alt={photo.note || "Progress"} />
                       <div className="photo-body">
-                        <p className="photo-note">{photo.note || "No note"}</p>
+                        <p className="photo-note">{photo.note || text.noNote}</p>
                         <p className="photo-sub">{photo.date} · {photo.weight} LB{photo.album ? ` · ${photo.album}` : ""}</p>
                       </div>
                     </div>
@@ -2865,19 +3104,19 @@ export default function AtlasLuthor() {
             {isProgressionDue(lastProgressionReview) && progressionItems.length > 0 && (
               <div className="home-card" style={{ marginBottom: 14, borderColor: "#FFD06055", background: "#151207" }}>
                 <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
-                  2-WEEK UPGRADE
+                  {text.twoWeekUpgrade}
                 </p>
 
                 <p style={{ color: "#BFA45E", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
-                  Two weeks in. You can add +5 lb to all {progressionItems.length} exercises, or keep your current weights. Nothing changes unless you pick one.
+                  {text.progressionLead} {progressionItems.length} {text.progressionTail}
                 </p>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <button className="dark-btn" onClick={rejectProgression}>
-                    Keep current
+                    {text.keepCurrent}
                   </button>
                   <button className="primary-btn" onClick={acceptProgression}>
-                    Apply +5 lb
+                    {text.applyFive}
                   </button>
                 </div>
               </div>
@@ -2885,20 +3124,20 @@ export default function AtlasLuthor() {
 
             <div className="metric-grid" style={{ marginBottom: 14 }}>
               {[
-                { label: "WEEKLY", val: `${weeklyMetrics.weeklyProgress}%` },
-                { label: "DONE", val: weeklyMetrics.completedExercises },
-                { label: "EXERCISES", val: weeklyMetrics.totalExercises },
-                { label: "SETS", val: weeklyMetrics.totalSets },
-                { label: "SESSIONS", val: weeklyMetrics.workoutSessions },
-                { label: "COMPLETED", val: weeklyMetrics.completedSessions },
-                { label: "CARDIO", val: weeklyMetrics.cardioSessions },
-                { label: "DAYS", val: "7" },
+                { label: text.mWeekly, val: `${weeklyMetrics.weeklyProgress}%` },
+                { label: text.mDone, val: weeklyMetrics.completedExercises },
+                { label: text.mExercises, val: weeklyMetrics.totalExercises },
+                { label: text.mSets, val: weeklyMetrics.totalSets },
+                { label: text.mSessions, val: weeklyMetrics.workoutSessions },
+                { label: text.mCompleted, val: weeklyMetrics.completedSessions },
+                { label: text.mCardio, val: weeklyMetrics.cardioSessions },
+                { label: text.mDays, val: "7" },
               ].map(metric => (
                 <div key={metric.label} className="stat-box">
                   <p style={{ fontSize: 22, fontWeight: 700, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>
                     {metric.val}
                   </p>
-                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                  <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                     {metric.label}
                   </p>
                 </div>
@@ -2906,8 +3145,8 @@ export default function AtlasLuthor() {
             </div>
 
             <div className="home-card">
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
-                WEEK PLAN
+              <p style={{ fontSize: 10, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 12 }}>
+                {text.weekPlan.toUpperCase()}
               </p>
 
               <div style={{ display: "grid", gap: 10 }}>
@@ -2926,7 +3165,7 @@ export default function AtlasLuthor() {
                         <span style={{ display: "block", fontFamily: "'Orbitron', monospace", letterSpacing: 1 }}>
                           {displayDayShort(dayName, currentDay.label)} - {displayDay(dayName)}
                         </span>
-                        <span style={{ display: "block", color: "#666", fontSize: 12, marginTop: 3 }}>
+                        <span style={{ display: "block", color: "#888", fontSize: 12, marginTop: 3 }}>
                           {currentDay.sessions.map(s => s.name).join(" / ")}
                         </span>
                       </span>
@@ -2945,12 +3184,12 @@ export default function AtlasLuthor() {
         {activeUserId && screen === "feature" && (
           <div className="fade-up feature-page">
             <button className="dark-btn" onClick={() => setScreen("home")} style={{ marginBottom: 14 }}>
-              Back Home
+              {text.backHome}
             </button>
 
             <div className="feature-hero" style={{ borderColor: `${activeFeature.accent}40` }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: activeFeature.accent, fontFamily: "'Orbitron', monospace" }}>
-                ATLAS MODULE
+                {language === "es" ? "MÓDULO ATLAS" : "ATLAS MODULE"}
               </p>
               <h2 className="feature-title">{activeFeature.title}</h2>
               <p className="feature-copy">
@@ -3120,7 +3359,7 @@ export default function AtlasLuthor() {
                       return (
                         <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
                           <span style={{ width: 11, height: 11, borderRadius: 3, background: visual.bg, display: "inline-block" }} />
-                          {CALENDAR_STATUS[status].label}
+                          {calendarLabels[status]}
                         </span>
                       );
                     })}
@@ -3437,7 +3676,7 @@ export default function AtlasLuthor() {
                   setScreen("home");
                 }}
               >
-                Back Home
+                {text.backHome}
               </button>
             </div>
 
@@ -3477,9 +3716,9 @@ export default function AtlasLuthor() {
             <div style={{ padding: "20px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
               <div style={{ minWidth: 0 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
-                  {todayOnlyMode ? "TODAY ONLY" : displayDay(activeDay).toUpperCase()}
+                  {displayDay(activeDay).toUpperCase()}
                 </span>
-                <span style={{ fontSize: 11, letterSpacing: 2, color: "#444", fontFamily: "'Orbitron', monospace" }}>
+                <span style={{ fontSize: 11, letterSpacing: 2, color: "#7C828E", fontFamily: "'Orbitron', monospace" }}>
                   {" "}- {day.type}
                 </span>
               </div>
@@ -3487,7 +3726,7 @@ export default function AtlasLuthor() {
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 {total > 0 && (
                   <div style={{ fontSize: 13, color: "#888", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
-                    <span style={{ color: theme.accent, fontWeight: 700 }}>{done}</span> / {total} done
+                    <span style={{ color: theme.accent, fontWeight: 700 }}>{done}</span> / {total} {text.doneWord}
                   </div>
                 )}
                 {total > 0 && (
@@ -3496,14 +3735,14 @@ export default function AtlasLuthor() {
                     onClick={() => setQuickMode(prev => !prev)}
                     style={quickMode ? { color: theme.accent, borderColor: theme.accent + "66" } : {}}
                   >
-                    {quickMode ? "Full" : "Quick"}
+                    {quickMode ? text.full : text.quick}
                   </button>
                 )}
                 <button
                   className="edit-btn"
                   onClick={() => setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } })}
                 >
-                  Edit Day
+                  {text.editDay}
                 </button>
               </div>
             </div>
@@ -3522,10 +3761,10 @@ export default function AtlasLuthor() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, marginBottom: 12 }}>
                     <div>
                       <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
-                        REST TIMER
+                        {text.restTimer}
                       </p>
-                      <p style={{ fontSize: 13, color: "#666", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
-                        {restTimer.running ? "Recover, then attack the next set." : "Start after a hard set."}
+                      <p style={{ fontSize: 13, color: "#888", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
+                        {restTimer.running ? text.recoverNext : text.startAfterSet}
                       </p>
                     </div>
 
@@ -3556,8 +3795,8 @@ export default function AtlasLuthor() {
                         <p style={{ fontSize: 23, color: "#FFFFFF", fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>
                           {formatTimer(restTimer.secondsLeft)}
                         </p>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#666", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
-                          {restTimer.running ? "REST" : "READY"}
+                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#888", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                          {restTimer.running ? text.restWord : text.readyWord}
                         </p>
                       </div>
                     </div>
@@ -3573,7 +3812,7 @@ export default function AtlasLuthor() {
 
                   {restTimer.secondsLeft > 0 && (
                     <button className="edit-btn" onClick={stopRestTimer} style={{ width: "100%", marginTop: 10, padding: 10 }}>
-                      Stop Timer
+                      {text.stopTimer}
                     </button>
                   )}
                 </div>
@@ -3600,7 +3839,7 @@ export default function AtlasLuthor() {
               <div className="fade-up" style={{ padding: "20px" }}>
                 <div className="home-card" style={{ minHeight: 360, display: "grid", alignContent: "center", gap: 16 }}>
                   <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
-                    QUICK SESSION
+                    {text.quickSession}
                   </p>
                   <h2 style={{ fontSize: 26, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.1 }}>
                     {quickExercise.name}
@@ -3608,19 +3847,19 @@ export default function AtlasLuthor() {
                   <div className="metric-grid">
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.weight}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>WEIGHT</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.weightWord}</p>
                     </div>
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickExercise.sets}x{quickExercise.reps}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>SETS</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.mSets}</p>
                     </div>
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickSetsDone}/{quickTotalSets}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>DONE</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.mDone}</p>
                     </div>
                     <div className="stat-box">
                       <p style={{ fontSize: 22, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>{quickSetsLeft}</p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>LEFT</p>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>{text.leftCap}</p>
                     </div>
                   </div>
                   {quickNote && (
@@ -3630,14 +3869,14 @@ export default function AtlasLuthor() {
                   )}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
                     <button className="dark-btn" onClick={() => updateSetCount(quickExerciseIndex, -1)}>
-                      - Set
+                      {text.minusSet}
                     </button>
                     <button className="primary-btn" onClick={() => updateSetCount(quickExerciseIndex, 1)}>
-                      + Set
+                      {text.plusSet}
                     </button>
                   </div>
                   <button className="dark-btn" onClick={() => toggleExercise(quickExerciseIndex)}>
-                    Mark Exercise Done
+                    {text.markExerciseDone}
                   </button>
                   <button
                     className="dark-btn"
@@ -3652,10 +3891,10 @@ export default function AtlasLuthor() {
                       })
                     }
                   >
-                    Notes
+                    {text.notesWord}
                   </button>
                   <button className="dark-btn" onClick={() => setQuickMode(false)}>
-                    Full Session
+                    {text.fullSession}
                   </button>
                 </div>
               </div>
@@ -3670,8 +3909,8 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 9, letterSpacing: 3, color: "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
-                      CARDIO / WARM-UP
+                    <p style={{ fontSize: 9, letterSpacing: 3, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
+                      {text.cardioWarmup}
                     </p>
                     <p style={{ fontSize: 15, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
                       {session.warmup.name}
@@ -3695,7 +3934,7 @@ export default function AtlasLuthor() {
                       })
                     }
                   >
-                    Edit
+                    {text.edit}
                   </button>
                 </div>
               )}
@@ -3703,11 +3942,11 @@ export default function AtlasLuthor() {
               {session.rest && (
                 <div style={{ textAlign: "center", padding: "50px 20px", border: "1.5px solid #1A1A22", borderRadius: 16, background: "#0F0F14" }}>
                   <div style={{ fontSize: 42, marginBottom: 14 }}>🌙</div>
-                  <p style={{ fontSize: 14, letterSpacing: 4, color: "#555", fontFamily: "'Orbitron', monospace" }}>
-                    RECOVERY MODE
+                  <p style={{ fontSize: 14, letterSpacing: 4, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                    {text.recoveryMode}
                   </p>
-                  <p style={{ fontSize: 15, color: "#444", fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>
-                    Rest. Eat. Rebuild.
+                  <p style={{ fontSize: 15, color: "#9CA1AC", fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>
+                    {text.restEatRebuild}
                   </p>
                 </div>
               )}
@@ -3746,15 +3985,15 @@ export default function AtlasLuthor() {
                       <p style={{ fontSize: 15, fontWeight: 600, color: isDone ? "#555" : "#FFFFFF", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {ex.name}
                       </p>
-                      <p style={{ fontSize: 12, color: isDone ? "#383838" : "#666", marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
-                        {ex.sets} sets x {ex.reps} reps
+                      <p style={{ fontSize: 12, color: isDone ? "#6E7480" : "#888", marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
+                        {ex.sets} {text.setsWord} x {ex.reps} {text.repsWord}
                       </p>
-                      <p style={{ fontSize: 11, color: isDone ? "#444" : "#AAAAAA", marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
-                        Sets {setsDone}/{totalExerciseSets} · {setsLeft} left
+                      <p style={{ fontSize: 11, color: isDone ? "#6E7480" : "#AAAAAA", marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
+                        {text.mSets} {setsDone}/{totalExerciseSets} · {setsLeft} {text.leftWord}
                       </p>
                       {hasNote && (
-                        <p style={{ fontSize: 11, color: isDone ? "#444" : theme.accent, marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {note.pr ? "PR · " : ""}{note.difficulty ? `RPE ${note.difficulty} · ` : ""}{note.technique || note.pain || "Notes saved"}
+                        <p style={{ fontSize: 11, color: isDone ? "#6E7480" : theme.accent, marginTop: 4, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {note.pr ? "PR · " : ""}{note.difficulty ? `RPE ${note.difficulty} · ` : ""}{note.technique || note.pain || (language === "es" ? "Notas guardadas" : "Notes saved")}
                         </p>
                       )}
                     </div>
@@ -3794,9 +4033,9 @@ export default function AtlasLuthor() {
                           technique: note?.technique || "",
                         });
                       }}
-                      style={{ color: hasNote ? theme.accent : "#777" }}
+                      style={{ color: hasNote ? theme.accent : "#888" }}
                     >
-                      Notes
+                      {text.notesWord}
                     </button>
 
                     <button
@@ -3823,15 +4062,15 @@ export default function AtlasLuthor() {
               {total > 0 && (
                 <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                   {[
-                    { label: "EXERCISES", val: total },
-                    { label: "TOTAL SETS", val: session.exercises.reduce((a, e) => a + e.sets, 0) },
-                    { label: "PROGRESS", val: `${pct}%` },
+                    { label: text.mExercises, val: total },
+                    { label: text.totalSets, val: session.exercises.reduce((a, e) => a + e.sets, 0) },
+                    { label: text.progressWord, val: `${pct}%` },
                   ].map(s => (
                     <div key={s.label} className="stat-box">
                       <p style={{ fontSize: 22, fontWeight: 700, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
                         {s.val}
                       </p>
-                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#555", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
+                      <p style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", marginTop: 4, fontFamily: "'Orbitron', monospace" }}>
                         {s.label}
                       </p>
                     </div>
@@ -3850,18 +4089,18 @@ export default function AtlasLuthor() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div>
                 <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                  ATLAS MENU
+                  {text.atlasMenu}
                 </p>
                 <p style={{ fontSize: 12, color: "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
-                  Signed in as {userName}
+                  {text.signedInAs} {userName}
                 </p>
               </div>
               <button className="edit-btn" onClick={() => setShowMenu(false)} style={{ padding: "8px 12px" }}>
-                Close
+                {text.close}
               </button>
             </div>
 
-            <p className="menu-section-label">WORKOUT</p>
+            <p className="menu-section-label">{text.workoutWord}</p>
             <div style={{ display: "grid", gap: 8, marginBottom: 18, marginTop: 6 }}>
               <button
                 className="primary-btn"
@@ -3870,7 +4109,7 @@ export default function AtlasLuthor() {
                   openWorkout(weeklyMetrics.today);
                 }}
               >
-                START TODAY
+                {text.startToday}
               </button>
               <button
                 className="dark-btn"
@@ -3879,7 +4118,7 @@ export default function AtlasLuthor() {
                   setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } });
                 }}
               >
-                Manage Workouts
+                {text.manageWorkouts}
               </button>
               <button
                 className="dark-btn"
@@ -3888,11 +4127,11 @@ export default function AtlasLuthor() {
                   setShowMenu(false);
                 }}
               >
-                Reset Week
+                {text.resetWeek}
               </button>
             </div>
 
-            <p className="menu-section-label">PAGES</p>
+            <p className="menu-section-label">{text.pages.toUpperCase()}</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 18, marginTop: 6 }}>
               {featurePages.map(page => (
                 <button
@@ -3907,7 +4146,7 @@ export default function AtlasLuthor() {
               ))}
             </div>
 
-            <p className="menu-section-label">APP</p>
+            <p className="menu-section-label">{text.appWord}</p>
             <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
               <button
                 className="dark-btn"
@@ -3916,7 +4155,7 @@ export default function AtlasLuthor() {
                   setShowSettings(true);
                 }}
               >
-                Settings
+                {text.settings}
               </button>
               <button
                 className="dark-btn"
@@ -3925,7 +4164,7 @@ export default function AtlasLuthor() {
                   setShowReminders(true);
                 }}
               >
-                Reminders
+                {text.reminders}
               </button>
               <button
                 className="dark-btn"
@@ -3934,7 +4173,7 @@ export default function AtlasLuthor() {
                   setShowDataTools(true);
                 }}
               >
-                Backup / Sync
+                {text.backupSync}
               </button>
             </div>
           </div>
@@ -3957,33 +4196,35 @@ export default function AtlasLuthor() {
                 </div>
                 <div style={{ display: "grid", gap: 8, flex: 1, minWidth: 0 }}>
                   <label className="dark-btn" style={{ textAlign: "center" }}>
-                    {appSettings.avatar ? "Change Profile Photo" : "Add Profile Photo"}
+                    {appSettings.avatar
+                      ? (language === "es" ? "Cambiar foto de perfil" : "Change Profile Photo")
+                      : (language === "es" ? "Agregar foto de perfil" : "Add Profile Photo")}
                     <input type="file" accept="image/*" onChange={handleAvatarPhoto} style={{ display: "none" }} />
                   </label>
                   {appSettings.avatar && (
                     <button className="edit-btn" onClick={() => setAppSettings(prev => ({ ...prev, avatar: "" }))}>
-                      Remove Photo
+                      {language === "es" ? "Quitar foto" : "Remove Photo"}
                     </button>
                   )}
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">FIRST NAME</span>
+                  <span className="field-label">{language === "es" ? "NOMBRE" : "FIRST NAME"}</span>
                   <input
                     className="input"
                     value={appSettings.firstName}
                     onChange={event => setAppSettings(prev => ({ ...prev, firstName: event.target.value }))}
-                    placeholder="First name"
+                    placeholder={language === "es" ? "Nombre" : "First name"}
                   />
                 </label>
                 <label style={{ display: "block" }}>
-                  <span className="field-label">LAST NAME</span>
+                  <span className="field-label">{language === "es" ? "APELLIDO" : "LAST NAME"}</span>
                   <input
                     className="input"
                     value={appSettings.lastName}
                     onChange={event => setAppSettings(prev => ({ ...prev, lastName: event.target.value }))}
-                    placeholder="Last name"
+                    placeholder={language === "es" ? "Apellido" : "Last name"}
                   />
                 </label>
               </div>
@@ -4009,11 +4250,15 @@ export default function AtlasLuthor() {
 
               <div className="setting-row">
                 <div>
-                  <p className="setting-title">Notifications</p>
-                  <p className="setting-sub">{notificationSettings.enabled ? "Enabled" : "Permission not enabled"}</p>
+                  <p className="setting-title">{language === "es" ? "Notificaciones" : "Notifications"}</p>
+                  <p className="setting-sub">
+                    {notificationSettings.enabled
+                      ? (language === "es" ? "Activadas" : "Enabled")
+                      : (language === "es" ? "Permiso no activado" : "Permission not enabled")}
+                  </p>
                 </div>
                 <button className="dark-btn" onClick={requestNotifications}>
-                  Enable
+                  {language === "es" ? "Activar" : "Enable"}
                 </button>
               </div>
               <p className="setting-sub">
@@ -4032,7 +4277,7 @@ export default function AtlasLuthor() {
                 className="input"
                 value={notificationSettings.workoutMessage}
                 onChange={event => setNotificationSettings(prev => ({ ...prev, workoutMessage: event.target.value }))}
-                placeholder="Workout notification message"
+                placeholder={language === "es" ? "Mensaje de notificación de entreno" : "Workout notification message"}
               />
               <input
                 className="input"
@@ -4044,7 +4289,7 @@ export default function AtlasLuthor() {
                 className="input"
                 value={notificationSettings.restMessage}
                 onChange={event => setNotificationSettings(prev => ({ ...prev, restMessage: event.target.value }))}
-                placeholder="Recovery notification message"
+                placeholder={language === "es" ? "Mensaje de notificación de descanso" : "Recovery notification message"}
               />
               <select
                 className="input"
@@ -4057,19 +4302,23 @@ export default function AtlasLuthor() {
               </select>
 
               <button className="dark-btn" onClick={() => playReminderSound(notificationSettings.sound)}>
-                Test Tone
+                {language === "es" ? "Probar tono" : "Test Tone"}
               </button>
 
               <div className="setting-row">
                 <div>
-                  <p className="setting-title">Tap feedback</p>
-                  <p className="setting-sub">Click sound and vibration when you tap a control.</p>
+                  <p className="setting-title">{language === "es" ? "Respuesta al tocar" : "Tap feedback"}</p>
+                  <p className="setting-sub">
+                    {language === "es"
+                      ? "Sonido y vibración al tocar un control."
+                      : "Click sound and vibration when you tap a control."}
+                  </p>
                 </div>
                 <button
                   className="dark-btn"
                   onClick={() => setAppSettings(prev => ({ ...prev, tapFeedback: prev.tapFeedback === false }))}
                 >
-                  {appSettings.tapFeedback === false ? "Off" : "On"}
+                  {appSettings.tapFeedback === false ? (language === "es" ? "No" : "Off") : (language === "es" ? "Sí" : "On")}
                 </button>
               </div>
 
@@ -4077,19 +4326,19 @@ export default function AtlasLuthor() {
                 setShowSettings(false);
                 setShowReminders(true);
               }}>
-                Custom Reminders
+                {language === "es" ? "Recordatorios personalizados" : "Custom Reminders"}
               </button>
               <button className="dark-btn" onClick={() => {
                 setShowSettings(false);
                 setShowDataTools(true);
               }}>
-                Backup / Cloud Sync
+                {language === "es" ? "Respaldo / Sincronización" : "Backup / Cloud Sync"}
               </button>
               <button className="dark-btn" onClick={handleLogout}>
-                Logout
+                {text.logout}
               </button>
               <button className="dark-btn" onClick={() => setShowSettings(false)}>
-                Close
+                {text.close}
               </button>
             </div>
           </div>
@@ -4152,7 +4401,7 @@ export default function AtlasLuthor() {
                 ADD REMINDER
               </button>
               <button className="dark-btn" onClick={() => setShowReminders(false)}>
-                Close
+                {text.close}
               </button>
             </div>
           </div>
@@ -4182,7 +4431,7 @@ export default function AtlasLuthor() {
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingExercise(null)}>
-                Cancel
+                {text.cancel}
               </button>
               <button
                 className="primary-btn"
@@ -4192,7 +4441,7 @@ export default function AtlasLuthor() {
                   setEditingExercise(null);
                 }}
               >
-                Save
+                {text.save}
               </button>
             </div>
           </div>
@@ -4227,7 +4476,7 @@ export default function AtlasLuthor() {
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingCardio(null)}>
-                Cancel
+                {text.cancel}
               </button>
               <button
                 className="primary-btn"
@@ -4244,7 +4493,7 @@ export default function AtlasLuthor() {
                   setEditingCardio(null);
                 }}
               >
-                Save
+                {text.save}
               </button>
             </div>
           </div>
@@ -4302,14 +4551,14 @@ export default function AtlasLuthor() {
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingNote(null)}>
-                Cancel
+                {text.cancel}
               </button>
               <button
                 className="primary-btn"
                 style={{ flex: 1 }}
                 onClick={() => saveExerciseNote(editingNote)}
               >
-                Save
+                {text.save}
               </button>
             </div>
           </div>
@@ -4369,7 +4618,7 @@ export default function AtlasLuthor() {
               </p>
 
               <button className="dark-btn" onClick={() => setShowDataTools(false)}>
-                Close
+                {text.close}
               </button>
             </div>
           </div>
@@ -4394,7 +4643,7 @@ export default function AtlasLuthor() {
                 </p>
               </div>
               <button className="edit-btn" onClick={() => setEditingRoutine(null)} style={{ padding: "8px 12px" }}>
-                Done
+                {text.doneBtn}
               </button>
             </div>
 
@@ -4507,7 +4756,7 @@ export default function AtlasLuthor() {
                 Add Exercise
               </button>
               <button className="dark-btn" onClick={() => setEditingRoutine(null)}>
-                Done
+                {text.doneBtn}
               </button>
             </div>
           </div>
@@ -4574,7 +4823,7 @@ export default function AtlasLuthor() {
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingProfile(null)}>
-                Cancel
+                {text.cancel}
               </button>
               <button
                 className="primary-btn"
@@ -4584,7 +4833,7 @@ export default function AtlasLuthor() {
                   setEditingProfile(null);
                 }}
               >
-                Save
+                {text.save}
               </button>
             </div>
           </div>
@@ -4637,7 +4886,7 @@ export default function AtlasLuthor() {
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingGoals(null)}>
-                Cancel
+                {text.cancel}
               </button>
               <button
                 className="primary-btn"
@@ -4647,7 +4896,7 @@ export default function AtlasLuthor() {
                   setEditingGoals(null);
                 }}
               >
-                Save
+                {text.save}
               </button>
             </div>
           </div>
@@ -4662,7 +4911,7 @@ export default function AtlasLuthor() {
                 VIEW PHOTO
               </p>
               <button className="edit-btn" onClick={() => setViewingPhoto(null)} style={{ padding: "8px 12px" }}>
-                Close
+                {text.close}
               </button>
             </div>
 
@@ -4696,7 +4945,7 @@ export default function AtlasLuthor() {
 
             <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
               <button className="dark-btn" style={{ flex: 1 }} onClick={() => setViewingPhoto(null)}>
-                Close
+                {text.close}
               </button>
               <button className="dark-btn" style={{ flex: 1, color: "#E5604D" }} onClick={() => deleteProgressPhoto(viewingPhoto.id)}>
                 Delete Photo
