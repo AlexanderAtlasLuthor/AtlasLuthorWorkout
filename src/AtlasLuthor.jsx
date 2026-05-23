@@ -4185,6 +4185,7 @@ export default function AtlasLuthor() {
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
         .ambient-bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #0C0C10; }
+        .ambient-bg.custom-bg::before, .ambient-bg.custom-bg::after { display: none !important; }
         .ambient-bg::before {
           content: "";
           position: absolute;
@@ -4551,7 +4552,11 @@ export default function AtlasLuthor() {
         }
       `}</style>
 
-      <div className="ambient-bg" aria-hidden="true" />
+      <div
+        className={`ambient-bg${bgConfig.type && bgConfig.type !== "default" ? " custom-bg" : ""}`}
+        aria-hidden="true"
+        style={bgConfig.type && bgConfig.type !== "default" ? customBgStyle : undefined}
+      />
 
       {prToast && (
         <div style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(14px + env(safe-area-inset-top))", zIndex: 60, background: "#FFD060", color: "#1A1400", padding: "11px 18px", borderRadius: 999, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, letterSpacing: 1, boxShadow: "0 10px 34px rgba(0,0,0,0.45)", maxWidth: "90vw", textAlign: "center" }}>
