@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatWeight, formatWeightDelta, formatHeight, formatExerciseWeight,
   formatDistance, formatMeasure, parseHeightInches,
-  measureInputToInches, distanceInputToMiles, measureUnit, inToCm,
+  measureInputToInches, distanceInputToMiles, measureUnit,
   weightUnit, kgToLb, lbToKg,
 } from "./lib/units.js";
 import {
@@ -23,6 +23,9 @@ import { loadPhotos as loadPhotosFromIDB, savePhotos as savePhotosToIDB } from "
 import BadgesPage from "./features/BadgesPage.jsx";
 import ProgressPage from "./features/ProgressPage.jsx";
 import CardioPage from "./features/CardioPage.jsx";
+import ChallengesPage from "./features/ChallengesPage.jsx";
+import PhotosPage from "./features/PhotosPage.jsx";
+import BodyPage from "./features/BodyPage.jsx";
 
 const pushSessions = [
   {
@@ -4811,150 +4814,35 @@ export default function AtlasLuthor() {
             )}
 
             {activeFeaturePage === "body" && (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  {[
-                    { label: text.currentLabel, val: fmtW(profile.currentWeight) },
-                    { label: text.start, val: fmtW(profile.startWeight) },
-                    { label: text.target, val: fmtW(profile.targetWeight) },
-                    { label: text.change, val: fmtWDelta(weightChange) },
-                    { label: text.toGoal, val: fmtWDelta(weightToGoal) },
-                    { label: text.heightLabel, val: fmtH(profile.height) },
-                    { label: text.sexLabel.toUpperCase(), val: profileSex === "male" ? text.maleLabel : text.femaleLabel },
-                    { label: text.ageLabel.toUpperCase(), val: `${profile.age || "--"} ${t("años", "yrs")}` },
-                  ].map(metric => (
-                    <div key={metric.label} className="detail-card">
-                      <p className="detail-label">{metric.label}</p>
-                      <p className="detail-value">{metric.val}</p>
-                    </div>
-                  ))}
-                </div>
-                {bmi > 0 && (
-                  <div className="home-card">
-                    <p className="detail-label">{text.bodyComposition.toUpperCase()}</p>
-                    <div className="detail-grid" style={{ marginTop: 10 }}>
-                      {[
-                        { label: text.bmiLabel, val: String(bmi) },
-                        { label: text.bodyFatLabel, val: `${bodyFatPct}%` },
-                        { label: text.leanMassLabel, val: fmtW(leanMassLb) },
-                        { label: text.ibwLabel, val: fmtW(ibwLb) },
-                      ].map(item => (
-                        <div key={item.label} className="detail-card">
-                          <p className="detail-label">{item.label}</p>
-                          <p className="detail-value">{item.val}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="home-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: latestMeasurement ? 10 : 0 }}>
-                    <p className="detail-label">{text.measurements.toUpperCase()}</p>
-                    <button
-                      className="edit-btn"
-                      onClick={() => {
-                        const draft = { date: getDateKey() };
-                        MEASUREMENT_FIELDS.forEach(field => {
-                          const inches = latestMeasurement?.[field] || 0;
-                          draft[field] = inches
-                            ? String(unitSystem === "metric" ? Math.round(inToCm(inches) * 10) / 10 : inches)
-                            : "";
-                        });
-                        setEditingMeasurements(draft);
-                      }}
-                    >
-                      {text.addMeasurement}
-                    </button>
-                  </div>
-                  {latestMeasurement ? (
-                    <>
-                      <div className="detail-grid">
-                        {MEASUREMENT_FIELDS.filter(field => latestMeasurement[field]).map(field => (
-                          <div key={field} className="detail-card">
-                            <p className="detail-label">{text[field].toUpperCase()}</p>
-                            <p className="detail-value">{fmtMeasure(latestMeasurement[field])}</p>
-                          </div>
-                        ))}
-                      </div>
-                      {navyBodyFatPct > 0 && (
-                        <p style={{ marginTop: 10, fontSize: 13, color: "#90C8FF", fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
-                          {text.navyBodyFat}: {navyBodyFatPct}%
-                        </p>
-                      )}
-                      {measurementEntries.length > 1 && (
-                        <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
-                          <p className="detail-label">{text.measurementHistory.toUpperCase()}</p>
-                          {measurementEntries.slice(0, 6).map(entry => (
-                            <div key={entry.date} style={{ display: "flex", justifyContent: "space-between", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
-                              <span style={{ color: "#8A8F99", fontWeight: 700 }}>{entry.date}</span>
-                              <span style={{ fontWeight: 800 }}>{entry.waist ? `${text.waist} ${fmtMeasure(entry.waist)}` : "--"}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {measurementEntries.filter(entry => Number(entry.waist) > 0).length >= 2 && (
-                        <div style={{ marginTop: 12 }}>
-                          <p className="detail-label">{text.waist.toUpperCase()}</p>
-                          <div style={{ marginTop: 8 }}>
-                            <TrendChart
-                              points={[...measurementEntries].reverse().filter(entry => Number(entry.waist) > 0).slice(-24).map(entry => ({ value: Number(entry.waist) }))}
-                              color="#B8A0FF"
-                              formatValue={value => fmtMeasure(value)}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>{text.noMeasurements}</p>
-                  )}
-                </div>
-                <button className="primary-btn" onClick={() => setEditingProfile({ ...profile })}>
-                  {text.editBodyStatus}
-                </button>
-                <div className="home-card">
-                  <p className="detail-label">{text.bodyTrend}</p>
-                  <p className="detail-row-main">
-                    {weightChange === 0 ? text.stableSinceStart : weightChange > 0 ? text.upFromStarting : text.downFromStarting}
-                  </p>
-                  <p className="detail-row-sub">
-                    {t(`Fecha inicio ${profile.startDate}. Fecha meta ${goals.targetDate}. Diferencia actual a la meta: ${fmtWDelta(weightToGoal)}.`, `Start date ${profile.startDate}. Target date ${goals.targetDate}. Current gap to target is ${fmtWDelta(weightToGoal)}.`)}
-                  </p>
-                  <div style={{ marginTop: 12 }}>
-                    <TrendChart
-                      points={[...progressEntries].reverse().filter(entry => Number(entry.weight) > 0).slice(-24).map(entry => ({ value: Number(entry.weight) }))}
-                      color="#90C8FF"
-                      formatValue={value => fmtW(value)}
-                      emptyLabel={t("Registra tu peso para ver la tendencia.", "Log your weight to see the trend.")}
-                    />
-                  </div>
-                </div>
-                <div className="detail-list">
-                  {progressEntries.slice(0, 5).map(entry => (
-                    <div key={`${entry.id}-body-row`} className="detail-row">
-                      <div>
-                        <p className="detail-row-main">{entry.date}</p>
-                        <p className="detail-row-sub">{entry.type === "manual" ? text.manualBodyCheck : text.autoProgressCapture}</p>
-                      </div>
-                      <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtW(entry.weight)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="home-card">
-                  <p className="detail-label">{text.dayByDay}</p>
-                  <div className="detail-list">
-                    {dayBreakdowns.map(row => (
-                      <div key={`${row.dayName}-metric-detail`} className="detail-row">
-                        <div>
-                          <p className="detail-row-main">{displayDayShort(row.dayName, row.label)} - {displayDay(row.dayName)}</p>
-                          <p className="detail-row-sub">{row.doneDayExercises}/{row.totalDayExercises} {text.exercisesWord} - {row.doneDaySets}/{row.totalDaySets} {text.setsWord}</p>
-                        </div>
-                        <span style={{ color: themeFor(row.type).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.progressPct}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <BodyPage
+                text={text}
+                t={t}
+                fmtW={fmtW}
+                fmtH={fmtH}
+                fmtWDelta={fmtWDelta}
+                fmtMeasure={fmtMeasure}
+                profile={profile}
+                profileSex={profileSex}
+                goals={goals}
+                weightChange={weightChange}
+                weightToGoal={weightToGoal}
+                bmi={bmi}
+                bodyFatPct={bodyFatPct}
+                leanMassLb={leanMassLb}
+                ibwLb={ibwLb}
+                latestMeasurement={latestMeasurement}
+                measurementEntries={measurementEntries}
+                navyBodyFatPct={navyBodyFatPct}
+                unitSystem={unitSystem}
+                getDateKey={getDateKey}
+                setEditingMeasurements={setEditingMeasurements}
+                setEditingProfile={setEditingProfile}
+                progressEntries={progressEntries}
+                dayBreakdowns={dayBreakdowns}
+                themeFor={themeFor}
+                displayDay={displayDay}
+                displayDayShort={displayDayShort}
+              />
             )}
 
             {activeFeaturePage === "score" && (
@@ -5167,158 +5055,34 @@ export default function AtlasLuthor() {
               />
             )}
 
-            {activeFeaturePage === "photos" && (() => {
-              const photosByDate = [...progressPhotos].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-              const cmpA = progressPhotos.find(p => p.id === compareAId) || photosByDate[0];
-              const cmpB = progressPhotos.find(p => p.id === compareBId) || photosByDate[photosByDate.length - 1];
-              const cmpDelta = cmpA && cmpB ? Math.round((toNumber(cmpB.weight) - toNumber(cmpA.weight)) * 10) / 10 : 0;
-              const updateComparePos = event => {
-                const rect = event.currentTarget.getBoundingClientRect();
-                if (!rect.width) return;
-                const pos = ((event.clientX - rect.left) / rect.width) * 100;
-                setComparePos(Math.max(0, Math.min(100, pos)));
-              };
-              return (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.photosLabel}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{totalPhotoCount}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.albumsLabel}</p><p className="detail-value" style={{ color: "#B8A0FF" }}>{photoAlbums.length}</p></div>
-                </div>
-
-                {progressPhotos.length >= 2 && cmpA && cmpB && (
-                  <div className="home-card">
-                    <p className="detail-label">{text.beforeAfter.toUpperCase()}</p>
-                    <div
-                      onPointerDown={event => {
-                        try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* unsupported */ }
-                        updateComparePos(event);
-                      }}
-                      onPointerMove={event => { if (event.buttons === 1) updateComparePos(event); }}
-                      style={{ position: "relative", width: "100%", aspectRatio: "1", borderRadius: 14, overflow: "hidden", marginTop: 10, cursor: "ew-resize", touchAction: "none", userSelect: "none", border: "1px solid #24242E", background: "#050507" }}
-                    >
-                      <img src={cmpB.dataUrl} draggable={false} alt="After" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${100 - comparePos}% 0 0)` }}>
-                        <img src={cmpA.dataUrl} draggable={false} alt="Before" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-                      </div>
-                      <div style={{ position: "absolute", top: 0, bottom: 0, left: `${comparePos}%`, width: 3, background: "#FFFFFF", transform: "translateX(-50%)", boxShadow: "0 0 14px rgba(0,0,0,0.7)" }}>
-                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 36, height: 36, borderRadius: "50%", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: 3, boxShadow: "0 2px 12px rgba(0,0,0,0.55)" }}>
-                          <div style={{ width: 2.5, height: 13, borderRadius: 2, background: "#101015" }} />
-                          <div style={{ width: 2.5, height: 13, borderRadius: 2, background: "#101015" }} />
-                        </div>
-                      </div>
-                      <span style={{ position: "absolute", top: 10, left: 10, background: "rgba(8,8,12,0.74)", color: "#90C8FF", borderRadius: 999, padding: "5px 11px", fontFamily: "'Orbitron', monospace", fontSize: 9, fontWeight: 900, letterSpacing: 2, backdropFilter: "blur(6px)" }}>{text.photoBefore.toUpperCase()}</span>
-                      <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,8,12,0.74)", color: "#3FB98A", borderRadius: 999, padding: "5px 11px", fontFamily: "'Orbitron', monospace", fontSize: 9, fontWeight: 900, letterSpacing: 2, backdropFilter: "blur(6px)" }}>{text.photoAfter.toUpperCase()}</span>
-                    </div>
-                    <p style={{ textAlign: "center", fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 8 }}>{text.dragToCompare}</p>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginTop: 8 }}>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>{text.photoBefore.toUpperCase()}</p>
-                        <p style={{ fontSize: 12, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{cmpA.date} · {fmtW(cmpA.weight)}</p>
-                      </div>
-                      <div style={{ minWidth: 0, textAlign: "right" }}>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: "#3FB98A", fontFamily: "'Orbitron', monospace" }}>{text.photoAfter.toUpperCase()}</p>
-                        <p style={{ fontSize: 12, fontWeight: 800, fontFamily: "'DM Sans', sans-serif" }}>{cmpB.date} · {fmtW(cmpB.weight)}</p>
-                      </div>
-                    </div>
-                    {cmpDelta !== 0 && (
-                      <p style={{ textAlign: "center", marginTop: 8, fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 14, color: cmpDelta < 0 ? "#3FB98A" : "#FF9860" }}>
-                        {fmtWDelta(cmpDelta)}
-                      </p>
-                    )}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-                      <select className="input" value={cmpA.id} onChange={event => setCompareAId(event.target.value)}>
-                        {photosByDate.map(photo => <option key={photo.id} value={photo.id}>{photo.date}</option>)}
-                      </select>
-                      <select className="input" value={cmpB.id} onChange={event => setCompareBId(event.target.value)}>
-                        {photosByDate.map(photo => <option key={photo.id} value={photo.id}>{photo.date}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                <div className="home-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                    <p className="detail-label" style={{ margin: 0 }}>{text.albumsLabel}</p>
-                    <button
-                      className="album-chip"
-                      onClick={() => { setAlbumDraft(""); setShowAlbumModal(true); }}
-                      style={{ display: "flex", alignItems: "center", gap: 5 }}
-                    >
-                      <span style={{ fontSize: 15, lineHeight: 1, fontWeight: 900 }}>+</span> {text.newAlbumBtn}
-                    </button>
-                  </div>
-                  {photoAlbums.length === 0 ? (
-                    <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5, marginTop: 10 }}>
-                      {text.noAlbumsHint}
-                    </p>
-                  ) : (
-                    <>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-                        <button
-                          className={`album-chip${albumFilter === "" ? " active" : ""}`}
-                          onClick={() => setAlbumFilter("")}
-                        >
-                          {t("Todos", "All")} ({progressPhotos.length})
-                        </button>
-                        {photoAlbums.map(album => (
-                          <button
-                            key={album}
-                            className={`album-chip${albumFilter === album ? " active" : ""}`}
-                            onClick={() => setAlbumFilter(album)}
-                          >
-                            {album} ({progressPhotos.filter(photo => photo.album === album).length})
-                          </button>
-                        ))}
-                      </div>
-                      {albumFilter && (
-                        <button className="edit-btn" onClick={() => removePhotoAlbum(albumFilter)} style={{ marginTop: 10, color: "#E5604D" }}>
-                          {text.deleteAlbumBtn} "{albumFilter}"
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <button
-                  className="primary-btn"
-                  onClick={() => {
-                    setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: albumFilter || "", weight: "" });
-                    setShowPhotoModal(true);
-                  }}
-                >
-                  + {text.addPhotoBtn}
-                </button>
-
-                {(() => {
-                  const shownPhotos = albumFilter ? progressPhotos.filter(photo => photo.album === albumFilter) : progressPhotos;
-
-                  if (shownPhotos.length === 0) {
-                    return (
-                      <div className="home-card">
-                        <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>
-                          {albumFilter ? text.noPhotosInAlbum : text.noPhotos}
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="photo-grid">
-                      {shownPhotos.map(photo => (
-                        <div key={`${photo.id}-feature`} className="photo-tile" onClick={() => setViewingPhoto(photo)}>
-                          <img src={photo.dataUrl} alt={photo.note || "Progress"} />
-                          <div className="photo-body">
-                            <p className="photo-note">{photo.note || text.noNote}</p>
-                            <p className="photo-sub">{photo.date} · {fmtW(photo.weight)}{photo.album ? ` · ${photo.album}` : ""}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-              );
-            })()}
+            {activeFeaturePage === "photos" && (
+              <PhotosPage
+                text={text}
+                t={t}
+                isLightMode={isLightMode}
+                fmtW={fmtW}
+                fmtWDelta={fmtWDelta}
+                toNumber={toNumber}
+                getDateKey={getDateKey}
+                progressPhotos={progressPhotos}
+                photoAlbums={photoAlbums}
+                totalPhotoCount={totalPhotoCount}
+                compareAId={compareAId}
+                compareBId={compareBId}
+                comparePos={comparePos}
+                setCompareAId={setCompareAId}
+                setCompareBId={setCompareBId}
+                setComparePos={setComparePos}
+                albumFilter={albumFilter}
+                setAlbumFilter={setAlbumFilter}
+                removePhotoAlbum={removePhotoAlbum}
+                setAlbumDraft={setAlbumDraft}
+                setShowAlbumModal={setShowAlbumModal}
+                setPhotoDraft={setPhotoDraft}
+                setShowPhotoModal={setShowPhotoModal}
+                setViewingPhoto={setViewingPhoto}
+              />
+            )}
 
             {activeFeaturePage === "metrics" && (
               <div className="detail-list">
@@ -5586,61 +5350,18 @@ export default function AtlasLuthor() {
               />
             )}
 
-            {activeFeaturePage === "challenges" && (() => {
-              const metricLabels = { workouts: text.challengeWorkouts, water: text.challengeWater, cardio: text.challengeCardio };
-              return (
-                <div className="detail-list">
-                  <div className="home-card">
-                    <p className="detail-label">{text.newChallenge.toUpperCase()}</p>
-                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                      <input className="input" value={challengeDraft.title} onChange={event => setChallengeDraft(prev => ({ ...prev, title: event.target.value }))} placeholder={text.challengeTitle} />
-                      <select className="input" value={challengeDraft.metric} onChange={event => setChallengeDraft(prev => ({ ...prev, metric: event.target.value }))}>
-                        <option value="workouts">{text.challengeWorkouts}</option>
-                        <option value="water">{text.challengeWater}</option>
-                        <option value="cardio">{text.challengeCardio}</option>
-                      </select>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        <label style={{ display: "block" }}>
-                          <span className="field-label">{text.challengeTarget.toUpperCase()}</span>
-                          <input className="input" type="number" inputMode="numeric" value={challengeDraft.target} onChange={event => setChallengeDraft(prev => ({ ...prev, target: event.target.value }))} />
-                        </label>
-                        <label style={{ display: "block" }}>
-                          <span className="field-label">{text.challengeDays.toUpperCase()}</span>
-                          <input className="input" type="number" inputMode="numeric" value={challengeDraft.days} onChange={event => setChallengeDraft(prev => ({ ...prev, days: event.target.value }))} />
-                        </label>
-                      </div>
-                      <button className="primary-btn" onClick={addChallenge}>{text.createChallenge}</button>
-                    </div>
-                  </div>
-
-                  {challenges.length === 0 && (
-                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>{text.noChallenges}</p>
-                  )}
-                  {challenges.map(challenge => {
-                    const progress = computeChallengeProgress(challenge);
-                    const pct = challenge.target > 0 ? Math.min(100, Math.round((progress / challenge.target) * 100)) : 0;
-                    const done = progress >= challenge.target;
-                    return (
-                      <div key={challenge.id} className="home-card" style={{ borderColor: done ? "#3FB98A66" : undefined }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-                          <div style={{ minWidth: 0 }}>
-                            <p className="detail-row-main">{challenge.title}</p>
-                            <p className="detail-row-sub">{metricLabels[challenge.metric]} · {challenge.startDate} - {challenge.endDate}</p>
-                          </div>
-                          <button className="edit-btn" onClick={() => removeChallenge(challenge.id)} style={{ color: "#E5604D", flexShrink: 0 }}>{text.removeBtn}</button>
-                        </div>
-                        <div style={{ height: 8, borderRadius: 5, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                          <div style={{ width: `${pct}%`, height: "100%", background: done ? "#3FB98A" : "#B8A0FF", borderRadius: 5, transition: "width 0.4s ease" }} />
-                        </div>
-                        <p style={{ marginTop: 8, fontSize: 12, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: done ? "#3FB98A" : "#8A8F99" }}>
-                          {progress} / {challenge.target} · {pct}%{done ? ` · ${text.challengeDone}` : ""}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
+            {activeFeaturePage === "challenges" && (
+              <ChallengesPage
+                text={text}
+                isLightMode={isLightMode}
+                challenges={challenges}
+                challengeDraft={challengeDraft}
+                setChallengeDraft={setChallengeDraft}
+                addChallenge={addChallenge}
+                removeChallenge={removeChallenge}
+                computeChallengeProgress={computeChallengeProgress}
+              />
+            )}
 
             {activeFeaturePage === "water" && (() => {
               const wAccent = waterPct >= 100 ? "#3FB98A" : "#90C8FF";
