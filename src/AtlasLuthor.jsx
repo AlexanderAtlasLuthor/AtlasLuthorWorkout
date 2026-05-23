@@ -8164,12 +8164,45 @@ export default function AtlasLuthor() {
                 );
               })()}
 
-              <button className="dark-btn" onClick={handleLogout}>
-                {text.logout}
-              </button>
               <button className="dark-btn" onClick={() => setShowSettings(false)}>
                 {text.close}
               </button>
+
+              {/* Danger zone — logout is destructive and used to sit right
+                  next to the background controls, where it was easy to tap
+                  by mistake. Now it's at the bottom, visually separated,
+                  styled red, and asks twice before signing out. */}
+              <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px dashed ${isLightMode ? "rgba(229,96,77,0.4)" : "rgba(229,96,77,0.32)"}` }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, color: "#E5604D", fontFamily: "'Orbitron', monospace", marginBottom: 10, opacity: 0.9 }}>
+                  {language === "es" ? "ZONA PELIGROSA" : "DANGER ZONE"}
+                </p>
+                <button
+                  onClick={() => {
+                    const ask1 = language === "es" ? "¿Cerrar sesión?" : "Log out?";
+                    const ask2 = language === "es"
+                      ? "Última confirmación: tu sesión se cerrará y volverás a la pantalla de inicio. ¿Continuar?"
+                      : "Last confirmation: you'll be signed out and returned to the start screen. Continue?";
+                    if (!window.confirm(ask1)) return;
+                    if (!window.confirm(ask2)) return;
+                    handleLogout();
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "13px 16px",
+                    borderRadius: 14,
+                    border: "1.5px solid rgba(229,96,77,0.5)",
+                    background: isLightMode ? "rgba(229,96,77,0.08)" : "rgba(229,96,77,0.1)",
+                    color: "#E5604D",
+                    fontFamily: "'Orbitron', monospace",
+                    fontWeight: 900,
+                    letterSpacing: 2,
+                    fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  {text.logout}
+                </button>
+              </div>
             </div>
           </div>
         </div>
