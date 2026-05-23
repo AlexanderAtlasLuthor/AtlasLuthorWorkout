@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatWeight, formatWeightDelta, formatHeight, formatExerciseWeight,
   formatDistance, formatMeasure, parseHeightInches,
-  measureInputToInches, distanceInputToMiles, measureUnit,
-  weightUnit, kgToLb, lbToKg,
+  measureInputToInches, distanceInputToMiles,
+  kgToLb,
 } from "./lib/units.js";
 import {
   calcBMR, calcTDEE, goalCalorieTarget, macroSplit, sumDayMacros,
-  FOOD_DB, ACTIVITY_LEVELS,
+  ACTIVITY_LEVELS,
 } from "./lib/nutrition.js";
 import { estimateCardioCalories } from "./lib/cardio.js";
 import { navyBodyFat, MEASUREMENT_FIELDS } from "./lib/bodyComp.js";
@@ -16,7 +16,6 @@ import {
   exerciseVolume, isNewPR,
 } from "./lib/strength.js";
 import { renderShareCard } from "./lib/shareCard.js";
-import TrendChart from "./components/TrendChart.jsx";
 import { computeAchievementStats, computeAchievements } from "./lib/achievements.js";
 import { loadPhotos as loadPhotosFromIDB, savePhotos as savePhotosToIDB } from "./lib/photoStore.js";
 import BadgesPage from "./features/BadgesPage.jsx";
@@ -38,6 +37,22 @@ import CoachPage from "./features/CoachPage.jsx";
 import NutritionPage from "./features/NutritionPage.jsx";
 import WorkoutScreen from "./features/WorkoutScreen.jsx";
 import { UI_TEXT } from "./lib/uiText.js";
+import MenuModal from "./features/modals/MenuModal.jsx";
+import SettingsModal from "./features/modals/SettingsModal.jsx";
+import EditRoutineModal from "./features/modals/EditRoutineModal.jsx";
+import EditProfileModal from "./features/modals/EditProfileModal.jsx";
+import RemindersModal from "./features/modals/RemindersModal.jsx";
+import AlbumModal from "./features/modals/AlbumModal.jsx";
+import PhotoModal from "./features/modals/PhotoModal.jsx";
+import EditExerciseModal from "./features/modals/EditExerciseModal.jsx";
+import EditCardioModal from "./features/modals/EditCardioModal.jsx";
+import EditNoteModal from "./features/modals/EditNoteModal.jsx";
+import DataToolsModal from "./features/modals/DataToolsModal.jsx";
+import EditGoalsModal from "./features/modals/EditGoalsModal.jsx";
+import AddFoodModal from "./features/modals/AddFoodModal.jsx";
+import EditMeasurementsModal from "./features/modals/EditMeasurementsModal.jsx";
+import OneRMModal from "./features/modals/OneRMModal.jsx";
+import ViewPhotoModal from "./features/modals/ViewPhotoModal.jsx";
 
 const pushSessions = [
   {
@@ -4453,1298 +4468,258 @@ export default function AtlasLuthor() {
       </div>
 
       {showMenu && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <div>
-                <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                  {text.atlasMenu}
-                </p>
-                <p style={{ fontSize: 12, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
-                  {text.signedInAs} {userName}
-                </p>
-              </div>
-              <button className="edit-btn" onClick={() => setShowMenu(false)} style={{ padding: "8px 12px" }}>
-                {text.close}
-              </button>
-            </div>
-
-            <p className="menu-section-label">{text.workoutWord}</p>
-            <div style={{ display: "grid", gap: 8, marginBottom: 18, marginTop: 6 }}>
-              <button
-                className="primary-btn"
-                onClick={() => {
-                  setShowMenu(false);
-                  openWorkout(weeklyMetrics.today);
-                }}
-              >
-                {text.startToday}
-              </button>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  setShowMenu(false);
-                  setEditingRoutine({ dayName: activeDay, sessionIndex: activeSession, draft: { name: "", sets: "3", reps: "8", weight: "0 lb" } });
-                }}
-              >
-                {text.manageWorkouts}
-              </button>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  resetWeek();
-                  setShowMenu(false);
-                }}
-              >
-                {text.resetWeek}
-              </button>
-            </div>
-
-            <p className="menu-section-label">{text.pages.toUpperCase()}</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 18, marginTop: 6 }}>
-              {featurePages.map(page => (
-                <button
-                  key={page.id}
-                  className="dark-btn"
-                  onClick={() => openFeaturePage(page.id)}
-                  style={{ padding: "11px 8px", display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}
-                >
-                  <span style={{ width: 18, height: 3, borderRadius: 2, background: page.accent, display: "block" }} />
-                  <span style={{ fontWeight: 800, fontSize: 13 }}>{page.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <p className="menu-section-label">{text.appWord}</p>
-            <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  setShowMenu(false);
-                  setShowSettings(true);
-                }}
-              >
-                {text.settings}
-              </button>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  setShowMenu(false);
-                  setShowReminders(true);
-                }}
-              >
-                {text.reminders}
-              </button>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  setShowMenu(false);
-                  setShowDataTools(true);
-                }}
-              >
-                {text.backupSync}
-              </button>
-            </div>
-          </div>
-        </div>
+        <MenuModal
+          text={text}
+          isLightMode={isLightMode}
+          userName={userName}
+          setShowMenu={setShowMenu}
+          setShowSettings={setShowSettings}
+          setShowReminders={setShowReminders}
+          setShowDataTools={setShowDataTools}
+          setEditingRoutine={setEditingRoutine}
+          activeDay={activeDay}
+          activeSession={activeSession}
+          weeklyMetrics={weeklyMetrics}
+          openWorkout={openWorkout}
+          resetWeek={resetWeek}
+          featurePages={featurePages}
+          openFeaturePage={openFeaturePage}
+        />
       )}
 
       {showSettings && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.settings.toUpperCase()}
-            </p>
-
-            <div className="settings-grid">
-              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <div style={{ width: 66, height: 66, borderRadius: 999, overflow: "hidden", border: "1.5px solid #2A2A34", background: "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {appSettings.avatar
-                    ? <img src={appSettings.avatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 24, color: isLightMode ? "#7A8090" : "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
-                </div>
-                <div style={{ display: "grid", gap: 8, flex: 1, minWidth: 0 }}>
-                  <label className="dark-btn" style={{ textAlign: "center" }}>
-                    {appSettings.avatar
-                      ? (t("Cambiar foto de perfil", "Change Profile Photo"))
-                      : (t("Agregar foto de perfil", "Add Profile Photo"))}
-                    <input type="file" accept="image/*" onChange={handleAvatarPhoto} style={{ display: "none" }} />
-                  </label>
-                  {appSettings.avatar && (
-                    <button className="edit-btn" onClick={() => setAppSettings(prev => ({ ...prev, avatar: "" }))}>
-                      {t("Quitar foto", "Remove Photo")}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <label style={{ display: "block" }}>
-                  <span className="field-label">{t("NOMBRE", "FIRST NAME")}</span>
-                  <input
-                    className="input"
-                    value={appSettings.firstName}
-                    onChange={event => setAppSettings(prev => ({ ...prev, firstName: event.target.value }))}
-                    placeholder={t("Nombre", "First name")}
-                  />
-                </label>
-                <label style={{ display: "block" }}>
-                  <span className="field-label">{t("APELLIDO", "LAST NAME")}</span>
-                  <input
-                    className="input"
-                    value={appSettings.lastName}
-                    onChange={event => setAppSettings(prev => ({ ...prev, lastName: event.target.value }))}
-                    placeholder={t("Apellido", "Last name")}
-                  />
-                </label>
-              </div>
-              <select
-                className="input"
-                value={appSettings.language}
-                onChange={event => setAppSettings(prev => ({ ...prev, language: event.target.value }))}
-              >
-                {LANGUAGE_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <select
-                className="input"
-                value={appSettings.themeMode}
-                onChange={event => setAppSettings(prev => ({ ...prev, themeMode: event.target.value }))}
-              >
-                {THEME_MODE_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <p className="setting-sub">{text.lightStarts}</p>
-
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.unitSystem.toUpperCase()}</span>
-                <select
-                  className="input"
-                  value={appSettings.unitSystem || "imperial"}
-                  onChange={event => setAppSettings(prev => ({ ...prev, unitSystem: event.target.value }))}
-                >
-                  <option value="imperial">{text.imperial}</option>
-                  <option value="metric">{text.metric}</option>
-                </select>
-              </label>
-              <p className="setting-sub">{text.unitSystemSub}</p>
-
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.restTimer}</span>
-                <select
-                  className="input"
-                  value={restSecondsSetting}
-                  onChange={event => setAppSettings(prev => ({ ...prev, restSeconds: Number(event.target.value) }))}
-                >
-                  {[30, 45, 60, 75, 90, 105, 120, 150, 180].map(seconds => (
-                    <option key={seconds} value={seconds}>{seconds}s ({formatTimer(seconds)})</option>
-                  ))}
-                </select>
-              </label>
-              <p className="setting-sub">{text.restTimerSub}</p>
-
-              <div className="setting-row">
-                <div>
-                  <p className="setting-title">{t("Notificaciones", "Notifications")}</p>
-                  <p className="setting-sub">
-                    {notificationSettings.enabled
-                      ? (t("Activadas", "Enabled"))
-                      : (t("Permiso no activado", "Permission not enabled"))}
-                  </p>
-                </div>
-                <button className="dark-btn" onClick={requestNotifications}>
-                  {t("Activar", "Enable")}
-                </button>
-              </div>
-              <p className="setting-sub">
-                {t("Los recordatorios solo se disparan mientras la app está abierta. Una notificación en segundo plano necesitaría un servidor de push.", "Reminders only fire while the app is open. Background notifications would need a push server.")}
-              </p>
-
-              <input
-                className="input"
-                type="time"
-                value={notificationSettings.workoutTime}
-                onChange={event => setNotificationSettings(prev => ({ ...prev, workoutTime: event.target.value, lastWorkoutNotice: "" }))}
-              />
-              <input
-                className="input"
-                value={notificationSettings.workoutMessage}
-                onChange={event => setNotificationSettings(prev => ({ ...prev, workoutMessage: event.target.value }))}
-                placeholder={t("Mensaje de notificación de entreno", "Workout notification message")}
-              />
-              <input
-                className="input"
-                type="time"
-                value={notificationSettings.restTime}
-                onChange={event => setNotificationSettings(prev => ({ ...prev, restTime: event.target.value, lastRestNotice: "" }))}
-              />
-              <input
-                className="input"
-                value={notificationSettings.restMessage}
-                onChange={event => setNotificationSettings(prev => ({ ...prev, restMessage: event.target.value }))}
-                placeholder={t("Mensaje de notificación de descanso", "Recovery notification message")}
-              />
-              <select
-                className="input"
-                value={notificationSettings.sound}
-                onChange={event => setNotificationSettings(prev => ({ ...prev, sound: event.target.value }))}
-              >
-                {SOUND_OPTIONS.map(option => (
-                  <option key={option} value={option}>{option} {t("tono", "tone")}</option>
-                ))}
-              </select>
-
-              <button className="dark-btn" onClick={() => playReminderSound(notificationSettings.sound)}>
-                {t("Probar tono", "Test Tone")}
-              </button>
-
-              <div className="setting-row">
-                <div>
-                  <p className="setting-title">{t("Respuesta al tocar", "Tap feedback")}</p>
-                  <p className="setting-sub">
-                    {t("Sonido y vibración al tocar un control.", "Click sound and vibration when you tap a control.")}
-                  </p>
-                </div>
-                <button
-                  className="dark-btn"
-                  onClick={() => setAppSettings(prev => ({ ...prev, tapFeedback: prev.tapFeedback === false }))}
-                >
-                  {appSettings.tapFeedback === false ? (t("No", "Off")) : (t("Sí", "On"))}
-                </button>
-              </div>
-
-              <button className="dark-btn" onClick={() => {
-                setShowSettings(false);
-                setShowReminders(true);
-              }}>
-                {t("Recordatorios personalizados", "Custom Reminders")}
-              </button>
-              <button className="dark-btn" onClick={() => {
-                setShowSettings(false);
-                setShowDataTools(true);
-              }}>
-                {t("Respaldo / Sincronización", "Backup / Cloud Sync")}
-              </button>
-              <button className="dark-btn" onClick={handleLogout}>
-                {text.logout}
-              </button>
-              <button className="dark-btn" onClick={() => setShowSettings(false)}>
-                {text.close}
-              </button>
-            </div>
-          </div>
-        </div>
+        <SettingsModal
+          text={text}
+          t={t}
+          isLightMode={isLightMode}
+          userName={userName}
+          appSettings={appSettings}
+          setAppSettings={setAppSettings}
+          handleAvatarPhoto={handleAvatarPhoto}
+          languageOptions={LANGUAGE_OPTIONS}
+          themeModeOptions={THEME_MODE_OPTIONS}
+          soundOptions={SOUND_OPTIONS}
+          restSecondsSetting={restSecondsSetting}
+          formatTimer={formatTimer}
+          notificationSettings={notificationSettings}
+          setNotificationSettings={setNotificationSettings}
+          requestNotifications={requestNotifications}
+          playReminderSound={playReminderSound}
+          setShowSettings={setShowSettings}
+          setShowReminders={setShowReminders}
+          setShowDataTools={setShowDataTools}
+          handleLogout={handleLogout}
+        />
       )}
 
       {showReminders && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.customReminders}
-            </p>
-
-            <div className="settings-grid">
-              {(notificationSettings.customReminders || []).map(reminder => (
-                <div key={reminder.id} className="setting-row">
-                  <div>
-                    <p className="setting-title">{reminder.label}</p>
-                    <p className="setting-sub">{reminder.time} - {reminder.message} - {reminder.sound}</p>
-                  </div>
-                  <div style={{ display: "grid", gap: 8 }}>
-                    <button className="edit-btn" onClick={() => updateCustomReminder(reminder.id, { enabled: !reminder.enabled })}>
-                      {reminder.enabled ? text.reminderOn : text.reminderOff}
-                    </button>
-                    <button className="edit-btn" onClick={() => removeCustomReminder(reminder.id)}>
-                      {text.removeBtn}
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              <input
-                className="input"
-                value={reminderDraft.label}
-                onChange={event => setReminderDraft(prev => ({ ...prev, label: event.target.value }))}
-                placeholder={text.reminderTitlePlaceholder}
-              />
-              <input
-                className="input"
-                type="time"
-                value={reminderDraft.time}
-                onChange={event => setReminderDraft(prev => ({ ...prev, time: event.target.value }))}
-              />
-              <input
-                className="input"
-                value={reminderDraft.message}
-                onChange={event => setReminderDraft(prev => ({ ...prev, message: event.target.value }))}
-                placeholder={text.reminderMessagePlaceholder}
-              />
-              <select
-                className="input"
-                value={reminderDraft.sound}
-                onChange={event => setReminderDraft(prev => ({ ...prev, sound: event.target.value }))}
-              >
-                {SOUND_OPTIONS.map(option => (
-                  <option key={option} value={option}>{option} {t("tono", "tone")}</option>
-                ))}
-              </select>
-              <button className="primary-btn" onClick={addCustomReminder}>
-                {text.addReminderBtn}
-              </button>
-              <button className="dark-btn" onClick={() => setShowReminders(false)}>
-                {text.close}
-              </button>
-            </div>
-          </div>
-        </div>
+        <RemindersModal
+          text={text}
+          t={t}
+          notificationSettings={notificationSettings}
+          reminderDraft={reminderDraft}
+          setReminderDraft={setReminderDraft}
+          updateCustomReminder={updateCustomReminder}
+          removeCustomReminder={removeCustomReminder}
+          addCustomReminder={addCustomReminder}
+          setShowReminders={setShowReminders}
+          soundOptions={SOUND_OPTIONS}
+        />
       )}
 
       {showAlbumModal && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.newAlbumTitle}
-            </p>
-            <div className="settings-grid">
-              <input
-                className="input"
-                value={albumDraft}
-                onChange={event => setAlbumDraft(event.target.value)}
-                onKeyDown={event => { if (event.key === "Enter") addPhotoAlbum(); }}
-                placeholder={text.newAlbumPlaceholder}
-                autoFocus
-              />
-              <button className="primary-btn" onClick={addPhotoAlbum}>{text.createBtn}</button>
-              <button className="dark-btn" onClick={() => { setShowAlbumModal(false); setAlbumDraft(""); }}>
-                {text.cancel}
-              </button>
-            </div>
-          </div>
-        </div>
+        <AlbumModal
+          text={text}
+          albumDraft={albumDraft}
+          setAlbumDraft={setAlbumDraft}
+          addPhotoAlbum={addPhotoAlbum}
+          setShowAlbumModal={setShowAlbumModal}
+        />
       )}
 
       {showPhotoModal && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.addPhotoLabel}
-            </p>
-            <div className="settings-grid">
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.dateField}</span>
-                <input className="input" type="date" value={photoDraft.date} onChange={event => setPhotoDraft(prev => ({ ...prev, date: event.target.value }))} />
-              </label>
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.weightWord} ({weightUnit(unitSystem)})</span>
-                <input
-                  className="input"
-                  type="number"
-                  inputMode="decimal"
-                  value={photoDraft.weight}
-                  onChange={event => setPhotoDraft(prev => ({ ...prev, weight: event.target.value }))}
-                  placeholder={unitSystem === "metric"
-                    ? String(Math.round(lbToKg(Number(profile.currentWeight) || 0) * 10) / 10)
-                    : String(Math.round(Number(profile.currentWeight) || 0))}
-                />
-              </label>
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.noteField}</span>
-                <input className="input" value={photoDraft.note} onChange={event => setPhotoDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={t("¿Qué muestra esta foto?", "What does this photo show?")} />
-              </label>
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.albumField}</span>
-                <select className="input" value={photoDraft.album} onChange={event => setPhotoDraft(prev => ({ ...prev, album: event.target.value }))}>
-                  <option value="">{text.noAlbum}</option>
-                  {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
-                </select>
-              </label>
-              <label className="dark-btn" style={{ textAlign: "center" }}>
-                {photoDraft.dataUrl ? (t("Cambiar foto", "Change photo")) : text.choosePhoto}
-                <input type="file" accept="image/*" onChange={handleProgressPhoto} style={{ display: "none" }} />
-              </label>
-              {photoDraft.dataUrl && <img src={photoDraft.dataUrl} alt="Progress preview" style={{ width: "100%", maxHeight: 260, objectFit: "cover", borderRadius: 12, border: "1px solid #24242E", display: "block" }} />}
-              <button
-                className="primary-btn"
-                onClick={saveProgressPhoto}
-                disabled={!photoDraft.dataUrl}
-                style={{ opacity: photoDraft.dataUrl ? 1 : 0.45 }}
-              >
-                {text.savePhoto}
-              </button>
-              <button
-                className="dark-btn"
-                onClick={() => {
-                  setShowPhotoModal(false);
-                  setPhotoDraft({ date: getDateKey(), note: "", dataUrl: "", album: "", weight: "" });
-                }}
-              >
-                {text.cancel}
-              </button>
-            </div>
-          </div>
-        </div>
+        <PhotoModal
+          text={text}
+          t={t}
+          unitSystem={unitSystem}
+          profile={profile}
+          photoDraft={photoDraft}
+          setPhotoDraft={setPhotoDraft}
+          photoAlbums={photoAlbums}
+          handleProgressPhoto={handleProgressPhoto}
+          saveProgressPhoto={saveProgressPhoto}
+          setShowPhotoModal={setShowPhotoModal}
+          getDateKey={getDateKey}
+        />
       )}
 
       {editingExercise && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.editWeight}
-            </p>
-
-            <h3 style={{ fontFamily: "'DM Sans', sans-serif", marginBottom: 14 }}>
-              {editingExercise.name}
-            </h3>
-
-            <select
-              className="input"
-              value={editingExercise.weight}
-              onChange={event => setEditingExercise(prev => ({ ...prev, weight: event.target.value }))}
-            >
-              {Array.from(new Set([editingExercise.weight, ...WEIGHT_OPTIONS])).map(weight => (
-                <option key={weight} value={weight}>{fmtExW(weight)}</option>
-              ))}
-            </select>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingExercise(null)}>
-                {text.cancel}
-              </button>
-              <button
-                className="primary-btn"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  updateExerciseWeight(editingExercise);
-                  setEditingExercise(null);
-                }}
-              >
-                {text.save}
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditExerciseModal
+          text={text}
+          themeAccent={theme.accent}
+          fmtExW={fmtExW}
+          editingExercise={editingExercise}
+          setEditingExercise={setEditingExercise}
+          updateExerciseWeight={updateExerciseWeight}
+          weightOptions={WEIGHT_OPTIONS}
+        />
       )}
 
       {editingCardio && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              EDIT CARDIO
-            </p>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <input
-                className="input"
-                value={editingCardio.name}
-                onChange={event => setEditingCardio(prev => ({ ...prev, name: event.target.value }))}
-                placeholder="Cardio name"
-              />
-
-              <select
-                className="input"
-                value={editingCardio.duration}
-                onChange={event => setEditingCardio(prev => ({ ...prev, duration: event.target.value }))}
-              >
-                {Array.from(new Set([editingCardio.duration, ...CARDIO_OPTIONS])).map(option => (
-                  <option key={option || "empty"} value={option}>{option || "No duration"}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingCardio(null)}>
-                {text.cancel}
-              </button>
-              <button
-                className="primary-btn"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  updateCardio({
-                    dayName: editingCardio.dayName,
-                    sessionIndex: editingCardio.sessionIndex,
-                    warmup: {
-                      name: editingCardio.name,
-                      duration: editingCardio.duration,
-                    },
-                  });
-                  setEditingCardio(null);
-                }}
-              >
-                {text.save}
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditCardioModal
+          text={text}
+          themeAccent={theme.accent}
+          editingCardio={editingCardio}
+          setEditingCardio={setEditingCardio}
+          updateCardio={updateCardio}
+          cardioOptions={CARDIO_OPTIONS}
+        />
       )}
 
       {editingNote && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {t("NOTAS DEL EJERCICIO", "EXERCISE NOTES")}
-            </p>
-
-            <h3 style={{ fontFamily: "'DM Sans', sans-serif", marginBottom: 14 }}>
-              {editingNote.name}
-            </h3>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <select
-                className="input"
-                value={editingNote.pain}
-                onChange={event => setEditingNote(prev => ({ ...prev, pain: event.target.value }))}
-              >
-                {PAIN_OPTIONS.map(option => (
-                  <option key={option || "empty"} value={option}>{option || (t("Dolor / malestar", "Pain / discomfort"))}</option>
-                ))}
-              </select>
-
-              <select
-                className="input"
-                value={editingNote.difficulty}
-                onChange={event => setEditingNote(prev => ({ ...prev, difficulty: event.target.value }))}
-              >
-                {RPE_OPTIONS.map(option => (
-                  <option key={option || "empty"} value={option}>{option ? `RPE ${option}` : (t("Dificultad 1-10", "Difficulty 1-10"))}</option>
-                ))}
-              </select>
-
-              <input
-                className="input"
-                value={editingNote.technique}
-                onChange={event => setEditingNote(prev => ({ ...prev, technique: event.target.value }))}
-                placeholder={t("Notas de técnica", "Technique notes")}
-              />
-
-              <label style={{ display: "flex", alignItems: "center", gap: 10, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>
-                <input
-                  type="checkbox"
-                  checked={editingNote.pr}
-                  onChange={event => setEditingNote(prev => ({ ...prev, pr: event.target.checked }))}
-                />
-                {t("Marcar como Récord", "Mark as PR")}
-              </label>
-            </div>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingNote(null)}>
-                {text.cancel}
-              </button>
-              <button
-                className="primary-btn"
-                style={{ flex: 1 }}
-                onClick={() => saveExerciseNote(editingNote)}
-              >
-                {text.save}
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditNoteModal
+          text={text}
+          t={t}
+          themeAccent={theme.accent}
+          editingNote={editingNote}
+          setEditingNote={setEditingNote}
+          saveExerciseNote={saveExerciseNote}
+          painOptions={PAIN_OPTIONS}
+          rpeOptions={RPE_OPTIONS}
+        />
       )}
 
       {showDataTools && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {t("RESPALDO / RESTAURAR", "BACKUP / RESTORE")}
-            </p>
-
-            <p style={{ color: "#777", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5, marginBottom: 14 }}>
-              {t("Exporta tus pesos, metas, checks, notas e historial de progreso a un archivo JSON. Importar restaura datos de un respaldo anterior.", "Export your weights, goals, checks, notes, and progress history to a JSON file. Import restores data from a previous backup.")}
-            </p>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <button className="primary-btn" onClick={exportData}>
-                {t("Exportar Progreso", "Export Progress")}
-              </button>
-
-              <label className="dark-btn" style={{ textAlign: "center" }}>
-                {t("Importar Respaldo", "Import Backup")}
-                <input
-                  type="file"
-                  accept="application/json"
-                  onChange={importDataFile}
-                  style={{ display: "none" }}
-                />
-              </label>
-
-              <p style={{ color: "#FFD060", fontFamily: "'DM Sans', sans-serif", fontSize: 12, lineHeight: 1.5 }}>
-                {t("El sync en la nube envía tus datos al endpoint que ingreses, sin autenticación integrada. Usa solo un endpoint que controles. Descargar reemplaza tus datos actuales.", "Cloud sync sends your data to the endpoint you enter, with no built-in authentication. Only use an endpoint you control and trust. Download replaces your current data.")}
-              </p>
-
-              <input
-                className="input"
-                value={cloudSettings.endpoint}
-                onChange={event => setCloudSettings(prev => ({ ...prev, endpoint: event.target.value }))}
-                placeholder={t("URL del endpoint de sync", "Cloud sync endpoint URL")}
-              />
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-                <button className="dark-btn" onClick={uploadCloudSync}>
-                  {t("Subir a la nube", "Cloud Upload")}
-                </button>
-                <button className="dark-btn" onClick={downloadCloudSync}>
-                  {t("Bajar de la nube", "Cloud Download")}
-                </button>
-              </div>
-
-              <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 12 }}>
-                {t("Estado:", "Cloud status:")} {cloudSettings.status}
-              </p>
-
-              <button className="dark-btn" onClick={() => setShowDataTools(false)}>
-                {text.close}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DataToolsModal
+          text={text}
+          t={t}
+          isLightMode={isLightMode}
+          cloudSettings={cloudSettings}
+          setCloudSettings={setCloudSettings}
+          exportData={exportData}
+          importDataFile={importDataFile}
+          uploadCloudSync={uploadCloudSync}
+          downloadCloudSync={downloadCloudSync}
+          setShowDataTools={setShowDataTools}
+        />
       )}
 
-      {editingRoutine && (() => {
-        const routineDay = workoutData[editingRoutine.dayName];
-        const safeSessionIndex = Math.min(editingRoutine.sessionIndex, routineDay.sessions.length - 1);
-        const routineSession = routineDay.sessions[safeSessionIndex];
+      {editingRoutine && (
+        <EditRoutineModal
+          text={text}
+          t={t}
+          language={language}
+          isLightMode={isLightMode}
+          fmtExW={fmtExW}
+          days={days}
+          workoutData={workoutData}
+          getDisplayDay={getDisplayDay}
+          editingRoutine={editingRoutine}
+          setEditingRoutine={setEditingRoutine}
+          updateRoutineSessionMeta={updateRoutineSessionMeta}
+          addRoutineSession={addRoutineSession}
+          duplicateRoutineSession={duplicateRoutineSession}
+          removeRoutineSession={removeRoutineSession}
+          removeRoutineExercise={removeRoutineExercise}
+          updateRoutineExercise={updateRoutineExercise}
+          addRoutineExercise={addRoutineExercise}
+          exerciseFilterMuscle={exerciseFilterMuscle}
+          setExerciseFilterMuscle={setExerciseFilterMuscle}
+          exerciseMuscleGroups={EXERCISE_MUSCLE_GROUPS}
+          commonExercises={COMMON_EXERCISES}
+          setOptions={SET_OPTIONS}
+          repOptions={REP_OPTIONS}
+          weightOptions={WEIGHT_OPTIONS}
+        />
+      )}
 
-        return (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div>
-                <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                  {text.manageWorkouts.toUpperCase()}
-                </p>
-                <p style={{ fontSize: 12, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
-                  {text.manageWorkoutsSub}
-                </p>
-              </div>
-              <button className="edit-btn" onClick={() => setEditingRoutine(null)} style={{ padding: "8px 12px" }}>
-                {text.doneBtn}
-              </button>
-            </div>
-
-            <p className="menu-section-label">{text.daySection}</p>
-            <select
-              className="input"
-              style={{ marginTop: 6, marginBottom: 16 }}
-              value={editingRoutine.dayName}
-              onChange={event => setEditingRoutine(prev => ({ ...prev, dayName: event.target.value, sessionIndex: 0 }))}
-            >
-              {days.map(dayName => (
-                <option key={dayName} value={dayName}>{getDisplayDay(dayName, language)} — {workoutData[dayName].type}</option>
-              ))}
-            </select>
-
-            <p className="menu-section-label">{text.sessionSection}</p>
-            <div style={{ display: "grid", gap: 8, marginTop: 6, marginBottom: 16 }}>
-              <select
-                className="input"
-                value={safeSessionIndex}
-                onChange={event => setEditingRoutine(prev => ({ ...prev, sessionIndex: Number(event.target.value) }))}
-              >
-                {routineDay.sessions.map((currentSession, index) => (
-                  <option key={`${currentSession.name}-${index}`} value={index}>{index + 1}. {currentSession.time} — {currentSession.name}</option>
-                ))}
-              </select>
-              <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 8 }}>
-                <label style={{ display: "block" }}>
-                  <span className="field-label">{text.sessionNameField}</span>
-                  <input
-                    className="input"
-                    value={routineSession?.name || ""}
-                    onChange={event => updateRoutineSessionMeta({ name: event.target.value })}
-                    placeholder={text.sessionNamePlaceholder}
-                  />
-                </label>
-                <label style={{ display: "block" }}>
-                  <span className="field-label">{text.timeField}</span>
-                  <select
-                    className="input"
-                    value={routineSession?.time || "AM"}
-                    onChange={event => updateRoutineSessionMeta({ time: event.target.value })}
-                  >
-                    {Array.from(new Set([routineSession?.time || "AM", "AM", "PM", "FULL"])).map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                <button className="dark-btn" onClick={addRoutineSession}>{text.addSessionBtn}</button>
-                <button className="dark-btn" onClick={duplicateRoutineSession}>{text.duplicateBtn}</button>
-                <button
-                  className="dark-btn"
-                  onClick={removeRoutineSession}
-                  disabled={routineDay.sessions.length <= 1}
-                  style={routineDay.sessions.length <= 1 ? { opacity: 0.4 } : { color: "#E5604D" }}
-                >
-                  {text.deleteBtn}
-                </button>
-              </div>
-            </div>
-
-            <p className="menu-section-label">{text.mExercises}</p>
-            <div style={{ display: "grid", gap: 10, marginTop: 6 }}>
-              {(routineSession?.exercises || []).length === 0 && (
-                <p style={{ color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 13, padding: "10px 2px" }}>
-                  {text.noExercisesYet}
-                </p>
-              )}
-              {(routineSession?.exercises || []).map((exercise, exerciseIndex) => (
-                <div key={`${exercise.name}-${exerciseIndex}`} style={{ border: "1px solid #24242E", borderRadius: 14, overflow: "hidden" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "rgba(144,200,255,0.05)", borderBottom: "1px solid #24242E" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 6, background: "#90C8FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: "#0A0A10", fontFamily: "'Orbitron', monospace", flexShrink: 0 }}>
-                        {exerciseIndex + 1}
-                      </div>
-                      <span style={{ fontSize: 9, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontWeight: 700 }}>
-                        {text.exerciseLabel}
-                      </span>
-                    </div>
-                    <button className="edit-btn" onClick={() => removeRoutineExercise(exerciseIndex)} style={{ color: "#E5604D", fontSize: 11 }}>
-                      {text.removeBtn}
-                    </button>
-                  </div>
-                  <div style={{ padding: "10px 14px 14px" }}>
-                    <input className="input" value={exercise.name} onChange={event => updateRoutineExercise(exerciseIndex, { name: event.target.value })} placeholder={text.exerciseNamePlaceholder} style={{ marginBottom: 10, fontWeight: 600 }} />
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                      <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.mSets}</p>
-                        <select className="input" value={exercise.sets} onChange={event => updateRoutineExercise(exerciseIndex, { sets: event.target.value })}>
-                          {SET_OPTIONS.map(option => <option key={option} value={option}>{option}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.repsLabel}</p>
-                        <select className="input" value={exercise.reps} onChange={event => updateRoutineExercise(exerciseIndex, { reps: event.target.value })}>
-                          {Array.from(new Set([String(exercise.reps), ...REP_OPTIONS])).map(option => <option key={option} value={option}>{option}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 9, letterSpacing: 2, color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>{text.weightWord}</p>
-                        <select className="input" value={exercise.weight} onChange={event => updateRoutineExercise(exerciseIndex, { weight: event.target.value })}>
-                          {Array.from(new Set([exercise.weight, ...WEIGHT_OPTIONS])).map(option => <option key={option} value={option}>{fmtExW(option)}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <p className="menu-section-label" style={{ marginTop: 16 }}>{text.addExerciseSection}</p>
-            <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 8 }}>
-                <select
-                  className="input"
-                  value={exerciseFilterMuscle}
-                  onChange={event => setExerciseFilterMuscle(event.target.value)}
-                >
-                  {EXERCISE_MUSCLE_GROUPS.map(group => (
-                    <option key={group} value={group}>{group}</option>
-                  ))}
-                </select>
-                <select
-                  className="input"
-                  value={editingRoutine.draft.name}
-                  onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))}
-                >
-                  <option value="">{t("Seleccionar ejercicio", "Select exercise")}</option>
-                  {(exerciseFilterMuscle === "All"
-                    ? Object.values(COMMON_EXERCISES).flat()
-                    : (COMMON_EXERCISES[exerciseFilterMuscle] || [])
-                  ).map(ex => (
-                    <option key={ex} value={ex}>{ex}</option>
-                  ))}
-                </select>
-              </div>
-              <input
-                className="input"
-                value={editingRoutine.draft.name}
-                onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, name: event.target.value } }))}
-                placeholder={t("O escribe el nombre del ejercicio", "Or type a custom exercise name")}
-              />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                <select className="input" value={editingRoutine.draft.sets} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, sets: event.target.value } }))}>
-                  {SET_OPTIONS.map(option => <option key={option} value={option}>{option} {text.setsWord}</option>)}
-                </select>
-                <select className="input" value={editingRoutine.draft.reps} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, reps: event.target.value } }))}>
-                  {REP_OPTIONS.map(option => <option key={option} value={option}>{option} {text.repsWord}</option>)}
-                </select>
-                <select className="input" value={editingRoutine.draft.weight} onChange={event => setEditingRoutine(prev => ({ ...prev, draft: { ...prev.draft, weight: event.target.value } }))}>
-                  {WEIGHT_OPTIONS.map(option => <option key={option} value={option}>{fmtExW(option)}</option>)}
-                </select>
-              </div>
-              <button className="primary-btn" onClick={addRoutineExercise}>
-                {t("Agregar Ejercicio", "Add Exercise")}
-              </button>
-              <button className="dark-btn" onClick={() => setEditingRoutine(null)}>
-                {text.doneBtn}
-              </button>
-            </div>
-          </div>
-        </div>
-        );
-      })()}
-
-      {editingProfile && (() => {
-        const editBmi = calculateBMI(editingProfile.currentWeight, editingProfile.height);
-        const editBf = calculateBodyFatPct(editBmi, editingProfile.age, editingProfile.sex || "male");
-        const editIbw = calculateIBW(editingProfile.height, editingProfile.sex || "male");
-        const editLean = getLeanMass(editingProfile.currentWeight, editBf);
-        return (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.editBodyStatus}
-            </p>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <label style={{ display: "block" }}>
-                  <span className="field-label">{text.sexLabel}</span>
-                  <select
-                    className="input"
-                    value={editingProfile.sex || "male"}
-                    onChange={event => setEditingProfile(prev => ({ ...prev, sex: event.target.value }))}
-                  >
-                    {GENDER_OPTIONS.map(option => (
-                      <option key={option.value} value={option.value}>{language === "es" ? (option.value === "male" ? "Hombre" : "Mujer") : option.label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label style={{ display: "block" }}>
-                  <span className="field-label">{text.ageLabel}</span>
-                  <select
-                    className="input"
-                    value={editingProfile.age || "30"}
-                    onChange={event => setEditingProfile(prev => ({ ...prev, age: event.target.value }))}
-                  >
-                    {Array.from(new Set([editingProfile.age || "30", ...AGE_OPTIONS])).map(option => (
-                      <option key={option} value={option}>{option} {t("años", "yrs")}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.activityLevel.toUpperCase()}</span>
-                <select
-                  className="input"
-                  value={ACTIVITY_LEVELS.includes(editingProfile.activityLevel) ? editingProfile.activityLevel : "auto"}
-                  onChange={event => setEditingProfile(prev => ({ ...prev, activityLevel: event.target.value }))}
-                >
-                  <option value="auto">{t("Automático (según tu rutina)", "Automatic (from your routine)")}</option>
-                  {ACTIVITY_LEVELS.map(level => (
-                    <option key={level} value={level}>
-                      {text[`activity${level.charAt(0).toUpperCase()}${level.slice(1)}`]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <select
-                className="input"
-                value={editingProfile.currentWeight}
-                onChange={event => setEditingProfile(prev => ({ ...prev, currentWeight: event.target.value }))}
-              >
-                {Array.from(new Set([editingProfile.currentWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{fmtW(option)} {t("actual", "current")}</option>
-                ))}
-              </select>
-
-              <select
-                className="input"
-                value={editingProfile.startWeight}
-                onChange={event => setEditingProfile(prev => ({ ...prev, startWeight: event.target.value }))}
-              >
-                {Array.from(new Set([editingProfile.startWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{fmtW(option)} {t("inicio", "start")}</option>
-                ))}
-              </select>
-
-              <select
-                className="input"
-                value={editingProfile.targetWeight}
-                onChange={event => setEditingProfile(prev => ({ ...prev, targetWeight: event.target.value }))}
-              >
-                {Array.from(new Set([editingProfile.targetWeight, ...BODY_WEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{fmtW(option)} {t("meta", "target")}</option>
-                ))}
-              </select>
-
-              <select
-                className="input"
-                value={editingProfile.height}
-                onChange={event => setEditingProfile(prev => ({ ...prev, height: event.target.value }))}
-              >
-                {Array.from(new Set([editingProfile.height, ...HEIGHT_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{fmtH(option)}</option>
-                ))}
-              </select>
-
-              <input
-                className="input"
-                type="date"
-                value={editingProfile.startDate}
-                onChange={event => setEditingProfile(prev => ({ ...prev, startDate: event.target.value }))}
-                placeholder={t("Fecha de inicio", "Start date")}
-              />
-
-              {editBmi > 0 && (
-                <div style={{ border: "1px solid #24242E", borderRadius: 12, padding: 12, background: "#101015" }}>
-                  <p style={{ fontSize: 9, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                    {text.bodyComposition.toUpperCase()}
-                  </p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
-                    {[
-                      { label: text.bmiLabel, val: String(editBmi) },
-                      { label: text.bodyFatLabel, val: `${editBf}%` },
-                      { label: text.leanMassLabel, val: fmtW(editLean) },
-                      { label: text.ibwLabel, val: fmtW(editIbw) },
-                    ].map(item => (
-                      <div key={item.label} style={{ textAlign: "center" }}>
-                        <p style={{ fontSize: 16, fontWeight: 900, color: "#FFFFFF", fontFamily: "'Orbitron', monospace" }}>{item.val}</p>
-                        <p style={{ fontSize: 9, letterSpacing: 1, color: isLightMode ? "#7A8090" : "#666", fontFamily: "'Orbitron', monospace", marginTop: 3 }}>{item.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingProfile(null)}>
-                {text.cancel}
-              </button>
-              <button
-                className="primary-btn"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  setProfile(editingProfile);
-                  setEditingProfile(null);
-                }}
-              >
-                {text.save}
-              </button>
-            </div>
-          </div>
-        </div>
-        );
-      })()}
+      {editingProfile && (
+        <EditProfileModal
+          text={text}
+          t={t}
+          language={language}
+          isLightMode={isLightMode}
+          fmtW={fmtW}
+          fmtH={fmtH}
+          editingProfile={editingProfile}
+          setEditingProfile={setEditingProfile}
+          setProfile={setProfile}
+          calculateBMI={calculateBMI}
+          calculateBodyFatPct={calculateBodyFatPct}
+          calculateIBW={calculateIBW}
+          getLeanMass={getLeanMass}
+          genderOptions={GENDER_OPTIONS}
+          ageOptions={AGE_OPTIONS}
+          bodyWeightOptions={BODY_WEIGHT_OPTIONS}
+          heightOptions={HEIGHT_OPTIONS}
+        />
+      )}
 
       {editingGoals && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.setMyGoals}
-            </p>
-
-            <div style={{ display: "grid", gap: 10 }}>
-              <input
-                className="input"
-                value={editingGoals.focusGoal}
-                onChange={event => setEditingGoals(prev => ({ ...prev, focusGoal: event.target.value }))}
-                placeholder={t("Meta principal", "Main goal")}
-              />
-
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.bodyTypeLabel.toUpperCase()}</span>
-                <select
-                  className="input"
-                  value={editingGoals.bodyTypeGoal || "athletic"}
-                  onChange={event => setEditingGoals(prev => ({ ...prev, bodyTypeGoal: event.target.value }))}
-                >
-                  {BODY_TYPE_GOAL_OPTIONS.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {language === "es"
-                        ? ({ lean: "Definir / Cortar", athletic: "Recomposición Atlética", muscular: "Ganar Músculo / Volumen", maintain: "Mantener & Tonificar" }[option.value] || option.label)
-                        : option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <select
-                className="input"
-                value={editingGoals.weeklyProgressGoal}
-                onChange={event => setEditingGoals(prev => ({ ...prev, weeklyProgressGoal: event.target.value }))}
-              >
-                {Array.from(new Set([editingGoals.weeklyProgressGoal, ...PROGRESS_GOAL_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option}% {t("meta semanal", "weekly goal")}</option>
-                ))}
-              </select>
-
-              <select
-                className="input"
-                value={editingGoals.weeklySessionsGoal}
-                onChange={event => setEditingGoals(prev => ({ ...prev, weeklySessionsGoal: event.target.value }))}
-              >
-                {Array.from(new Set([editingGoals.weeklySessionsGoal, ...SESSION_GOAL_OPTIONS])).map(option => (
-                  <option key={option} value={option}>{option} {text.sessionsWord}</option>
-                ))}
-              </select>
-
-              <input
-                className="input"
-                type="date"
-                value={editingGoals.targetDate}
-                onChange={event => setEditingGoals(prev => ({ ...prev, targetDate: event.target.value }))}
-                placeholder={t("Fecha meta", "Target date")}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingGoals(null)}>
-                {text.cancel}
-              </button>
-              <button
-                className="primary-btn"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  setGoals(editingGoals);
-                  setEditingGoals(null);
-                }}
-              >
-                {text.save}
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditGoalsModal
+          text={text}
+          t={t}
+          language={language}
+          editingGoals={editingGoals}
+          setEditingGoals={setEditingGoals}
+          setGoals={setGoals}
+          bodyTypeGoalOptions={BODY_TYPE_GOAL_OPTIONS}
+          progressGoalOptions={PROGRESS_GOAL_OPTIONS}
+          sessionGoalOptions={SESSION_GOAL_OPTIONS}
+        />
       )}
 
-      {addFoodTarget && (() => {
-        const query = foodSearch.trim().toLowerCase();
-        const displayName = food => food.name || (language === "es" ? food.es : food.en);
-        const mealLabels = { breakfast: text.breakfast, lunch: text.lunch, dinner: text.dinner, snack: text.snack };
-        const allFoods = [...customFoods, ...FOOD_DB];
-        const filtered = allFoods.filter(food => {
-          if (!query) return true;
-          return `${food.name || ""} ${food.en || ""} ${food.es || ""}`.toLowerCase().includes(query);
-        }).slice(0, 40);
-        return (
-          <div className="modal-backdrop">
-            <div className="modal">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <p style={{ fontSize: 12, letterSpacing: 2, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                  {text.addFood.toUpperCase()} · {mealLabels[addFoodTarget].toUpperCase()}
-                </p>
-                <button className="edit-btn" onClick={() => setAddFoodTarget(null)} style={{ padding: "8px 12px" }}>{text.doneBtn}</button>
-              </div>
-
-              <input className="input" value={foodSearch} onChange={event => setFoodSearch(event.target.value)} placeholder={text.searchFood} style={{ marginBottom: 10 }} />
-
-              {recentFoods.length > 0 && !query && (
-                <div style={{ marginBottom: 12 }}>
-                  <p className="menu-section-label">{text.recentFoods.toUpperCase()}</p>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                    {recentFoods.slice(0, 8).map(food => (
-                      <button key={food.id} className="album-chip" onClick={() => addFoodEntry(addFoodTarget, { ...food, qty: 1 })}>
-                        + {food.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: "grid", gap: 6, maxHeight: "34vh", overflow: "auto", marginBottom: 14 }}>
-                {filtered.map((food, index) => {
-                  const name = displayName(food);
-                  return (
-                    <button
-                      key={food.id || `${name}-${index}`}
-                      className="dark-btn"
-                      onClick={() => addFoodEntry(addFoodTarget, { id: food.id, name, kcal: food.kcal, protein: food.protein, carbs: food.carbs, fat: food.fat, qty: 1 })}
-                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", textAlign: "left", gap: 10 }}
-                    >
-                      <span style={{ minWidth: 0 }}>
-                        <span style={{ display: "block", fontWeight: 800, fontSize: 13 }}>{name}</span>
-                        <span style={{ display: "block", fontSize: 11, color: "#8A8F99", marginTop: 2 }}>{food.serving || "1 serving"} · P{food.protein} C{food.carbs} F{food.fat}</span>
-                      </span>
-                      <span style={{ color: "#3FB98A", fontFamily: "'Orbitron', monospace", fontSize: 13, fontWeight: 900, flexShrink: 0 }}>{food.kcal}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <p className="menu-section-label">{text.customFood.toUpperCase()}</p>
-              <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-                <input className="input" value={customFoodDraft.name} onChange={event => setCustomFoodDraft(prev => ({ ...prev, name: event.target.value }))} placeholder={text.foodName} />
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-                  {[["kcal", "kcal"], ["protein", "P"], ["carbs", "C"], ["fat", "F"]].map(([field, label]) => (
-                    <input
-                      key={field}
-                      className="input"
-                      type="number"
-                      inputMode="numeric"
-                      value={customFoodDraft[field]}
-                      onChange={event => setCustomFoodDraft(prev => ({ ...prev, [field]: event.target.value }))}
-                      placeholder={label}
-                    />
-                  ))}
-                </div>
-                <button className="primary-btn" onClick={addCustomFood}>{text.saveFood}</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {addFoodTarget && (
+        <AddFoodModal
+          text={text}
+          language={language}
+          addFoodTarget={addFoodTarget}
+          setAddFoodTarget={setAddFoodTarget}
+          foodSearch={foodSearch}
+          setFoodSearch={setFoodSearch}
+          customFoods={customFoods}
+          recentFoods={recentFoods}
+          customFoodDraft={customFoodDraft}
+          setCustomFoodDraft={setCustomFoodDraft}
+          addFoodEntry={addFoodEntry}
+          addCustomFood={addCustomFood}
+        />
+      )}
 
       {editingMeasurements && (
-        <div className="modal-backdrop">
-          <div className="modal">
-            <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-              {text.addMeasurement.toUpperCase()}
-            </p>
-            <div style={{ display: "grid", gap: 10 }}>
-              <label style={{ display: "block" }}>
-                <span className="field-label">{text.dateField}</span>
-                <input className="input" type="date" value={editingMeasurements.date} onChange={event => setEditingMeasurements(prev => ({ ...prev, date: event.target.value }))} />
-              </label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {MEASUREMENT_FIELDS.map(field => (
-                  <label key={field} style={{ display: "block" }}>
-                    <span className="field-label">{text[field].toUpperCase()} ({measureUnit(unitSystem)})</span>
-                    <input
-                      className="input"
-                      type="number"
-                      inputMode="decimal"
-                      value={editingMeasurements[field] || ""}
-                      onChange={event => setEditingMeasurements(prev => ({ ...prev, [field]: event.target.value }))}
-                      placeholder="0"
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setEditingMeasurements(null)}>{text.cancel}</button>
-              <button className="primary-btn" style={{ flex: 1 }} onClick={() => saveMeasurements(editingMeasurements)}>{text.save}</button>
-            </div>
-          </div>
-        </div>
+        <EditMeasurementsModal
+          text={text}
+          unitSystem={unitSystem}
+          editingMeasurements={editingMeasurements}
+          setEditingMeasurements={setEditingMeasurements}
+          saveMeasurements={saveMeasurements}
+        />
       )}
 
-      {oneRMExerciseName && (() => {
-        const perf = exercisePerformance[oneRMExerciseName];
-        const history = Array.isArray(perf?.history) ? perf.history : [];
-        // Chart wants oldest -> newest; history is stored newest-first.
-        const chartPoints = [...history].reverse().slice(-30).map(entry => ({ value: Number(entry.est1RM) || 0 }));
-        return (
-          <div className="modal-backdrop" onClick={() => setOneRMExerciseName(null)}>
-            <div className="modal" onClick={event => event.stopPropagation()}>
-              <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFFFFF", fontFamily: "'Orbitron', monospace", marginBottom: 4 }}>
-                {t("HISTORIAL 1RM", "1RM HISTORY")}
-              </p>
-              <p style={{ fontSize: 16, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", fontWeight: 900, marginBottom: 12 }}>
-                {oneRMExerciseName}
-              </p>
+      {oneRMExerciseName && (
+        <OneRMModal
+          text={text}
+          t={t}
+          fmtW={fmtW}
+          oneRMExerciseName={oneRMExerciseName}
+          setOneRMExerciseName={setOneRMExerciseName}
+          exercisePerformance={exercisePerformance}
+        />
+      )}
 
-              <div className="detail-grid" style={{ marginBottom: 12 }}>
-                <div className="detail-card"><p className="detail-label">{text.personalBest}</p><p className="detail-value" style={{ color: "#FFD060" }}>{fmtW(perf?.best1RM || 0)}</p></div>
-                <div className="detail-card"><p className="detail-label">{t("MEJOR PESO", "BEST WEIGHT")}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{fmtW(perf?.bestWeight || 0)}</p></div>
-                <div className="detail-card"><p className="detail-label">{t("MEJOR REPS", "BEST REPS")}</p><p className="detail-value" style={{ color: "#B8A0FF" }}>{perf?.bestReps || 0}</p></div>
-                <div className="detail-card"><p className="detail-label">{t("SESIONES", "SESSIONS")}</p><p className="detail-value" style={{ color: "#3FB98A" }}>{history.length}</p></div>
-              </div>
-
-              <TrendChart
-                points={chartPoints}
-                color="#FFD060"
-                formatValue={value => fmtW(value)}
-                emptyLabel={t("Aún no hay suficientes registros para graficar.", "Not enough records to chart yet.")}
-              />
-
-              {history.length > 0 && (
-                <div className="detail-list" style={{ marginTop: 14, maxHeight: 220, overflowY: "auto" }}>
-                  {history.slice(0, 10).map((entry, idx) => (
-                    <div key={`${entry.date}-${idx}`} className="detail-row">
-                      <div>
-                        <p className="detail-row-main">{entry.date}</p>
-                        <p className="detail-row-sub">{fmtW(entry.weight)} × {entry.reps}</p>
-                      </div>
-                      <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900 }}>
-                        1RM {fmtW(entry.est1RM)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button className="primary-btn" style={{ marginTop: 14, width: "100%" }} onClick={() => setOneRMExerciseName(null)}>
-                {text.close || t("Cerrar", "Close")}
-              </button>
-            </div>
-          </div>
-        );
-      })()}
-
-      {viewingPhoto && (() => {
-        const viewIndex = progressPhotos.findIndex(photo => photo.id === viewingPhoto.id);
-        const olderPhoto = viewIndex >= 0 && viewIndex < progressPhotos.length - 1 ? progressPhotos[viewIndex + 1] : null;
-        const newerPhoto = viewIndex > 0 ? progressPhotos[viewIndex - 1] : null;
-        return (
-        <div className="modal-backdrop" onClick={() => setViewingPhoto(null)}>
-          <div className="modal" onClick={event => event.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <p style={{ fontSize: 13, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                {t("VER FOTO", "VIEW PHOTO")}
-              </p>
-              <button className="edit-btn" onClick={() => setViewingPhoto(null)} style={{ padding: "8px 12px" }}>
-                {text.close}
-              </button>
-            </div>
-
-            <img
-              src={viewingPhoto.dataUrl}
-              alt={viewingPhoto.note || "Progress photo"}
-              style={{ width: "100%", maxHeight: "52vh", objectFit: "contain", borderRadius: 12, border: "1px solid #24242E", background: "#050507", display: "block" }}
-            />
-
-            {(olderPhoto || newerPhoto) && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-                <button className="dark-btn" disabled={!olderPhoto} onClick={() => olderPhoto && setViewingPhoto(olderPhoto)} style={olderPhoto ? undefined : { opacity: 0.4 }}>
-                  {text.photoPrev}
-                </button>
-                <button className="dark-btn" disabled={!newerPhoto} onClick={() => newerPhoto && setViewingPhoto(newerPhoto)} style={newerPhoto ? undefined : { opacity: 0.4 }}>
-                  {text.photoNext}
-                </button>
-              </div>
-            )}
-
-            <div className="detail-grid" style={{ marginTop: 12 }}>
-              <div className="detail-card"><p className="detail-label">{text.dateField}</p><p className="detail-value">{viewingPhoto.date}</p></div>
-              <div className="detail-card"><p className="detail-label">{text.weightWord}</p><p className="detail-value">{fmtW(viewingPhoto.weight)}</p></div>
-            </div>
-
-            <div className="detail-card" style={{ marginTop: 10 }}>
-              <p className="detail-label">{text.noteField}</p>
-              <p className="detail-value" style={{ fontSize: 14 }}>{viewingPhoto.note || text.noNote}</p>
-            </div>
-
-            <label style={{ display: "block", marginTop: 10 }}>
-              <span className="field-label">{text.albumField}</span>
-              <select
-                className="input"
-                value={viewingPhoto.album || ""}
-                onChange={event => updatePhotoAlbum(viewingPhoto.id, event.target.value)}
-              >
-                <option value="">{text.noAlbum}</option>
-                {photoAlbums.map(album => <option key={album} value={album}>{album}</option>)}
-              </select>
-            </label>
-
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button className="dark-btn" style={{ flex: 1 }} onClick={() => setViewingPhoto(null)}>
-                {text.close}
-              </button>
-              <button className="dark-btn" style={{ flex: 1, color: "#E5604D" }} onClick={() => deleteProgressPhoto(viewingPhoto.id)}>
-                {t("Eliminar Foto", "Delete Photo")}
-              </button>
-            </div>
-          </div>
-        </div>
-        );
-      })()}
+      {viewingPhoto && (
+        <ViewPhotoModal
+          text={text}
+          t={t}
+          fmtW={fmtW}
+          viewingPhoto={viewingPhoto}
+          setViewingPhoto={setViewingPhoto}
+          progressPhotos={progressPhotos}
+          photoAlbums={photoAlbums}
+          updatePhotoAlbum={updatePhotoAlbum}
+          deleteProgressPhoto={deleteProgressPhoto}
+        />
+      )}
     </div>
   );
 }
