@@ -235,6 +235,14 @@ const DEFAULT_APP_SETTINGS = {
   meditationVoiceVolume: 0.95,
   meditationTummoAck: false,
   meditationReflections: {},
+  background: {
+    type: "default",
+    color: "#0C0C10",
+    gradientFrom: "#0C0C10",
+    gradientTo: "#1A1A3E",
+    gradientAngle: 180,
+    photo: "",
+  },
 };
 
 function withNameParts(settings) {
@@ -3885,6 +3893,24 @@ export default function AtlasLuthor() {
     }
   };
 
+  const handleBackgroundPhoto = async event => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      // Compress to ~1400 px for a phone-sized background that still looks
+      // sharp without inflating localStorage.
+      const dataUrl = await compressImage(file, 1400, 0.78);
+      setAppSettings(prev => ({
+        ...prev,
+        background: { ...(prev.background || {}), type: "photo", photo: dataUrl },
+      }));
+    } catch {
+      window.alert(language === "es" ? "No pudimos procesar esa imagen." : "That image could not be processed.");
+    }
+  };
+
   const handleProgressPhoto = async event => {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -4124,8 +4150,32 @@ export default function AtlasLuthor() {
     setScreen("workout");
   };
 
+  // Custom background (color / gradient / photo) set in Settings. Falls back
+  // to the theme default when type is "default" or unset.
+  const defaultBgColor = isLightMode ? "#E8EDF5" : "#0C0C10";
+  const bgConfig = appSettings.background || { type: "default" };
+  const customBgStyle = (() => {
+    if (bgConfig.type === "color" && bgConfig.color) {
+      return { background: bgConfig.color };
+    }
+    if (bgConfig.type === "gradient" && bgConfig.gradientFrom && bgConfig.gradientTo) {
+      const angle = Number.isFinite(Number(bgConfig.gradientAngle)) ? Number(bgConfig.gradientAngle) : 180;
+      return { background: `linear-gradient(${angle}deg, ${bgConfig.gradientFrom}, ${bgConfig.gradientTo})` };
+    }
+    if (bgConfig.type === "photo" && bgConfig.photo) {
+      return {
+        backgroundImage: `url(${bgConfig.photo})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: defaultBgColor,
+      };
+    }
+    return { background: defaultBgColor };
+  })();
+
   return (
-    <div className={`app-root ${isLightMode ? "light-mode" : "dark-mode"}`} style={{ minHeight: "100dvh", background: isLightMode ? "#E8EDF5" : "#0C0C10", color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate" }}>
+    <div className={`app-root ${isLightMode ? "light-mode" : "dark-mode"}`} style={{ minHeight: "100dvh", color: isLightMode ? "#101015" : "#FFFFFF", fontFamily: "'Orbitron', monospace", paddingBottom: 80, position: "relative", overflowX: "hidden", isolation: "isolate", ...customBgStyle }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
@@ -7993,6 +8043,122 @@ export default function AtlasLuthor() {
               }}>
                 {language === "es" ? "Respaldo / Sincronización" : "Backup / Cloud Sync"}
               </button>
+
+              {(() => {
+                const bg = appSettings.background || { type: "default" };
+                const setBg = patch => setAppSettings(prev => ({ ...prev, background: { ...(prev.background || {}), ...patch } }));
+                const types = [
+                  { id: "default", esLabel: "Predeterminado", enLabel: "Default" },
+                  { id: "color", esLabel: "Color sólido", enLabel: "Solid color" },
+                  { id: "gradient", esLabel: "Degradado", enLabel: "Gradient" },
+                  { id: "photo", esLabel: "Foto", enLabel: "Photo" },
+                ];
+                const angleOptions = [
+                  { value: 0, label: "↑" },
+                  { value: 45, label: "↗" },
+                  { value: 90, label: "→" },
+                  { value: 135, label: "↘" },
+                  { value: 180, label: "↓" },
+                  { value: 225, label: "↙" },
+                  { value: 270, label: "←" },
+                  { value: 315, label: "↖" },
+                ];
+                return (
+                  <div style={{ borderTop: `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`, paddingTop: 14, marginTop: 4 }}>
+                    <p className="field-label">{language === "es" ? "FONDO DE LA APP" : "APP BACKGROUND"}</p>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                      {types.map(t => {
+                        const sel = (bg.type || "default") === t.id;
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => setBg({ type: t.id })}
+                            style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${sel ? "#90C8FF66" : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: sel ? (isLightMode ? "rgba(144,200,255,0.12)" : "rgba(144,200,255,0.1)") : "transparent", color: sel ? "#90C8FF" : "#888", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, cursor: "pointer" }}
+                          >
+                            {language === "es" ? t.esLabel : t.enLabel}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {bg.type === "color" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
+                        <input
+                          type="color"
+                          value={bg.color || "#0C0C10"}
+                          onChange={event => setBg({ color: event.target.value })}
+                          aria-label={language === "es" ? "Color de fondo" : "Background color"}
+                          style={{ width: 56, height: 36, borderRadius: 8, border: `1px solid ${isLightMode ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.18)"}`, background: "transparent", cursor: "pointer", padding: 2 }}
+                        />
+                        <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 12, color: isLightMode ? "#5A6270" : "#8A8F99" }}>{(bg.color || "#0C0C10").toUpperCase()}</span>
+                      </div>
+                    )}
+
+                    {bg.type === "gradient" && (
+                      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: isLightMode ? "#5A6270" : "#8A8F99", minWidth: 56 }}>{language === "es" ? "Desde" : "From"}</span>
+                          <input type="color" value={bg.gradientFrom || "#0C0C10"} onChange={event => setBg({ gradientFrom: event.target.value })} style={{ width: 48, height: 32, borderRadius: 8, border: `1px solid ${isLightMode ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.18)"}`, background: "transparent", cursor: "pointer", padding: 2 }} />
+                          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 11, color: isLightMode ? "#5A6270" : "#8A8F99" }}>{(bg.gradientFrom || "#0C0C10").toUpperCase()}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: isLightMode ? "#5A6270" : "#8A8F99", minWidth: 56 }}>{language === "es" ? "Hasta" : "To"}</span>
+                          <input type="color" value={bg.gradientTo || "#1A1A3E"} onChange={event => setBg({ gradientTo: event.target.value })} style={{ width: 48, height: 32, borderRadius: 8, border: `1px solid ${isLightMode ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.18)"}`, background: "transparent", cursor: "pointer", padding: 2 }} />
+                          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 11, color: isLightMode ? "#5A6270" : "#8A8F99" }}>{(bg.gradientTo || "#1A1A3E").toUpperCase()}</span>
+                        </div>
+                        <div>
+                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: isLightMode ? "#5A6270" : "#8A8F99", marginBottom: 6 }}>{language === "es" ? "Dirección" : "Direction"}</p>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                            {angleOptions.map(opt => {
+                              const sel = Number(bg.gradientAngle) === opt.value;
+                              return (
+                                <button
+                                  key={opt.value}
+                                  onClick={() => setBg({ gradientAngle: opt.value })}
+                                  aria-label={`${opt.value}°`}
+                                  style={{ width: 36, height: 36, borderRadius: 8, border: `1.5px solid ${sel ? "#90C8FF66" : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: sel ? (isLightMode ? "rgba(144,200,255,0.12)" : "rgba(144,200,255,0.1)") : "transparent", color: sel ? "#90C8FF" : "#888", fontFamily: "'Orbitron', monospace", fontSize: 16, fontWeight: 900, cursor: "pointer" }}
+                                >
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <div style={{ height: 40, borderRadius: 10, background: `linear-gradient(${bg.gradientAngle || 180}deg, ${bg.gradientFrom || "#0C0C10"}, ${bg.gradientTo || "#1A1A3E"})`, border: `1px solid ${isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)"}` }} />
+                      </div>
+                    )}
+
+                    {bg.type === "photo" && (
+                      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                        {bg.photo && (
+                          <div style={{ height: 120, borderRadius: 10, backgroundImage: `url(${bg.photo})`, backgroundSize: "cover", backgroundPosition: "center", border: `1px solid ${isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)"}` }} />
+                        )}
+                        <label className="dark-btn" style={{ textAlign: "center" }}>
+                          {bg.photo ? (language === "es" ? "Cambiar foto de fondo" : "Change background photo") : (language === "es" ? "Subir foto de fondo" : "Upload background photo")}
+                          <input type="file" accept="image/*" onChange={handleBackgroundPhoto} style={{ display: "none" }} />
+                        </label>
+                        {bg.photo && (
+                          <button className="edit-btn" onClick={() => setBg({ photo: "" })} style={{ color: "#E5604D" }}>
+                            {language === "es" ? "Quitar foto" : "Remove photo"}
+                          </button>
+                        )}
+                        <p style={{ fontSize: 11, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                          {language === "es"
+                            ? "Tip: para que el texto se lea bien, usa imágenes oscuras o con poco contraste."
+                            : "Tip: for readable text, pick darker or low-contrast images."}
+                        </p>
+                      </div>
+                    )}
+
+                    {bg.type !== "default" && (
+                      <button className="edit-btn" onClick={() => setBg({ type: "default" })} style={{ marginTop: 10, color: "#90C8FF" }}>
+                        {language === "es" ? "Restaurar predeterminado" : "Reset to default"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
               <button className="dark-btn" onClick={handleLogout}>
                 {text.logout}
               </button>
