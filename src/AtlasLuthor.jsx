@@ -227,6 +227,9 @@ const DEFAULT_APP_SETTINGS = {
   unitSystem: "imperial",
   restSeconds: 90,
   meditationGoalMin: 10,
+  meditationPractice: "pranayama",
+  meditationDurationMin: 10,
+  meditationIntervalBellMin: 0,
 };
 
 function withNameParts(settings) {
@@ -351,45 +354,132 @@ const PROGRESS_GOAL_OPTIONS = ["70", "75", "80", "85", "90", "95", "100"];
 const SESSION_GOAL_OPTIONS = Array.from({ length: 90 }, (_, i) => String(i + 1));
 const CARDIO_OPTIONS = ["", "10 min", "15 min", "20 min", "Run 1 mile", "Stairs Level 5", "Row Machine 15 min"];
 const SOUND_OPTIONS = ["silent", "chime", "pulse", "bell"];
-const MEDITATION_PRESETS = [1, 3, 5, 10, 15, 20, 30];
-const MEDITATION_MODES = {
-  free: {
-    en: "Free", es: "Libre",
-    enHint: "Sit, breathe naturally, settle in.",
-    esHint: "Siéntate, respira natural, asiéntate.",
+const MEDITATION_PRACTICES = {
+  pranayama: {
+    en: "Pranayama", es: "Pranayama",
+    enSub: "Breath control",
+    esSub: "Control de respiración",
+    enDesc: "Conscious breath ratios to regulate the nervous system and energy. Inhale 4, hold 2, exhale 6.",
+    esDesc: "Ratios conscientes de respiración para regular el sistema nervioso y la energía. Inhala 4, mantén 2, exhala 6.",
+    accent: "#90C8FF",
+    minMin: 5, maxMin: 45, defaultMin: 10, defaultIntervalBellMin: 0,
     cycleSec: 12,
     phases: [
-      { sec: 6, en: "Inhale", es: "Inhala" },
+      { sec: 4, en: "Inhale", es: "Inhala" },
+      { sec: 2, en: "Hold", es: "Mantén" },
       { sec: 6, en: "Exhale", es: "Exhala" },
     ],
-    accent: "#90C8FF",
+    showBreathCircle: true,
+    showBreathCounter: false,
+    enSteps: [
+      "Siéntate con la columna recta, hombros relajados, manos en las rodillas.",
+      "Cierra los ojos. Exhala completo por la nariz antes de empezar.",
+      "Sigue el ritmo del círculo: inhala 4 segundos, mantén 2, exhala 6.",
+      "Respira siempre por la nariz, suave y sin forzar.",
+      "Si te mareas o sientes hormigueo, baja el ritmo o detente.",
+    ].map((line, i) => ({ es: line, en: [
+      "Sit upright, shoulders relaxed, hands on your knees.",
+      "Close your eyes. Exhale fully through the nose before starting.",
+      "Follow the circle: inhale 4 seconds, hold 2, exhale 6.",
+      "Always breathe through the nose, smoothly and without forcing.",
+      "If you feel dizzy or tingly, slow down or stop.",
+    ][i] })),
   },
-  box: {
-    en: "Box 4-4-4-4", es: "Caja 4-4-4-4",
-    enHint: "Balance the nervous system. Equal inhale, hold, exhale, hold.",
-    esHint: "Equilibra el sistema nervioso. Inhalar, mantener, exhalar, mantener iguales.",
-    cycleSec: 16,
-    phases: [
-      { sec: 4, en: "Inhale", es: "Inhala" },
-      { sec: 4, en: "Hold", es: "Mantén" },
-      { sec: 4, en: "Exhale", es: "Exhala" },
-      { sec: 4, en: "Hold", es: "Mantén" },
-    ],
-    accent: "#B8A0FF",
-  },
-  calm: {
-    en: "Calm 4-7-8", es: "Calma 4-7-8",
-    enHint: "Slows heart rate. Inhale 4, hold 7, exhale 8.",
-    esHint: "Baja la frecuencia cardiaca. Inhala 4, mantén 7, exhala 8.",
-    cycleSec: 19,
-    phases: [
-      { sec: 4, en: "Inhale", es: "Inhala" },
-      { sec: 7, en: "Hold", es: "Mantén" },
-      { sec: 8, en: "Exhale", es: "Exhala" },
-    ],
+  vipassana: {
+    en: "Vipassana", es: "Vipassana",
+    enSub: "Insight meditation",
+    esSub: "Observación profunda",
+    enDesc: "Observe sensations as they arise and pass, without reacting. No breath control — just watch.",
+    esDesc: "Observa las sensaciones que surgen y se van, sin reaccionar. Sin control de respiración — solo observa.",
     accent: "#3FB98A",
+    minMin: 10, maxMin: 90, defaultMin: 20, defaultIntervalBellMin: 5,
+    cycleSec: 0,
+    phases: [],
+    showBreathCircle: false,
+    showBreathCounter: false,
+    enSteps: [
+      "Siéntate cómodo y erguido. Ojos cerrados o con mirada suave.",
+      "Lleva la atención a la respiración natural en las fosas nasales.",
+      "Observa todo lo que surge: picor, calor, sonidos, pensamientos.",
+      "Nómbralos en silencio (\"sensación, sensación\") y déjalos pasar.",
+      "No reacciones, no pelees, no sigas. Solo observa con ecuanimidad.",
+      "Cuando la mente divague, vuelve a la respiración sin juzgar.",
+    ].map((line, i) => ({ es: line, en: [
+      "Sit comfortably and upright. Eyes closed or soft gaze.",
+      "Bring attention to the natural breath at the nostrils.",
+      "Notice everything that arises: itches, warmth, sounds, thoughts.",
+      "Label them silently (\"feeling, feeling\") and let them pass.",
+      "Don't react, don't fight, don't follow. Just observe with equanimity.",
+      "When the mind wanders, return to the breath without judgment.",
+    ][i] })),
+  },
+  zazen: {
+    en: "Zazen", es: "Zazen",
+    enSub: "Seated stability",
+    esSub: "Estabilidad sentada",
+    enDesc: "Just sitting. Count each exhale from 1 to 10, then start over. The counter shows your number.",
+    esDesc: "Solo sentarse. Cuenta cada exhalación de 1 a 10 y reinicia. El contador muestra tu número.",
+    accent: "#FFD060",
+    minMin: 10, maxMin: 60, defaultMin: 25, defaultIntervalBellMin: 0,
+    cycleSec: 10,
+    phases: [
+      { sec: 4, en: "Inhale", es: "Inhala" },
+      { sec: 6, en: "Exhale · count", es: "Exhala · cuenta" },
+    ],
+    showBreathCircle: true,
+    showBreathCounter: true,
+    enSteps: [
+      "Siéntate en medio loto, loto completo o seiza, con un cojín bajo las caderas.",
+      "Columna recta, orejas alineadas con los hombros, mentón ligeramente metido.",
+      "Ojos semi-abiertos, mirada suave al suelo a un metro de distancia.",
+      "Manos en mudra cósmico: izquierda sobre derecha, pulgares apenas tocándose.",
+      "Cuenta mentalmente cada exhalación: 1, 2, 3... hasta 10, y empieza de nuevo.",
+      "Si pierdes la cuenta o te distraes, vuelve a 1 sin frustración.",
+    ].map((line, i) => ({ es: line, en: [
+      "Sit in half-lotus, full lotus or seiza, with a cushion under your hips.",
+      "Spine straight, ears aligned with shoulders, chin slightly tucked.",
+      "Eyes half-open, soft gaze to the floor about a meter away.",
+      "Hands in cosmic mudra: left over right, thumbs just touching.",
+      "Mentally count each exhale: 1, 2, 3... up to 10, then start over.",
+      "If you lose count or get distracted, return to 1 without frustration.",
+    ][i] })),
+  },
+  tummo: {
+    en: "Tummo", es: "Tummo",
+    enSub: "Inner heat (advanced)",
+    esSub: "Calor interno (avanzado)",
+    enDesc: "Tibetan vase breathing with heat visualization. Deep inhale, long hold visualizing fire at the navel, slow exhale.",
+    esDesc: "Respiración de vasija tibetana con visualización de calor. Inhala profundo, mantén largo visualizando fuego en el ombligo, exhala lento.",
+    accent: "#FF9860",
+    minMin: 5, maxMin: 30, defaultMin: 10, defaultIntervalBellMin: 0,
+    cycleSec: 20,
+    phases: [
+      { sec: 4, en: "Deep inhale", es: "Inhala profundo" },
+      { sec: 12, en: "Hold · feel heat", es: "Mantén · siente calor" },
+      { sec: 4, en: "Slow exhale", es: "Exhala lento" },
+    ],
+    showBreathCircle: true,
+    showBreathCounter: false,
+    safetyEs: "Práctica avanzada. NO la hagas con presión baja, embarazada, en el agua, conduciendo, o con condiciones cardíacas. Detente si te mareas.",
+    safetyEn: "Advanced practice. DO NOT do this with low blood pressure, pregnant, in water, while driving, or with heart conditions. Stop if you feel dizzy.",
+    enSteps: [
+      "Siéntate erguido con la columna recta. Cierra los ojos.",
+      "Visualiza una pequeña llama brillante en tu ombligo.",
+      "Inhala profundo y completo por la nariz, llenando el abdomen como una vasija.",
+      "Mantén el aire. Contrae el bajo vientre y siente cómo la llama crece y irradia calor.",
+      "Cuando necesites, exhala lento por la nariz, suelta el calor.",
+      "Principiantes: empieza con retenciones más cortas. Solo practica en un lugar seguro.",
+    ].map((line, i) => ({ es: line, en: [
+      "Sit upright with spine straight. Close your eyes.",
+      "Visualize a small bright flame at your navel.",
+      "Inhale deep and full through the nose, filling the abdomen like a vase.",
+      "Hold the breath. Contract the lower belly and feel the flame grow and radiate heat.",
+      "When you need to, exhale slowly through the nose, releasing the heat.",
+      "Beginners: start with shorter holds. Only practice in a safe setting.",
+    ][i] })),
   },
 };
+const MEDITATION_PRACTICE_KEYS = Object.keys(MEDITATION_PRACTICES);
 const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
   { value: "es", label: "Español" },
@@ -1678,12 +1768,15 @@ export default function AtlasLuthor() {
   const [meditationLog, setMeditationLog] = useState({});
   const [medTimer, setMedTimer] = useState({
     running: false,
-    mode: "free",
-    durationSec: 300,
-    secondsLeft: 300,
+    practice: "pranayama",
+    durationSec: 600,
+    secondsLeft: 600,
     startedAt: 0,
+    intervalBellMin: 0,
+    lastBellTick: 0,
   });
   const [medCompleted, setMedCompleted] = useState(null);
+  const [medShowTeaching, setMedShowTeaching] = useState(false);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
   const [exerciseFilterMuscle, setExerciseFilterMuscle] = useState("All");
   const [addFoodTarget, setAddFoodTarget] = useState(null);
@@ -1849,7 +1942,8 @@ export default function AtlasLuthor() {
   }, [restTimer.running, restTimer.endsAt, notificationSettings.sound]);
 
   // Meditation session countdown. Each tick decrements secondsLeft; when it
-  // hits 0 the session is logged and a bell plays.
+  // hits 0 the session is logged and a bell plays. Optional interval bells
+  // ring every N minutes during the session to redirect attention.
   useEffect(() => {
     if (!medTimer.running) return undefined;
     const intervalId = window.setInterval(() => {
@@ -1857,18 +1951,53 @@ export default function AtlasLuthor() {
         if (!prev.running) return prev;
         if (prev.secondsLeft <= 1) {
           const totalMin = Math.max(1, Math.round(prev.durationSec / 60));
-          logMeditationSession(totalMin, prev.mode);
+          logMeditationSession(totalMin, prev.practice);
           playReminderSound("bell");
-          setMedCompleted({ durationMin: totalMin, mode: prev.mode, at: Date.now() });
+          setMedCompleted({ durationMin: totalMin, practice: prev.practice, at: Date.now() });
           return { ...prev, running: false, secondsLeft: 0 };
         }
-        return { ...prev, secondsLeft: prev.secondsLeft - 1 };
+        const nextLeft = prev.secondsLeft - 1;
+        const elapsed = prev.durationSec - nextLeft;
+        let nextLastBellTick = prev.lastBellTick;
+        if (prev.intervalBellMin > 0) {
+          const bellEvery = prev.intervalBellMin * 60;
+          const currentTick = Math.floor(elapsed / bellEvery);
+          // Only ring on a positive tick boundary that we haven't rung yet,
+          // and skip the final tick (the end-of-session bell handles it).
+          if (currentTick > prev.lastBellTick && nextLeft > 1 && elapsed % bellEvery === 0) {
+            playReminderSound("chime");
+            nextLastBellTick = currentTick;
+          }
+        }
+        return { ...prev, secondsLeft: nextLeft, lastBellTick: nextLastBellTick };
       });
     }, 1000);
     return () => window.clearInterval(intervalId);
     // logMeditationSession changes per render but is stable in behavior
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [medTimer.running]);
+
+  // Restore the user's last-used practice / duration / interval bell after
+  // their account data is loaded.
+  useEffect(() => {
+    if (!activeUserId) return;
+    setMedTimer(prev => {
+      if (prev.running) return prev;
+      const practiceKey = MEDITATION_PRACTICES[appSettings.meditationPractice]
+        ? appSettings.meditationPractice
+        : "pranayama";
+      const def = MEDITATION_PRACTICES[practiceKey];
+      const durationMin = Math.min(def.maxMin, Math.max(def.minMin, Number(appSettings.meditationDurationMin) || def.defaultMin));
+      const durationSec = durationMin * 60;
+      return {
+        ...prev,
+        practice: practiceKey,
+        durationSec,
+        secondsLeft: durationSec,
+        intervalBellMin: Math.max(0, Number(appSettings.meditationIntervalBellMin) || 0),
+      };
+    });
+  }, [activeUserId, appSettings.meditationPractice, appSettings.meditationDurationMin, appSettings.meditationIntervalBellMin]);
 
   const updateCalendarForToday = nextChecked => {
     const date = getDateKey();
@@ -2841,16 +2970,28 @@ export default function AtlasLuthor() {
     setRestTimer(prev => ({ ...prev, secondsLeft: 0, running: false, endsAt: null, notified: false }));
   };
 
-  const startMeditation = (mode, durationMin) => {
-    const durationSec = Math.max(1, Math.round(Number(durationMin) * 60));
+  const startMeditation = (practice, durationMin, intervalBellMin) => {
+    const practiceKey = MEDITATION_PRACTICES[practice] ? practice : "pranayama";
+    const def = MEDITATION_PRACTICES[practiceKey];
+    const safeMin = Math.min(def.maxMin, Math.max(def.minMin, Number(durationMin) || def.defaultMin));
+    const durationSec = Math.max(1, Math.round(safeMin * 60));
+    const bellMin = Math.max(0, Math.min(60, Number(intervalBellMin) || 0));
     setMedCompleted(null);
     setMedTimer({
       running: true,
-      mode: MEDITATION_MODES[mode] ? mode : "free",
+      practice: practiceKey,
       durationSec,
       secondsLeft: durationSec,
       startedAt: Date.now(),
+      intervalBellMin: bellMin,
+      lastBellTick: 0,
     });
+    setAppSettings(prev => ({
+      ...prev,
+      meditationPractice: practiceKey,
+      meditationDurationMin: safeMin,
+      meditationIntervalBellMin: bellMin,
+    }));
     playReminderSound("bell");
   };
 
@@ -2862,12 +3003,12 @@ export default function AtlasLuthor() {
     setMedTimer(prev => ({ ...prev, running: false, secondsLeft: prev.durationSec }));
   };
 
-  const logMeditationSession = (durationMin, mode) => {
+  const logMeditationSession = (durationMin, practice) => {
     const date = getDateKey();
     const entry = {
       id: `med-${Date.now()}`,
       durationMin,
-      mode,
+      mode: practice,
       completedAt: new Date().toISOString(),
     };
     setMeditationLog(prev => {
@@ -3667,27 +3808,29 @@ export default function AtlasLuthor() {
           100% { opacity: 1; transform: scale(1); }
         }
 
-        @keyframes medBreathFree {
+        /* Meditation breathing animations. Each keyframe matches the
+           phase ratios of its practice. Vipassana shows no breath
+           animation (just the timer), so it has no class here. */
+        @keyframes medBreathPranayama {
+          0% { transform: scale(0.85); opacity: 0.85; }
+          33% { transform: scale(1.05); opacity: 1; }   /* 4s inhale of 12s */
+          50% { transform: scale(1.05); opacity: 1; }   /* 2s hold */
+          100% { transform: scale(0.85); opacity: 0.85; } /* 6s exhale */
+        }
+        @keyframes medBreathZazen {
           0%, 100% { transform: scale(0.85); opacity: 0.85; }
-          50% { transform: scale(1.05); opacity: 1; }
+          40% { transform: scale(1.05); opacity: 1; }   /* 4s in, 6s out of 10s */
         }
-        @keyframes medBreathBox {
+        @keyframes medBreathTummo {
           0% { transform: scale(0.85); opacity: 0.85; }
-          25% { transform: scale(1.05); opacity: 1; }
-          50% { transform: scale(1.05); opacity: 1; }
-          75% { transform: scale(0.85); opacity: 0.85; }
-          100% { transform: scale(0.85); opacity: 0.85; }
-        }
-        @keyframes medBreathCalm {
-          0% { transform: scale(0.85); opacity: 0.85; }
-          21% { transform: scale(1.05); opacity: 1; }
-          58% { transform: scale(1.05); opacity: 1; }
-          100% { transform: scale(0.85); opacity: 0.85; }
+          20% { transform: scale(1.1); opacity: 1; }    /* 4s strong inhale */
+          80% { transform: scale(1.1); opacity: 1; }    /* 12s hold (heat) */
+          100% { transform: scale(0.85); opacity: 0.85; } /* 4s slow exhale */
         }
         .med-breath { transform-origin: center; }
-        .med-breath-free { animation: medBreathFree 12s ease-in-out infinite; }
-        .med-breath-box { animation: medBreathBox 16s ease-in-out infinite; }
-        .med-breath-calm { animation: medBreathCalm 19s ease-in-out infinite; }
+        .med-breath-pranayama { animation: medBreathPranayama 12s ease-in-out infinite; }
+        .med-breath-zazen { animation: medBreathZazen 10s ease-in-out infinite; }
+        .med-breath-tummo { animation: medBreathTummo 20s ease-in-out infinite; }
 
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
@@ -4329,8 +4472,14 @@ export default function AtlasLuthor() {
             </div>
 
             {(() => {
-              const medAccent = meditationStats.todayMinutes >= meditationGoalMin ? "#3FB98A" : "#B8A0FF";
+              const selectedPractice = MEDITATION_PRACTICES[medTimer.practice] || MEDITATION_PRACTICES.pranayama;
+              const medAccent = meditationStats.todayMinutes >= meditationGoalMin ? "#3FB98A" : selectedPractice.accent;
               const medPct = Math.min(100, Math.round((meditationStats.todayMinutes / meditationGoalMin) * 100));
+              const quickPresets = [
+                Math.max(selectedPractice.minMin, 5),
+                selectedPractice.defaultMin,
+                Math.min(selectedPractice.maxMin, 20),
+              ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 3);
               return (
                 <div className="home-card" style={{ marginBottom: 14, borderColor: medTimer.running ? `${medAccent}55` : undefined }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -4340,6 +4489,9 @@ export default function AtlasLuthor() {
                       </p>
                       <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: medAccent, lineHeight: 1 }}>
                         {meditationStats.todayMinutes}<span style={{ fontSize: 14, color: isLightMode ? "#7A8090" : "#666", fontWeight: 400 }}>/{meditationGoalMin} min</span>
+                      </p>
+                      <p style={{ fontSize: 11, color: selectedPractice.accent, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, marginTop: 4 }}>
+                        {language === "es" ? selectedPractice.es : selectedPractice.en} · {language === "es" ? selectedPractice.esSub : selectedPractice.enSub}
                       </p>
                       {meditationStats.streak > 0 && (
                         <p style={{ fontSize: 10, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginTop: 4, letterSpacing: 1 }}>
@@ -4359,12 +4511,12 @@ export default function AtlasLuthor() {
                       {language === "es" ? "Sesión en curso · Abrir" : "Session running · Open"}
                     </button>
                   ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                      {[5, 10, 15].map(min => (
+                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${quickPresets.length}, 1fr)`, gap: 8 }}>
+                      {quickPresets.map(min => (
                         <button
                           key={min}
                           className="dark-btn"
-                          onClick={() => { startMeditation(medTimer.mode, min); openFeaturePage("meditation"); }}
+                          onClick={() => { startMeditation(medTimer.practice, min, medTimer.intervalBellMin); openFeaturePage("meditation"); }}
                           style={{ color: medAccent, borderColor: `${medAccent}33` }}
                         >
                           + {min} min
@@ -5980,26 +6132,31 @@ export default function AtlasLuthor() {
             })()}
 
             {activeFeaturePage === "meditation" && (() => {
-              const modeDef = MEDITATION_MODES[medTimer.mode] || MEDITATION_MODES.free;
+              const def = MEDITATION_PRACTICES[medTimer.practice] || MEDITATION_PRACTICES.pranayama;
+              const accent = def.accent;
               const elapsedSec = medTimer.durationSec - medTimer.secondsLeft;
               const progressPct = medTimer.durationSec > 0 ? Math.min(100, Math.round((elapsedSec / medTimer.durationSec) * 100)) : 0;
-              const cycleSec = modeDef.cycleSec;
+              const cycleSec = def.cycleSec;
               const cyclePos = cycleSec > 0 ? elapsedSec % cycleSec : 0;
-              let phaseSec = 0;
               let phaseLabel = "";
-              for (const phase of modeDef.phases) {
-                if (cyclePos < phaseSec + phase.sec) {
-                  phaseLabel = language === "es" ? phase.es : phase.en;
-                  break;
+              if (cycleSec > 0) {
+                let phaseStart = 0;
+                for (const phase of def.phases) {
+                  if (cyclePos < phaseStart + phase.sec) {
+                    phaseLabel = language === "es" ? phase.es : phase.en;
+                    break;
+                  }
+                  phaseStart += phase.sec;
                 }
-                phaseSec += phase.sec;
               }
+              const breathCount = def.showBreathCounter && cycleSec > 0
+                ? ((Math.floor(elapsedSec / cycleSec) % 10) + 1)
+                : 0;
               const mmss = sec => {
                 const m = Math.floor(sec / 60);
                 const s = sec % 60;
                 return `${m}:${String(s).padStart(2, "0")}`;
               };
-              const accent = modeDef.accent;
               const ringR = 64;
               const ringC = 2 * Math.PI * ringR;
               const todayPct = Math.min(100, Math.round((meditationStats.todayMinutes / meditationGoalMin) * 100));
@@ -6015,6 +6172,8 @@ export default function AtlasLuthor() {
                 }
                 return days7;
               })();
+              const currentMin = Math.round(medTimer.durationSec / 60);
+
               return (
                 <div className="detail-list">
                   <div className="detail-grid">
@@ -6025,25 +6184,31 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div className="home-card" style={{ borderColor: medTimer.running ? `${accent}66` : undefined, padding: "22px 18px" }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: accent, fontFamily: "'Orbitron', monospace", marginBottom: 4, textAlign: "center" }}>
+                      {(language === "es" ? def.es : def.en).toUpperCase()}
+                    </p>
+                    <p style={{ fontSize: 11, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginBottom: 16, textAlign: "center" }}>
+                      {language === "es" ? def.esSub : def.enSub}
+                    </p>
+
                     <div style={{ position: "relative", width: "100%", maxWidth: 240, aspectRatio: "1", margin: "0 auto" }}>
                       <svg viewBox="0 0 160 160" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
                         <circle cx="80" cy="80" r={ringR} fill="none" stroke={isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"} strokeWidth="8" />
                         <circle cx="80" cy="80" r={ringR} fill="none" stroke={accent} strokeWidth="8" strokeLinecap="round" strokeDasharray={ringC} strokeDashoffset={ringC * (1 - progressPct / 100)} style={{ transition: "stroke-dashoffset 0.9s linear" }} />
                       </svg>
                       <div
-                        className={medTimer.running ? `med-breath med-breath-${medTimer.mode}` : ""}
+                        className={medTimer.running && def.showBreathCircle ? `med-breath med-breath-${medTimer.practice}` : ""}
                         style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: accent, pointerEvents: "none" }}
                       >
                         <p style={{ fontSize: 42, fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{mmss(medTimer.secondsLeft)}</p>
-                        {medTimer.running && (
+                        {medTimer.running && def.showBreathCircle && phaseLabel && (
                           <p style={{ fontSize: 12, letterSpacing: 3, marginTop: 8, fontFamily: "'Orbitron', monospace", fontWeight: 800, opacity: 0.9 }}>{phaseLabel.toUpperCase()}</p>
+                        )}
+                        {medTimer.running && def.showBreathCounter && breathCount > 0 && (
+                          <p style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Orbitron', monospace", marginTop: 4, opacity: 0.7, color: "#FFFFFF" }}>{breathCount}</p>
                         )}
                       </div>
                     </div>
-
-                    <p style={{ textAlign: "center", fontSize: 12, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 14, lineHeight: 1.5 }}>
-                      {language === "es" ? modeDef.esHint : modeDef.enHint}
-                    </p>
 
                     {medTimer.running ? (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
@@ -6064,7 +6229,7 @@ export default function AtlasLuthor() {
                         </button>
                       </div>
                     ) : (
-                      <button className="primary-btn" style={{ marginTop: 16, width: "100%" }} onClick={() => startMeditation(medTimer.mode, medTimer.durationSec / 60)}>
+                      <button className="primary-btn" style={{ marginTop: 16, width: "100%" }} onClick={() => startMeditation(medTimer.practice, currentMin, medTimer.intervalBellMin)}>
                         {language === "es" ? "Empezar sesión" : "Start session"}
                       </button>
                     )}
@@ -6077,22 +6242,131 @@ export default function AtlasLuthor() {
                       </p>
                       <p style={{ color: isLightMode ? "#1A3A2A" : "#A8E0C0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
                         {language === "es"
-                          ? `Guardamos ${medCompleted.durationMin} min en tu historial. Buena calma.`
-                          : `Logged ${medCompleted.durationMin} min to your history. Nice calm.`}
+                          ? `Guardamos ${medCompleted.durationMin} min de ${MEDITATION_PRACTICES[medCompleted.practice]?.es || ""} en tu historial. Buena calma.`
+                          : `Logged ${medCompleted.durationMin} min of ${MEDITATION_PRACTICES[medCompleted.practice]?.en || ""} to your history. Nice calm.`}
                       </p>
                     </div>
                   )}
 
                   <div className="home-card">
+                    <p className="detail-label">{language === "es" ? "PRÁCTICA" : "PRACTICE"}</p>
+                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                      {MEDITATION_PRACTICE_KEYS.map(key => {
+                        const p = MEDITATION_PRACTICES[key];
+                        const isSel = medTimer.practice === key;
+                        return (
+                          <button
+                            key={key}
+                            className="dark-btn"
+                            disabled={medTimer.running}
+                            onClick={() => {
+                              setMedShowTeaching(false);
+                              setMedTimer(prev => {
+                                const newDurationMin = p.defaultMin;
+                                return {
+                                  ...prev,
+                                  practice: key,
+                                  durationSec: newDurationMin * 60,
+                                  secondsLeft: newDurationMin * 60,
+                                  intervalBellMin: p.defaultIntervalBellMin,
+                                };
+                              });
+                              setAppSettings(prev => ({
+                                ...prev,
+                                meditationPractice: key,
+                                meditationDurationMin: p.defaultMin,
+                                meditationIntervalBellMin: p.defaultIntervalBellMin,
+                              }));
+                            }}
+                            style={{
+                              textAlign: "left",
+                              borderColor: isSel ? `${p.accent}55` : undefined,
+                              boxShadow: isSel ? `inset 0 0 0 1px ${p.accent}44` : "none",
+                              opacity: medTimer.running && !isSel ? 0.45 : 1,
+                              padding: "12px 14px",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                              <span style={{ fontWeight: 900, color: isSel ? p.accent : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif" }}>{language === "es" ? p.es : p.en}</span>
+                              <span style={{ fontSize: 9, letterSpacing: 2, color: isSel ? p.accent : "#8A8F99", fontFamily: "'Orbitron', monospace", fontWeight: 800 }}>{p.minMin}-{p.maxMin} MIN</span>
+                            </div>
+                            <p style={{ fontSize: 11, color: isSel ? p.accent : "#8A8F99", marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{language === "es" ? p.esSub : p.enSub}</p>
+                            <p style={{ fontSize: 12, color: isLightMode ? "#5A6270" : "#9CA1AC", marginTop: 6, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{language === "es" ? p.esDesc : p.enDesc}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {def.safetyEs && (
+                    <div className="home-card" style={{ borderColor: "#FF986055", background: isLightMode ? "rgba(255,152,96,0.08)" : "rgba(255,152,96,0.06)" }}>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#FF9860", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                        {language === "es" ? "⚠ SEGURIDAD" : "⚠ SAFETY"}
+                      </p>
+                      <p style={{ color: isLightMode ? "#7A3A20" : "#FFC8A0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                        {language === "es" ? def.safetyEs : def.safetyEn}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="home-card">
+                    <button
+                      className="edit-btn"
+                      onClick={() => setMedShowTeaching(v => !v)}
+                      style={{ width: "100%", textAlign: "left", padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", color: accent }}
+                    >
+                      <span style={{ fontSize: 10, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 800 }}>
+                        {language === "es" ? "CÓMO HACERLO" : "HOW TO"}
+                      </span>
+                      <span>{medShowTeaching ? "↑" : "↓"}</span>
+                    </button>
+                    {medShowTeaching && (
+                      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                        {def.enSteps.map((step, i) => (
+                          <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                            <div style={{ width: 22, height: 22, borderRadius: "50%", background: `${accent}22`, color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, fontFamily: "'Orbitron', monospace", flexShrink: 0 }}>
+                              {i + 1}
+                            </div>
+                            <p style={{ color: isLightMode ? "#2A3A4A" : "#C8D0DC", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.55 }}>
+                              {language === "es" ? step.es : step.en}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="home-card">
                     <p className="detail-label">{language === "es" ? "DURACIÓN" : "DURATION"}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+                      <input
+                        type="range"
+                        min={def.minMin}
+                        max={def.maxMin}
+                        step="1"
+                        value={currentMin}
+                        disabled={medTimer.running}
+                        onChange={event => {
+                          const minutes = Number(event.target.value);
+                          setMedTimer(prev => ({ ...prev, durationSec: minutes * 60, secondsLeft: minutes * 60 }));
+                          setAppSettings(prev => ({ ...prev, meditationDurationMin: minutes }));
+                        }}
+                        style={{ flex: 1, accentColor: accent }}
+                      />
+                      <span style={{ minWidth: 64, textAlign: "right", color: accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{currentMin} min</span>
+                    </div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                      {MEDITATION_PRESETS.map(min => {
-                        const isSel = Math.round(medTimer.durationSec / 60) === min;
+                      {[def.minMin, def.defaultMin, def.maxMin].filter((v, i, a) => a.indexOf(v) === i).map(min => {
+                        const isSel = currentMin === min;
                         return (
                           <button
                             key={min}
-                            onClick={() => setMedTimer(prev => ({ ...prev, durationSec: min * 60, secondsLeft: min * 60, running: false }))}
-                            style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 900, cursor: "pointer" }}
+                            disabled={medTimer.running}
+                            onClick={() => {
+                              setMedTimer(prev => ({ ...prev, durationSec: min * 60, secondsLeft: min * 60 }));
+                              setAppSettings(prev => ({ ...prev, meditationDurationMin: min }));
+                            }}
+                            style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, cursor: medTimer.running ? "not-allowed" : "pointer", opacity: medTimer.running ? 0.5 : 1 }}
                           >
                             {min} min
                           </button>
@@ -6102,19 +6376,24 @@ export default function AtlasLuthor() {
                   </div>
 
                   <div className="home-card">
-                    <p className="detail-label">{language === "es" ? "MODO DE RESPIRACIÓN" : "BREATHING MODE"}</p>
-                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                      {Object.entries(MEDITATION_MODES).map(([key, m]) => {
-                        const isSel = medTimer.mode === key;
+                    <p className="detail-label">{language === "es" ? "CAMPANA DURANTE LA SESIÓN" : "INTERVAL BELL"}</p>
+                    <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6, lineHeight: 1.5 }}>
+                      {language === "es" ? "Tono suave cada N minutos para redirigir la atención. Útil para Vipassana." : "Soft chime every N minutes to redirect attention. Useful for Vipassana."}
+                    </p>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                      {[0, 1, 2, 5, 10].map(min => {
+                        const isSel = medTimer.intervalBellMin === min;
                         return (
                           <button
-                            key={key}
-                            className="dark-btn"
-                            onClick={() => setMedTimer(prev => ({ ...prev, mode: key }))}
-                            style={{ textAlign: "left", borderColor: isSel ? `${m.accent}55` : undefined, boxShadow: isSel ? `inset 0 0 0 1px ${m.accent}44` : "none" }}
+                            key={min}
+                            disabled={medTimer.running}
+                            onClick={() => {
+                              setMedTimer(prev => ({ ...prev, intervalBellMin: min }));
+                              setAppSettings(prev => ({ ...prev, meditationIntervalBellMin: min }));
+                            }}
+                            style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, cursor: medTimer.running ? "not-allowed" : "pointer", opacity: medTimer.running ? 0.5 : 1 }}
                           >
-                            <span style={{ display: "block", fontWeight: 900, color: isSel ? m.accent : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif" }}>{language === "es" ? m.es : m.en}</span>
-                            <span style={{ display: "block", fontSize: 11, color: "#8A8F99", marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>{language === "es" ? m.esHint : m.enHint}</span>
+                            {min === 0 ? (language === "es" ? "Off" : "Off") : `${min} min`}
                           </button>
                         );
                       })}
@@ -6131,7 +6410,7 @@ export default function AtlasLuthor() {
                         step="1"
                         value={meditationGoalMin}
                         onChange={event => setAppSettings(prev => ({ ...prev, meditationGoalMin: Number(event.target.value) }))}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, accentColor: accent }}
                       />
                       <span style={{ minWidth: 56, textAlign: "right", color: accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{meditationGoalMin} min</span>
                     </div>
@@ -6166,6 +6445,29 @@ export default function AtlasLuthor() {
                       })}
                     </div>
                   </div>
+
+                  {(meditationLog[getDateKey()] || []).length > 0 && (
+                    <div className="home-card">
+                      <p className="detail-label">{language === "es" ? "SESIONES DE HOY" : "TODAY'S SESSIONS"}</p>
+                      <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+                        {(meditationLog[getDateKey()] || []).map(entry => {
+                          const p = MEDITATION_PRACTICES[entry.mode];
+                          const name = p ? (language === "es" ? p.es : p.en) : (entry.mode || "—");
+                          const c = p?.accent || accent;
+                          const time = entry.completedAt ? new Date(entry.completedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+                          return (
+                            <div key={entry.id} className="detail-row">
+                              <div>
+                                <p className="detail-row-main">{name}</p>
+                                <p className="detail-row-sub">{time}</p>
+                              </div>
+                              <span style={{ color: c, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900 }}>{entry.durationMin} min</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="home-card">
                     <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
