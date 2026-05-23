@@ -1888,6 +1888,10 @@ export default function AtlasLuthor() {
   const [photoAlbums, setPhotoAlbums] = useState([]);
   const [cloudSettings, setCloudSettings] = useState(() => cloneData(DEFAULT_CLOUD_SETTINGS));
   const [appSettings, setAppSettings] = useState(() => withNameParts(DEFAULT_APP_SETTINGS));
+  // Language is derived early because the meditation timer effect (defined
+  // further down) reads it from its closure — keeping it here avoids a
+  // temporal-dead-zone crash on first render.
+  const language = appSettings.language === "es" ? "es" : "en";
   const [notificationSettings, setNotificationSettings] = useState(() => cloneData(DEFAULT_NOTIFICATION_SETTINGS));
   const [setProgress, setSetProgress] = useState({});
   const [storageFull, setStorageFull] = useState(false);
@@ -2699,7 +2703,6 @@ export default function AtlasLuthor() {
   const quickSetsDone = Number(setProgress[quickExerciseKey] || 0);
   const quickTotalSets = Number(quickExercise?.sets || 0);
   const quickSetsLeft = Math.max(quickTotalSets - quickSetsDone, 0);
-  const language = appSettings.language === "es" ? "es" : "en";
   const text = UI_TEXT[language];
   const calendarLabels = {
     completed: text.calCompleted,
