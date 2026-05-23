@@ -226,6 +226,7 @@ const DEFAULT_APP_SETTINGS = {
   tapFeedback: true,
   unitSystem: "imperial",
   restSeconds: 90,
+  meditationGoalMin: 10,
 };
 
 function withNameParts(settings) {
@@ -279,6 +280,7 @@ function defaultUserData() {
     measurementLog: {},
     exercisePerformance: {},
     challenges: [],
+    meditationLog: {},
   };
 }
 
@@ -349,6 +351,45 @@ const PROGRESS_GOAL_OPTIONS = ["70", "75", "80", "85", "90", "95", "100"];
 const SESSION_GOAL_OPTIONS = Array.from({ length: 90 }, (_, i) => String(i + 1));
 const CARDIO_OPTIONS = ["", "10 min", "15 min", "20 min", "Run 1 mile", "Stairs Level 5", "Row Machine 15 min"];
 const SOUND_OPTIONS = ["silent", "chime", "pulse", "bell"];
+const MEDITATION_PRESETS = [1, 3, 5, 10, 15, 20, 30];
+const MEDITATION_MODES = {
+  free: {
+    en: "Free", es: "Libre",
+    enHint: "Sit, breathe naturally, settle in.",
+    esHint: "Siéntate, respira natural, asiéntate.",
+    cycleSec: 12,
+    phases: [
+      { sec: 6, en: "Inhale", es: "Inhala" },
+      { sec: 6, en: "Exhale", es: "Exhala" },
+    ],
+    accent: "#90C8FF",
+  },
+  box: {
+    en: "Box 4-4-4-4", es: "Caja 4-4-4-4",
+    enHint: "Balance the nervous system. Equal inhale, hold, exhale, hold.",
+    esHint: "Equilibra el sistema nervioso. Inhalar, mantener, exhalar, mantener iguales.",
+    cycleSec: 16,
+    phases: [
+      { sec: 4, en: "Inhale", es: "Inhala" },
+      { sec: 4, en: "Hold", es: "Mantén" },
+      { sec: 4, en: "Exhale", es: "Exhala" },
+      { sec: 4, en: "Hold", es: "Mantén" },
+    ],
+    accent: "#B8A0FF",
+  },
+  calm: {
+    en: "Calm 4-7-8", es: "Calma 4-7-8",
+    enHint: "Slows heart rate. Inhale 4, hold 7, exhale 8.",
+    esHint: "Baja la frecuencia cardiaca. Inhala 4, mantén 7, exhala 8.",
+    cycleSec: 19,
+    phases: [
+      { sec: 4, en: "Inhale", es: "Inhala" },
+      { sec: 7, en: "Hold", es: "Mantén" },
+      { sec: 8, en: "Exhale", es: "Exhala" },
+    ],
+    accent: "#3FB98A",
+  },
+};
 const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
   { value: "es", label: "Español" },
@@ -1634,6 +1675,15 @@ export default function AtlasLuthor() {
   const [measurementLog, setMeasurementLog] = useState({});
   const [exercisePerformance, setExercisePerformance] = useState({});
   const [challenges, setChallenges] = useState([]);
+  const [meditationLog, setMeditationLog] = useState({});
+  const [medTimer, setMedTimer] = useState({
+    running: false,
+    mode: "free",
+    durationSec: 300,
+    secondsLeft: 300,
+    startedAt: 0,
+  });
+  const [medCompleted, setMedCompleted] = useState(null);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
   const [exerciseFilterMuscle, setExerciseFilterMuscle] = useState("All");
   const [addFoodTarget, setAddFoodTarget] = useState(null);
@@ -1720,6 +1770,7 @@ export default function AtlasLuthor() {
       measurementLog,
       exercisePerformance,
       challenges,
+      meditationLog,
     });
 
     setStorageFull(!saved);
@@ -1748,6 +1799,7 @@ export default function AtlasLuthor() {
     measurementLog,
     exercisePerformance,
     challenges,
+    meditationLog,
   ]);
 
   useEffect(() => {
@@ -1795,6 +1847,28 @@ export default function AtlasLuthor() {
       document.removeEventListener("visibilitychange", syncRestTimer);
     };
   }, [restTimer.running, restTimer.endsAt, notificationSettings.sound]);
+
+  // Meditation session countdown. Each tick decrements secondsLeft; when it
+  // hits 0 the session is logged and a bell plays.
+  useEffect(() => {
+    if (!medTimer.running) return undefined;
+    const intervalId = window.setInterval(() => {
+      setMedTimer(prev => {
+        if (!prev.running) return prev;
+        if (prev.secondsLeft <= 1) {
+          const totalMin = Math.max(1, Math.round(prev.durationSec / 60));
+          logMeditationSession(totalMin, prev.mode);
+          playReminderSound("bell");
+          setMedCompleted({ durationMin: totalMin, mode: prev.mode, at: Date.now() });
+          return { ...prev, running: false, secondsLeft: 0 };
+        }
+        return { ...prev, secondsLeft: prev.secondsLeft - 1 };
+      });
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+    // logMeditationSession changes per render but is stable in behavior
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [medTimer.running]);
 
   const updateCalendarForToday = nextChecked => {
     const date = getDateKey();
@@ -2117,6 +2191,36 @@ export default function AtlasLuthor() {
     [progressEntries]
   );
   const weeklyStreak = completedWeekKeys.length;
+  const meditationGoalMin = Math.max(1, Number(appSettings.meditationGoalMin) || 10);
+  const meditationStats = useMemo(() => {
+    const todayKey = getDateKey();
+    const sumMinutes = list => (Array.isArray(list) ? list : []).reduce((sum, item) => sum + (Number(item.durationMin) || 0), 0);
+    const todayMinutes = sumMinutes(meditationLog[todayKey]);
+    let totalSessions = 0;
+    let totalMinutes = 0;
+    Object.values(meditationLog).forEach(list => {
+      if (!Array.isArray(list)) return;
+      totalSessions += list.length;
+      totalMinutes += sumMinutes(list);
+    });
+    // Daily streak: consecutive days back from today that hit the goal.
+    let streak = 0;
+    for (let offset = 0; offset < 365; offset += 1) {
+      const day = new Date();
+      day.setDate(day.getDate() - offset);
+      const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+      const minutes = sumMinutes(meditationLog[key]);
+      if (minutes >= meditationGoalMin) {
+        streak += 1;
+      } else if (offset === 0) {
+        // Today not yet at goal — don't break the prior streak.
+        continue;
+      } else {
+        break;
+      }
+    }
+    return { todayMinutes, totalSessions, totalMinutes, streak };
+  }, [meditationLog, meditationGoalMin]);
   const earnedBadges = [
     weeklyMetrics.weeklyProgress >= 100 ? (appSettings.language === "es" ? "Protocolo Completo" : "Protocol Clear") : null,
     weeklyMetrics.completedSessions >= weeklySessionsGoal ? (appSettings.language === "es" ? "Cazador de Sesiones" : "Session Hunter") : null,
@@ -2235,11 +2339,11 @@ export default function AtlasLuthor() {
     ? { today:"Hoy", body:"Cuerpo", score:"Puntaje", calendar:"Calendario", prs:"Récords",
         fatigue:"Fatiga", goals:"Metas", progress:"Progreso", badges:"Insignias",
         photos:"Fotos", metrics:"Métricas", week:"Semana", water:"Agua", coach:"Coach",
-        nutrition:"Nutrición", cardio:"Cardio", challenges:"Retos" }
+        nutrition:"Nutrición", cardio:"Cardio", challenges:"Retos", meditation:"Meditación" }
     : { today:"Today", body:"Body", score:"Score", calendar:"Calendar", prs:"PRs",
         fatigue:"Fatigue", goals:"Goals", progress:"Progress", badges:"Badges",
         photos:"Photos", metrics:"Metrics", week:"Week", water:"Water", coach:"Coach",
-        nutrition:"Nutrition", cardio:"Cardio", challenges:"Challenges" };
+        nutrition:"Nutrition", cardio:"Cardio", challenges:"Challenges", meditation:"Meditation" };
   const featurePages = [
     { id: "today", title: text.todayCommand, label: featurePageLabels.today, accent: themeFor(weeklyMetrics.todayType).accent },
     { id: "body", title: text.bodyStatus, label: featurePageLabels.body, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
@@ -2258,6 +2362,7 @@ export default function AtlasLuthor() {
     { id: "week", title: text.weekPlan, label: featurePageLabels.week, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "water", title: text.waterTracking, label: featurePageLabels.water, accent: "#90C8FF" },
     { id: "coach", title: text.coachTitle, label: featurePageLabels.coach, accent: "#B8A0FF" },
+    { id: "meditation", title: language === "es" ? "Meditación" : "Meditation", label: featurePageLabels.meditation, accent: "#B8A0FF" },
   ];
   const activeFeature = featurePages.find(page => page.id === activeFeaturePage) || featurePages[0];
   const weeklySetProgress = days.reduce((sum, dayName) => (
@@ -2464,6 +2569,7 @@ export default function AtlasLuthor() {
     setMeasurementLog(data?.measurementLog || {});
     setExercisePerformance(data?.exercisePerformance || {});
     setChallenges(Array.isArray(data?.challenges) ? data.challenges : []);
+    setMeditationLog(data?.meditationLog && typeof data.meditationLog === "object" ? data.meditationLog : {});
     setActiveDay(getTodayDayName());
     setActiveSession(0);
     setActiveFeaturePage("today");
@@ -2519,6 +2625,7 @@ export default function AtlasLuthor() {
       measurementLog: {},
       exercisePerformance: {},
       challenges: [],
+      meditationLog: {},
     };
   };
 
@@ -2732,6 +2839,41 @@ export default function AtlasLuthor() {
 
   const stopRestTimer = () => {
     setRestTimer(prev => ({ ...prev, secondsLeft: 0, running: false, endsAt: null, notified: false }));
+  };
+
+  const startMeditation = (mode, durationMin) => {
+    const durationSec = Math.max(1, Math.round(Number(durationMin) * 60));
+    setMedCompleted(null);
+    setMedTimer({
+      running: true,
+      mode: MEDITATION_MODES[mode] ? mode : "free",
+      durationSec,
+      secondsLeft: durationSec,
+      startedAt: Date.now(),
+    });
+    playReminderSound("bell");
+  };
+
+  const pauseMeditation = () => {
+    setMedTimer(prev => ({ ...prev, running: !prev.running }));
+  };
+
+  const stopMeditation = () => {
+    setMedTimer(prev => ({ ...prev, running: false, secondsLeft: prev.durationSec }));
+  };
+
+  const logMeditationSession = (durationMin, mode) => {
+    const date = getDateKey();
+    const entry = {
+      id: `med-${Date.now()}`,
+      durationMin,
+      mode,
+      completedAt: new Date().toISOString(),
+    };
+    setMeditationLog(prev => {
+      const list = Array.isArray(prev[date]) ? prev[date] : [];
+      return { ...prev, [date]: [entry, ...list] };
+    });
   };
 
   const addWater = (amount = 1) => {
@@ -2979,6 +3121,7 @@ export default function AtlasLuthor() {
         measurementLog,
         exercisePerformance,
         challenges,
+        meditationLog,
       },
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -3025,6 +3168,7 @@ export default function AtlasLuthor() {
         if (data.measurementLog) setMeasurementLog(data.measurementLog);
         if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
         if (Array.isArray(data.challenges)) setChallenges(data.challenges);
+        if (data.meditationLog && typeof data.meditationLog === "object") setMeditationLog(data.meditationLog);
         setShowDataTools(false);
       } catch {
         window.alert("That backup file could not be imported.");
@@ -3067,6 +3211,7 @@ export default function AtlasLuthor() {
         measurementLog,
         exercisePerformance,
         challenges,
+        meditationLog,
       },
     };
 
@@ -3124,6 +3269,7 @@ export default function AtlasLuthor() {
       if (data.measurementLog) setMeasurementLog(data.measurementLog);
       if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
       if (Array.isArray(data.challenges)) setChallenges(data.challenges);
+      if (data.meditationLog && typeof data.meditationLog === "object") setMeditationLog(data.meditationLog);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
     } catch {
       setCloudSettings(prev => ({ ...prev, status: "Download failed" }));
@@ -3520,6 +3666,28 @@ export default function AtlasLuthor() {
           50% { opacity: 0.7; transform: scale(1.04); }
           100% { opacity: 1; transform: scale(1); }
         }
+
+        @keyframes medBreathFree {
+          0%, 100% { transform: scale(0.85); opacity: 0.85; }
+          50% { transform: scale(1.05); opacity: 1; }
+        }
+        @keyframes medBreathBox {
+          0% { transform: scale(0.85); opacity: 0.85; }
+          25% { transform: scale(1.05); opacity: 1; }
+          50% { transform: scale(1.05); opacity: 1; }
+          75% { transform: scale(0.85); opacity: 0.85; }
+          100% { transform: scale(0.85); opacity: 0.85; }
+        }
+        @keyframes medBreathCalm {
+          0% { transform: scale(0.85); opacity: 0.85; }
+          21% { transform: scale(1.05); opacity: 1; }
+          58% { transform: scale(1.05); opacity: 1; }
+          100% { transform: scale(0.85); opacity: 0.85; }
+        }
+        .med-breath { transform-origin: center; }
+        .med-breath-free { animation: medBreathFree 12s ease-in-out infinite; }
+        .med-breath-box { animation: medBreathBox 16s ease-in-out infinite; }
+        .med-breath-calm { animation: medBreathCalm 19s ease-in-out infinite; }
 
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
@@ -4160,6 +4328,54 @@ export default function AtlasLuthor() {
               </div>
             </div>
 
+            {(() => {
+              const medAccent = meditationStats.todayMinutes >= meditationGoalMin ? "#3FB98A" : "#B8A0FF";
+              const medPct = Math.min(100, Math.round((meditationStats.todayMinutes / meditationGoalMin) * 100));
+              return (
+                <div className="home-card" style={{ marginBottom: 14, borderColor: medTimer.running ? `${medAccent}55` : undefined }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <div>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                        {language === "es" ? "MEDITACIÓN HOY" : "MEDITATION TODAY"}
+                      </p>
+                      <p style={{ fontSize: 28, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: medAccent, lineHeight: 1 }}>
+                        {meditationStats.todayMinutes}<span style={{ fontSize: 14, color: isLightMode ? "#7A8090" : "#666", fontWeight: 400 }}>/{meditationGoalMin} min</span>
+                      </p>
+                      {meditationStats.streak > 0 && (
+                        <p style={{ fontSize: 10, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginTop: 4, letterSpacing: 1 }}>
+                          {meditationStats.streak} {language === "es" ? "DÍAS SEGUIDOS" : "DAY STREAK"}
+                        </p>
+                      )}
+                    </div>
+                    <button className="edit-btn" onClick={() => openFeaturePage("meditation")} style={{ color: medAccent }}>
+                      {language === "es" ? "Ver" : "View"}
+                    </button>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 5, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.07)", overflow: "hidden", marginBottom: 12 }}>
+                    <div style={{ width: `${medPct}%`, height: "100%", background: medAccent, borderRadius: 5, transition: "width 0.4s ease" }} />
+                  </div>
+                  {medTimer.running ? (
+                    <button className="primary-btn" style={{ width: "100%" }} onClick={() => openFeaturePage("meditation")}>
+                      {language === "es" ? "Sesión en curso · Abrir" : "Session running · Open"}
+                    </button>
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                      {[5, 10, 15].map(min => (
+                        <button
+                          key={min}
+                          className="dark-btn"
+                          onClick={() => { startMeditation(medTimer.mode, min); openFeaturePage("meditation"); }}
+                          style={{ color: medAccent, borderColor: `${medAccent}33` }}
+                        >
+                          + {min} min
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div>
@@ -4626,6 +4842,9 @@ export default function AtlasLuthor() {
                 {activeFeaturePage === "nutrition" && text.featDescNutrition}
                 {activeFeaturePage === "cardio" && text.featDescCardio}
                 {activeFeaturePage === "challenges" && text.featDescChallenges}
+                {activeFeaturePage === "meditation" && (language === "es"
+                  ? "Temporizador con guía de respiración. Sesiones cortas todos los días bajan el estrés y aceleran la recuperación."
+                  : "Timer with a breathing guide. Short daily sessions lower stress and speed recovery.")}
               </p>
             </div>
 
@@ -5756,6 +5975,221 @@ export default function AtlasLuthor() {
                   <button className="dark-btn" onClick={() => setEditingProfile({ ...profile })}>
                     {text.editBodyStatus}
                   </button>
+                </div>
+              );
+            })()}
+
+            {activeFeaturePage === "meditation" && (() => {
+              const modeDef = MEDITATION_MODES[medTimer.mode] || MEDITATION_MODES.free;
+              const elapsedSec = medTimer.durationSec - medTimer.secondsLeft;
+              const progressPct = medTimer.durationSec > 0 ? Math.min(100, Math.round((elapsedSec / medTimer.durationSec) * 100)) : 0;
+              const cycleSec = modeDef.cycleSec;
+              const cyclePos = cycleSec > 0 ? elapsedSec % cycleSec : 0;
+              let phaseSec = 0;
+              let phaseLabel = "";
+              for (const phase of modeDef.phases) {
+                if (cyclePos < phaseSec + phase.sec) {
+                  phaseLabel = language === "es" ? phase.es : phase.en;
+                  break;
+                }
+                phaseSec += phase.sec;
+              }
+              const mmss = sec => {
+                const m = Math.floor(sec / 60);
+                const s = sec % 60;
+                return `${m}:${String(s).padStart(2, "0")}`;
+              };
+              const accent = modeDef.accent;
+              const ringR = 64;
+              const ringC = 2 * Math.PI * ringR;
+              const todayPct = Math.min(100, Math.round((meditationStats.todayMinutes / meditationGoalMin) * 100));
+              const recentDays = (() => {
+                const days7 = [];
+                for (let i = 0; i < 7; i += 1) {
+                  const d = new Date();
+                  d.setDate(d.getDate() - i);
+                  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                  const list = Array.isArray(meditationLog[key]) ? meditationLog[key] : [];
+                  const minutes = list.reduce((sum, item) => sum + (Number(item.durationMin) || 0), 0);
+                  days7.push({ key, minutes, sessions: list.length });
+                }
+                return days7;
+              })();
+              return (
+                <div className="detail-list">
+                  <div className="detail-grid">
+                    <div className="detail-card"><p className="detail-label">{language === "es" ? "HOY" : "TODAY"}</p><p className="detail-value" style={{ color: accent }}>{meditationStats.todayMinutes} <span style={{ fontSize: 14, color: "#8A8F99", fontWeight: 400 }}>/ {meditationGoalMin} min</span></p></div>
+                    <div className="detail-card"><p className="detail-label">{language === "es" ? "RACHA" : "STREAK"}</p><p className="detail-value" style={{ color: "#FFD060" }}>{meditationStats.streak} {language === "es" ? "días" : "days"}</p></div>
+                    <div className="detail-card"><p className="detail-label">{language === "es" ? "SESIONES" : "SESSIONS"}</p><p className="detail-value">{meditationStats.totalSessions}</p></div>
+                    <div className="detail-card"><p className="detail-label">{language === "es" ? "TOTAL MIN" : "TOTAL MIN"}</p><p className="detail-value">{meditationStats.totalMinutes}</p></div>
+                  </div>
+
+                  <div className="home-card" style={{ borderColor: medTimer.running ? `${accent}66` : undefined, padding: "22px 18px" }}>
+                    <div style={{ position: "relative", width: "100%", maxWidth: 240, aspectRatio: "1", margin: "0 auto" }}>
+                      <svg viewBox="0 0 160 160" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                        <circle cx="80" cy="80" r={ringR} fill="none" stroke={isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"} strokeWidth="8" />
+                        <circle cx="80" cy="80" r={ringR} fill="none" stroke={accent} strokeWidth="8" strokeLinecap="round" strokeDasharray={ringC} strokeDashoffset={ringC * (1 - progressPct / 100)} style={{ transition: "stroke-dashoffset 0.9s linear" }} />
+                      </svg>
+                      <div
+                        className={medTimer.running ? `med-breath med-breath-${medTimer.mode}` : ""}
+                        style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: accent, pointerEvents: "none" }}
+                      >
+                        <p style={{ fontSize: 42, fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{mmss(medTimer.secondsLeft)}</p>
+                        {medTimer.running && (
+                          <p style={{ fontSize: 12, letterSpacing: 3, marginTop: 8, fontFamily: "'Orbitron', monospace", fontWeight: 800, opacity: 0.9 }}>{phaseLabel.toUpperCase()}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <p style={{ textAlign: "center", fontSize: 12, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 14, lineHeight: 1.5 }}>
+                      {language === "es" ? modeDef.esHint : modeDef.enHint}
+                    </p>
+
+                    {medTimer.running ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+                        <button className="dark-btn" onClick={pauseMeditation}>
+                          {language === "es" ? "Pausar" : "Pause"}
+                        </button>
+                        <button className="dark-btn" onClick={stopMeditation} style={{ color: "#E5604D" }}>
+                          {language === "es" ? "Detener" : "Stop"}
+                        </button>
+                      </div>
+                    ) : medTimer.secondsLeft > 0 && medTimer.secondsLeft < medTimer.durationSec ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+                        <button className="primary-btn" onClick={pauseMeditation}>
+                          {language === "es" ? "Continuar" : "Resume"}
+                        </button>
+                        <button className="dark-btn" onClick={stopMeditation} style={{ color: "#E5604D" }}>
+                          {language === "es" ? "Detener" : "Stop"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button className="primary-btn" style={{ marginTop: 16, width: "100%" }} onClick={() => startMeditation(medTimer.mode, medTimer.durationSec / 60)}>
+                        {language === "es" ? "Empezar sesión" : "Start session"}
+                      </button>
+                    )}
+                  </div>
+
+                  {medCompleted && !medTimer.running && (
+                    <div className="home-card" style={{ borderColor: "#3FB98A66", background: isLightMode ? "rgba(63,185,138,0.08)" : "rgba(63,185,138,0.06)" }}>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                        {language === "es" ? "SESIÓN COMPLETA" : "SESSION DONE"}
+                      </p>
+                      <p style={{ color: isLightMode ? "#1A3A2A" : "#A8E0C0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                        {language === "es"
+                          ? `Guardamos ${medCompleted.durationMin} min en tu historial. Buena calma.`
+                          : `Logged ${medCompleted.durationMin} min to your history. Nice calm.`}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="home-card">
+                    <p className="detail-label">{language === "es" ? "DURACIÓN" : "DURATION"}</p>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+                      {MEDITATION_PRESETS.map(min => {
+                        const isSel = Math.round(medTimer.durationSec / 60) === min;
+                        return (
+                          <button
+                            key={min}
+                            onClick={() => setMedTimer(prev => ({ ...prev, durationSec: min * 60, secondsLeft: min * 60, running: false }))}
+                            style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 900, cursor: "pointer" }}
+                          >
+                            {min} min
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="home-card">
+                    <p className="detail-label">{language === "es" ? "MODO DE RESPIRACIÓN" : "BREATHING MODE"}</p>
+                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                      {Object.entries(MEDITATION_MODES).map(([key, m]) => {
+                        const isSel = medTimer.mode === key;
+                        return (
+                          <button
+                            key={key}
+                            className="dark-btn"
+                            onClick={() => setMedTimer(prev => ({ ...prev, mode: key }))}
+                            style={{ textAlign: "left", borderColor: isSel ? `${m.accent}55` : undefined, boxShadow: isSel ? `inset 0 0 0 1px ${m.accent}44` : "none" }}
+                          >
+                            <span style={{ display: "block", fontWeight: 900, color: isSel ? m.accent : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif" }}>{language === "es" ? m.es : m.en}</span>
+                            <span style={{ display: "block", fontSize: 11, color: "#8A8F99", marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>{language === "es" ? m.esHint : m.enHint}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="home-card">
+                    <p className="detail-label">{language === "es" ? "META DIARIA" : "DAILY GOAL"}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+                      <input
+                        type="range"
+                        min="1"
+                        max="60"
+                        step="1"
+                        value={meditationGoalMin}
+                        onChange={event => setAppSettings(prev => ({ ...prev, meditationGoalMin: Number(event.target.value) }))}
+                        style={{ flex: 1 }}
+                      />
+                      <span style={{ minWidth: 56, textAlign: "right", color: accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{meditationGoalMin} min</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 10 }}>
+                      <div style={{ width: `${todayPct}%`, height: "100%", background: accent, borderRadius: 4, transition: "width 0.4s ease" }} />
+                    </div>
+                    <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6 }}>
+                      {meditationStats.todayMinutes} / {meditationGoalMin} min · {todayPct}%
+                    </p>
+                  </div>
+
+                  <div className="home-card">
+                    <p className="detail-label">{language === "es" ? "ÚLTIMOS 7 DÍAS" : "LAST 7 DAYS"}</p>
+                    <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+                      {recentDays.map(day => {
+                        const pct = Math.min(100, meditationGoalMin > 0 ? Math.round((day.minutes / meditationGoalMin) * 100) : 0);
+                        const isToday = day.key === getDateKey();
+                        const barColor = pct >= 100 ? "#3FB98A" : pct > 0 ? accent : (isLightMode ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.18)");
+                        return (
+                          <div key={day.key} className="detail-row" style={{ borderColor: isToday ? `${accent}33` : undefined }}>
+                            <div style={{ minWidth: 72 }}>
+                              <p className="detail-row-main" style={{ fontSize: 12, color: isToday ? accent : undefined }}>
+                                {isToday ? (language === "es" ? "HOY" : "TODAY") : day.key}
+                              </p>
+                            </div>
+                            <div style={{ flex: 1, height: 4, borderRadius: 4, overflow: "hidden", background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)" }}>
+                              <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 4, transition: "width 0.4s ease" }} />
+                            </div>
+                            <p style={{ fontSize: 12, fontWeight: 900, color: barColor, fontFamily: "'Orbitron', monospace", minWidth: 60, textAlign: "right" }}>{day.minutes} min</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="home-card">
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                      {language === "es" ? "POR QUÉ IMPORTA" : "WHY IT MATTERS"}
+                    </p>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {(language === "es" ? [
+                        "Reduce el cortisol y acelera la recuperación entre sesiones de entreno.",
+                        "Mejora el enfoque y la conexión mente-músculo durante las series.",
+                        "Estabiliza el ritmo cardíaco y la calidad del sueño.",
+                        "10 minutos al día son suficientes para empezar a sentir el cambio.",
+                      ] : [
+                        "Lowers cortisol and speeds recovery between training sessions.",
+                        "Sharpens focus and mind-muscle connection during lifts.",
+                        "Stabilizes heart rate and improves sleep quality.",
+                        "10 minutes a day is enough to start noticing the shift.",
+                      ]).map((line, ii) => (
+                        <div key={ii} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <div style={{ width: 5, height: 5, borderRadius: "50%", background: accent, marginTop: 5, flexShrink: 0 }} />
+                          <p style={{ color: isLightMode ? "#2A3A4A" : "#B8C8D8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.55 }}>{line}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               );
             })()}
