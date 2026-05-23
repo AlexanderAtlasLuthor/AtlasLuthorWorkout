@@ -21,6 +21,7 @@ import {
 import { getExerciseCues } from "./lib/exerciseInfo.js";
 import { renderShareCard } from "./lib/shareCard.js";
 import TrendChart from "./components/TrendChart.jsx";
+import { computeAchievementStats, computeAchievements } from "./lib/achievements.js";
 
 const pushSessions = [
   {
@@ -1635,6 +1636,7 @@ export default function AtlasLuthor() {
   const [measurementLog, setMeasurementLog] = useState({});
   const [exercisePerformance, setExercisePerformance] = useState({});
   const [challenges, setChallenges] = useState([]);
+  const [sessionHistory, setSessionHistory] = useState({});
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
   const [exerciseFilterMuscle, setExerciseFilterMuscle] = useState("All");
   const [addFoodTarget, setAddFoodTarget] = useState(null);
@@ -1724,6 +1726,7 @@ export default function AtlasLuthor() {
       measurementLog,
       exercisePerformance,
       challenges,
+      sessionHistory,
     };
     pendingSaveRef.current = { key, payload };
 
@@ -1759,6 +1762,7 @@ export default function AtlasLuthor() {
     measurementLog,
     exercisePerformance,
     challenges,
+    sessionHistory,
   ]);
 
   // Flushes a pending debounced save immediately when the app is hidden or
@@ -1852,6 +1856,30 @@ export default function AtlasLuthor() {
         updatedAt: new Date().toISOString(),
       },
     }));
+
+    // When the day is fully done, snapshot the exercises into session history
+    // so the user has a permanent record of what they actually trained.
+    if (status === "completed") {
+      setSessionHistory(prev => ({
+        ...prev,
+        [date]: {
+          date,
+          dayName: today,
+          sessions: todaySessions.map((session, sessionIndex) => ({
+            name: session.name,
+            exercises: session.exercises.map((exercise, exerciseIndex) => ({
+              name: exercise.name,
+              weight: exercise.weight,
+              reps: exercise.reps,
+              sets: exercise.sets,
+              completed: !!nextChecked[getExerciseKey(today, sessionIndex, exerciseIndex)],
+              est1RM: estimate1RMFromExercise(exercise.weight, exercise.reps),
+            })),
+          })),
+          completedAt: new Date().toISOString(),
+        },
+      }));
+    }
   };
 
   // Records a completed exercise into per-exercise performance history and
@@ -2154,6 +2182,12 @@ export default function AtlasLuthor() {
     weeklyStreak >= 2 ? (appSettings.language === "es" ? `Racha de ${weeklyStreak} Semanas` : `${weeklyStreak} Week Streak`) : null,
     progressEntries.some(entry => entry.type === "manual") ? (appSettings.language === "es" ? "Progreso Registrado" : "Progress Logged") : null,
   ].filter(Boolean);
+  const achievementStats = useMemo(
+    () => computeAchievementStats({ calendarLog, exerciseNotes, cardioLog, progressPhotos, foodLog, weeklyStreak, profile }),
+    [calendarLog, exerciseNotes, cardioLog, progressPhotos, foodLog, weeklyStreak, profile]
+  );
+  const allAchievements = useMemo(() => computeAchievements(achievementStats), [achievementStats]);
+  const earnedAchievementsCount = allAchievements.filter(a => a.earned).length;
   const restTimerRadius = 44;
   const restTimerCircumference = 2 * Math.PI * restTimerRadius;
   const restTimerProgress = restTimer.duration > 0 ? restTimer.secondsLeft / restTimer.duration : 0;
@@ -2495,6 +2529,7 @@ export default function AtlasLuthor() {
     setMeasurementLog(data?.measurementLog || {});
     setExercisePerformance(data?.exercisePerformance || {});
     setChallenges(Array.isArray(data?.challenges) ? data.challenges : []);
+    setSessionHistory(data?.sessionHistory && typeof data.sessionHistory === "object" ? data.sessionHistory : {});
     setActiveDay(getTodayDayName());
     setActiveSession(0);
     setActiveFeaturePage("today");
@@ -2550,6 +2585,7 @@ export default function AtlasLuthor() {
       measurementLog: {},
       exercisePerformance: {},
       challenges: [],
+      sessionHistory: {},
     };
   };
 
@@ -3010,6 +3046,7 @@ export default function AtlasLuthor() {
         measurementLog,
         exercisePerformance,
         challenges,
+        sessionHistory,
       },
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -3056,6 +3093,7 @@ export default function AtlasLuthor() {
         if (data.measurementLog) setMeasurementLog(data.measurementLog);
         if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
         if (Array.isArray(data.challenges)) setChallenges(data.challenges);
+        if (data.sessionHistory && typeof data.sessionHistory === "object") setSessionHistory(data.sessionHistory);
         setShowDataTools(false);
       } catch {
         window.alert("That backup file could not be imported.");
@@ -3098,6 +3136,7 @@ export default function AtlasLuthor() {
         measurementLog,
         exercisePerformance,
         challenges,
+        sessionHistory,
       },
     };
 
@@ -3164,6 +3203,7 @@ export default function AtlasLuthor() {
       if (isObject(data.measurementLog)) setMeasurementLog(data.measurementLog);
       if (isObject(data.exercisePerformance)) setExercisePerformance(data.exercisePerformance);
       if (Array.isArray(data.challenges)) setChallenges(data.challenges);
+      if (isObject(data.sessionHistory)) setSessionHistory(data.sessionHistory);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
     } catch {
       setCloudSettings(prev => ({ ...prev, status: "Download failed" }));
@@ -5086,6 +5126,33 @@ export default function AtlasLuthor() {
                     <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtW(entry.weight)}</span>
                   </div>
                 ))}
+                {Object.keys(sessionHistory).length > 0 && (
+                  <div className="home-card">
+                    <p className="detail-label">{language === "es" ? "HISTORIAL DE SESIONES" : "SESSION HISTORY"}</p>
+                    <div className="detail-list" style={{ marginTop: 10 }}>
+                      {Object.entries(sessionHistory)
+                        .sort((a, b) => b[0].localeCompare(a[0]))
+                        .slice(0, 10)
+                        .map(([date, entry]) => {
+                          const exercises = (entry.sessions || []).flatMap(session => session.exercises || []);
+                          const completed = exercises.filter(item => item.completed).length;
+                          const bestEst = exercises.reduce((max, item) => Math.max(max, Number(item.est1RM) || 0), 0);
+                          const sessionNames = (entry.sessions || []).map(session => session.name).filter(Boolean).join(" · ");
+                          return (
+                            <div key={date} className="detail-row">
+                              <div>
+                                <p className="detail-row-main">{date} · {displayDay(entry.dayName)}</p>
+                                <p className="detail-row-sub">{sessionNames ? `${sessionNames} — ` : ""}{completed}/{exercises.length} {text.exercisesWord}</p>
+                              </div>
+                              {bestEst > 0 && (
+                                <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>1RM {fmtW(bestEst)}</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -5095,14 +5162,47 @@ export default function AtlasLuthor() {
                   <div className="detail-card"><p className="detail-label">{text.weekStreak}</p><p className="detail-value" style={{ color: "#FFD060" }}>{weeklyStreak}</p></div>
                   <div className="detail-card"><p className="detail-label">{text.daysClear}</p><p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedDays}/7</p></div>
                   <div className="detail-card"><p className="detail-label">{text.weekOf}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{currentWeekKey.slice(5)}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.badgesLabel}</p><p className="detail-value" style={{ color: "#B8A0FF" }}>{earnedBadges.length || 1}</p></div>
+                  <div className="detail-card"><p className="detail-label">{text.badgesLabel}</p><p className="detail-value" style={{ color: "#B8A0FF" }}>{earnedAchievementsCount}/{allAchievements.length}</p></div>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(earnedBadges.length ? earnedBadges : [text.protocolStarted]).map(badge => (
-                    <span key={badge} style={{ color: "#FFD060", background: "rgba(255,208,96,0.08)", border: "1px solid rgba(255,208,96,0.32)", borderRadius: 999, padding: "9px 13px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 900 }}>
-                      {badge}
-                    </span>
-                  ))}
+                {earnedBadges.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {earnedBadges.map(badge => (
+                      <span key={badge} style={{ color: "#FFD060", background: "rgba(255,208,96,0.08)", border: "1px solid rgba(255,208,96,0.32)", borderRadius: 999, padding: "9px 13px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 900 }}>
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "grid", gap: 10 }}>
+                  {allAchievements.map(achievement => {
+                    const pct = Math.min(100, Math.round((achievement.progress / achievement.target) * 100));
+                    const accent = achievement.earned ? "#FFD060" : "#90C8FF";
+                    return (
+                      <div
+                        key={achievement.id}
+                        className="home-card"
+                        style={{
+                          opacity: achievement.earned ? 1 : 0.72,
+                          borderColor: achievement.earned ? "rgba(255,208,96,0.5)" : undefined,
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 900, fontSize: 14, color: accent }}>
+                            {achievement.label[language] || achievement.label.en}
+                          </p>
+                          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 11, color: accent, fontWeight: 900 }}>
+                            {Math.min(achievement.progress, achievement.target)}/{achievement.target}
+                          </span>
+                        </div>
+                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: isLightMode ? "#5A6270" : "#8A8F99", marginTop: 4, lineHeight: 1.5 }}>
+                          {achievement.description[language] || achievement.description.en}
+                        </p>
+                        <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 8 }}>
+                          <div style={{ width: `${pct}%`, height: "100%", background: accent, borderRadius: 4, transition: "width 0.4s ease" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
