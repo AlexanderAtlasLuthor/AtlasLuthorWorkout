@@ -2,16 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatWeight, formatWeightDelta, formatHeight, formatExerciseWeight,
   formatDistance, formatMeasure, parseHeightInches,
-  measureInputToInches, distanceInputToMiles, measureUnit, distanceUnit, inToCm,
+  measureInputToInches, distanceInputToMiles, measureUnit, inToCm,
   weightUnit, kgToLb, lbToKg,
 } from "./lib/units.js";
 import {
   calcBMR, calcTDEE, goalCalorieTarget, macroSplit, sumDayMacros,
   FOOD_DB, MEALS, ACTIVITY_LEVELS,
 } from "./lib/nutrition.js";
-import {
-  CARDIO_TYPES, cardioTypeInfo, cardioTypeLabel, estimateCardioCalories, formatPace,
-} from "./lib/cardio.js";
+import { estimateCardioCalories } from "./lib/cardio.js";
 import { navyBodyFat, MEASUREMENT_FIELDS } from "./lib/bodyComp.js";
 import {
   estimate1RMFromExercise, parseWeightNumber, parseRepsNumber,
@@ -22,6 +20,9 @@ import { renderShareCard } from "./lib/shareCard.js";
 import TrendChart from "./components/TrendChart.jsx";
 import { computeAchievementStats, computeAchievements } from "./lib/achievements.js";
 import { loadPhotos as loadPhotosFromIDB, savePhotos as savePhotosToIDB } from "./lib/photoStore.js";
+import BadgesPage from "./features/BadgesPage.jsx";
+import ProgressPage from "./features/ProgressPage.jsx";
+import CardioPage from "./features/CardioPage.jsx";
 
 const pushSessions = [
   {
@@ -5135,134 +5136,35 @@ export default function AtlasLuthor() {
             )}
 
             {activeFeaturePage === "progress" && (
-              <div className="detail-list">
-                <div className="compact-actions">
-                  <button className="primary-btn" onClick={rememberProgress}>{text.saveProgress}</button>
-                  <button className="dark-btn" onClick={() => setShowDataTools(true)}>{text.backup}</button>
-                  <button className="dark-btn" onClick={resetWeek}>{text.resetWeek}</button>
-                </div>
-                {chartEntries.length > 0 && (
-                  <div className="home-card" style={{ display: "flex", alignItems: "end", gap: 8, height: 130 }}>
-                    {chartEntries.map(entry => {
-                      const range = Math.max(maxChartWeight - minChartWeight, 1);
-                      const height = 34 + ((entry.weightNumber - minChartWeight) / range) * 66;
-                      return (
-                        <div key={`${entry.id}-feature-bar`} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-                          <div title={fmtW(entry.weight)} style={{ height, maxWidth: 52, margin: "0 auto", borderRadius: "8px 8px 3px 3px", background: "linear-gradient(180deg, #90C8FF, #5C93C8)", boxShadow: "0 0 18px rgba(144,200,255,0.3)" }} />
-                          <p style={{ color: isLightMode ? "#7A8090" : "#666", fontFamily: "'DM Sans', sans-serif", fontSize: 9, marginTop: 5 }}>{fmtW(entry.weight)}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {(() => {
-                  const volumePoints = [...progressEntries]
-                    .reverse()
-                    .filter(entry => Number(entry.weeklyVolume) > 0)
-                    .slice(-20)
-                    .map(entry => ({ value: Number(entry.weeklyVolume) }));
-                  if (volumePoints.length < 2) return null;
-                  return (
-                    <div className="home-card">
-                      <p className="detail-label">{t("VOLUMEN SEMANAL", "WEEKLY VOLUME")}</p>
-                      <div style={{ marginTop: 10 }}>
-                        <TrendChart
-                          points={volumePoints}
-                          color="#B8A0FF"
-                          formatValue={value => Math.round(value).toLocaleString()}
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-                {progressEntries.slice(0, 12).map(entry => (
-                  <div key={`${entry.id}-feature`} className="detail-row">
-                    <div>
-                      <p className="detail-row-main">{entry.date} - {entry.type === "manual" ? text.manualSave : text.autoSnapshot}</p>
-                      <p className="detail-row-sub">{entry.completedExercises} {text.exercisesWord} - {entry.completedSessions} {text.sessionsWord} - {text.weekWord} {entry.weekKey}</p>
-                    </div>
-                    <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtW(entry.weight)}</span>
-                  </div>
-                ))}
-                {Object.keys(sessionHistory).length > 0 && (
-                  <div className="home-card">
-                    <p className="detail-label">{t("HISTORIAL DE SESIONES", "SESSION HISTORY")}</p>
-                    <div className="detail-list" style={{ marginTop: 10 }}>
-                      {Object.entries(sessionHistory)
-                        .sort((a, b) => b[0].localeCompare(a[0]))
-                        .slice(0, 10)
-                        .map(([date, entry]) => {
-                          const exercises = (entry.sessions || []).flatMap(session => session.exercises || []);
-                          const completed = exercises.filter(item => item.completed).length;
-                          const bestEst = exercises.reduce((max, item) => Math.max(max, Number(item.est1RM) || 0), 0);
-                          const sessionNames = (entry.sessions || []).map(session => session.name).filter(Boolean).join(" · ");
-                          return (
-                            <div key={date} className="detail-row">
-                              <div>
-                                <p className="detail-row-main">{date} · {displayDay(entry.dayName)}</p>
-                                <p className="detail-row-sub">{sessionNames ? `${sessionNames} — ` : ""}{completed}/{exercises.length} {text.exercisesWord}</p>
-                              </div>
-                              {bestEst > 0 && (
-                                <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>1RM {fmtW(bestEst)}</span>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ProgressPage
+                text={text}
+                t={t}
+                isLightMode={isLightMode}
+                fmtW={fmtW}
+                displayDay={displayDay}
+                rememberProgress={rememberProgress}
+                setShowDataTools={setShowDataTools}
+                resetWeek={resetWeek}
+                chartEntries={chartEntries}
+                maxChartWeight={maxChartWeight}
+                minChartWeight={minChartWeight}
+                progressEntries={progressEntries}
+                sessionHistory={sessionHistory}
+              />
             )}
 
             {activeFeaturePage === "badges" && (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.weekStreak}</p><p className="detail-value" style={{ color: "#FFD060" }}>{weeklyStreak}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.daysClear}</p><p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedDays}/7</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.weekOf}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{currentWeekKey.slice(5)}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.badgesLabel}</p><p className="detail-value" style={{ color: "#B8A0FF" }}>{earnedAchievementsCount}/{allAchievements.length}</p></div>
-                </div>
-                {earnedBadges.length > 0 && (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {earnedBadges.map(badge => (
-                      <span key={badge} style={{ color: "#FFD060", background: "rgba(255,208,96,0.08)", border: "1px solid rgba(255,208,96,0.32)", borderRadius: 999, padding: "9px 13px", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 900 }}>
-                        {badge}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div style={{ display: "grid", gap: 10 }}>
-                  {allAchievements.map(achievement => {
-                    const pct = Math.min(100, Math.round((achievement.progress / achievement.target) * 100));
-                    const accent = achievement.earned ? "#FFD060" : "#90C8FF";
-                    return (
-                      <div
-                        key={achievement.id}
-                        className="home-card"
-                        style={{
-                          opacity: achievement.earned ? 1 : 0.72,
-                          borderColor: achievement.earned ? "rgba(255,208,96,0.5)" : undefined,
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                          <p style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 900, fontSize: 14, color: accent }}>
-                            {achievement.label[language] || achievement.label.en}
-                          </p>
-                          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 11, color: accent, fontWeight: 900 }}>
-                            {Math.min(achievement.progress, achievement.target)}/{achievement.target}
-                          </span>
-                        </div>
-                        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: isLightMode ? "#5A6270" : "#8A8F99", marginTop: 4, lineHeight: 1.5 }}>
-                          {achievement.description[language] || achievement.description.en}
-                        </p>
-                        <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 8 }}>
-                          <div style={{ width: `${pct}%`, height: "100%", background: accent, borderRadius: 4, transition: "width 0.4s ease" }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <BadgesPage
+                text={text}
+                language={language}
+                isLightMode={isLightMode}
+                weeklyStreak={weeklyStreak}
+                weeklyMetrics={weeklyMetrics}
+                currentWeekKey={currentWeekKey}
+                earnedAchievementsCount={earnedAchievementsCount}
+                allAchievements={allAchievements}
+                earnedBadges={earnedBadges}
+              />
             )}
 
             {activeFeaturePage === "photos" && (() => {
@@ -5665,97 +5567,24 @@ export default function AtlasLuthor() {
               );
             })()}
 
-            {activeFeaturePage === "cardio" && (() => {
-              const cardioDays = Object.entries(cardioLog).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
-              const cardioMinutesSeries = [];
-              for (let dayOffset = 13; dayOffset >= 0; dayOffset -= 1) {
-                const day = new Date();
-                day.setDate(day.getDate() - dayOffset);
-                const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
-                const minutes = (cardioLog[key] || []).reduce((sum, item) => sum + (Number(item.durationMin) || 0), 0);
-                cardioMinutesSeries.push({ value: minutes });
-              }
-              const hasCardioTrend = cardioMinutesSeries.some(point => point.value > 0);
-              const typeInfo = cardioTypeInfo(cardioDraft.type);
-              const draftDistance = distanceInputToMiles(cardioDraft.distance, unitSystem);
-              const draftDuration = Number(cardioDraft.durationMin) || 0;
-              return (
-                <div className="detail-list">
-                  <div className="detail-grid">
-                    <div className="detail-card"><p className="detail-label">{text.weeklyCardio.toUpperCase()}</p><p className="detail-value" style={{ color: "#FF9860" }}>{weeklyCardio.sessions}</p></div>
-                    <div className="detail-card"><p className="detail-label">{text.duration.toUpperCase()}</p><p className="detail-value">{weeklyCardio.minutes} {text.minutesShort}</p></div>
-                    <div className="detail-card"><p className="detail-label">{text.distance.toUpperCase()}</p><p className="detail-value">{fmtDist(weeklyCardio.distance)}</p></div>
-                    <div className="detail-card"><p className="detail-label">{text.caloriesBurned.toUpperCase()}</p><p className="detail-value" style={{ color: "#FF9860" }}>{weeklyCardio.calories}</p></div>
-                  </div>
-
-                  <div className="home-card">
-                    <p className="detail-label">{text.addCardioSession.toUpperCase()}</p>
-                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                      <select className="input" value={cardioDraft.type} onChange={event => setCardioDraft(prev => ({ ...prev, type: event.target.value }))}>
-                        {CARDIO_TYPES.map(option => <option key={option.id} value={option.id}>{cardioTypeLabel(option.id, language)}</option>)}
-                      </select>
-                      <div style={{ display: "grid", gridTemplateColumns: typeInfo.distance ? "1fr 1fr" : "1fr", gap: 8 }}>
-                        <label style={{ display: "block" }}>
-                          <span className="field-label">{text.duration.toUpperCase()} ({text.minutesShort})</span>
-                          <input className="input" type="number" inputMode="numeric" value={cardioDraft.durationMin} onChange={event => setCardioDraft(prev => ({ ...prev, durationMin: event.target.value }))} placeholder="20" />
-                        </label>
-                        {typeInfo.distance && (
-                          <label style={{ display: "block" }}>
-                            <span className="field-label">{text.distance.toUpperCase()} ({distanceUnit(unitSystem)})</span>
-                            <input className="input" type="number" inputMode="decimal" value={cardioDraft.distance} onChange={event => setCardioDraft(prev => ({ ...prev, distance: event.target.value }))} placeholder="3" />
-                          </label>
-                        )}
-                      </div>
-                      <input className="input" value={cardioDraft.note} onChange={event => setCardioDraft(prev => ({ ...prev, note: event.target.value }))} placeholder={text.noteField} />
-                      {draftDuration > 0 && (
-                        <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
-                          {estimateCardioCalories(cardioDraft.type, draftDuration, profile.currentWeight)} kcal
-                          {typeInfo.distance && draftDistance > 0 ? ` · ${formatPace(draftDistance, draftDuration, unitSystem)}` : ""}
-                        </p>
-                      )}
-                      <button className="primary-btn" onClick={addCardioSession}>{text.addCardioSession}</button>
-                    </div>
-                  </div>
-
-                  {hasCardioTrend && (
-                    <div className="home-card">
-                      <p className="detail-label">
-                        {t("MINUTOS · ÚLTIMOS 14 DÍAS", "MINUTES · LAST 14 DAYS")}
-                      </p>
-                      <div style={{ marginTop: 10 }}>
-                        <TrendChart
-                          points={cardioMinutesSeries}
-                          color="#FF9860"
-                          formatValue={value => `${Math.round(value)} ${text.minutesShort}`}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {cardioDays.length === 0 && (
-                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>{text.noCardioYet}</p>
-                  )}
-                  {cardioDays.map(([date, list]) => (
-                    <div key={date} className="home-card">
-                      <p className="detail-label">{date === getDateKey() ? (t("HOY", "TODAY")) : date}</p>
-                      <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
-                        {(list || []).map(item => (
-                          <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: isLightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 10px" }}>
-                            <div style={{ minWidth: 0 }}>
-                              <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{cardioTypeLabel(item.type, language)}</p>
-                              <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
-                                {item.durationMin} {text.minutesShort}{item.distance > 0 ? ` · ${fmtDist(item.distance)} · ${formatPace(item.distance, item.durationMin, unitSystem)}` : ""} · {item.calories} kcal
-                              </p>
-                            </div>
-                            <button className="edit-btn" onClick={() => removeCardioSession(date, item.id)} style={{ color: "#E5604D", flexShrink: 0 }}>{text.removeBtn}</button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
+            {activeFeaturePage === "cardio" && (
+              <CardioPage
+                text={text}
+                t={t}
+                language={language}
+                isLightMode={isLightMode}
+                fmtDist={fmtDist}
+                cardioLog={cardioLog}
+                cardioDraft={cardioDraft}
+                setCardioDraft={setCardioDraft}
+                unitSystem={unitSystem}
+                weeklyCardio={weeklyCardio}
+                profile={profile}
+                addCardioSession={addCardioSession}
+                removeCardioSession={removeCardioSession}
+                getDateKey={getDateKey}
+              />
+            )}
 
             {activeFeaturePage === "challenges" && (() => {
               const metricLabels = { workouts: text.challengeWorkouts, water: text.challengeWater, cardio: text.challengeCardio };
