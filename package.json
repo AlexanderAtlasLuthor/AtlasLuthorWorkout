@@ -7,6 +7,9 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
     "deploy:cloudflare": "npm run build && wrangler pages deploy dist --project-name atlas-luthor-workout"
   },
   "dependencies": {
@@ -16,6 +19,12 @@
     "vite": "^7.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^15.15.0",
+    "vitest": "^2.1.9",
     "wrangler": "^4.93.1"
   }
 }

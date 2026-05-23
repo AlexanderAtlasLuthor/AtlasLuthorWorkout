@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatWeight, formatWeightDelta, formatHeight, formatExerciseWeight,
   formatDistance, formatMeasure, parseHeightInches,
-  getBodyWeightOptions, getHeightOptions, getExerciseWeightOptions,
   measureInputToInches, distanceInputToMiles, measureUnit, distanceUnit, inToCm,
   weightUnit, kgToLb, lbToKg,
 } from "./lib/units.js";
@@ -15,7 +14,7 @@ import {
 } from "./lib/cardio.js";
 import { navyBodyFat, MEASUREMENT_FIELDS } from "./lib/bodyComp.js";
 import {
-  estimate1RM, estimate1RMFromExercise, parseWeightNumber, parseRepsNumber,
+  estimate1RMFromExercise, parseWeightNumber, parseRepsNumber,
   exerciseVolume, isNewPR,
 } from "./lib/strength.js";
 import { getExerciseCues } from "./lib/exerciseInfo.js";

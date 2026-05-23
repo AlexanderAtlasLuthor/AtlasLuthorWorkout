@@ -1,4 +1,4 @@
-import React, { useId } from "react";
+import { useId } from "react";
 
 // Lightweight SVG line/area chart for historical trends. No dependencies —
 // it matches the hand-drawn SVG style used elsewhere in the app. `points` is
