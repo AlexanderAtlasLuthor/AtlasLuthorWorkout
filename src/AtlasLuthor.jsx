@@ -354,6 +354,11 @@ function muscleGroupFor(name) {
 const SET_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map(String);
 const REP_OPTIONS = [4, 5, 6, 8, 10, 12, 15, 20, "3x3", "AMRAP"].map(String);
 const RPE_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
+const PAIN_OPTIONS = ["", "None", "Tight", "Mild", "Moderate", "Sharp", "Stop"];
+const PROGRESS_GOAL_OPTIONS = ["70", "75", "80", "85", "90", "95", "100"];
+const SESSION_GOAL_OPTIONS = Array.from({ length: 90 }, (_, i) => String(i + 1));
+const CARDIO_OPTIONS = ["", "10 min", "15 min", "20 min", "Run 1 mile", "Stairs Level 5", "Row Machine 15 min"];
+const SOUND_OPTIONS = ["silent", "chime", "pulse", "bell"];
 const MEDITATION_PRACTICES = {
   pranayama: {
     en: "Pranayama", es: "Pranayama",
