@@ -380,17 +380,15 @@ const MEDITATION_PRACTICES = {
       // Short phrases with 10-15 s of silence between, so you actually have
       // time to do what the voice asks before the next instruction arrives.
       opening: [
-        { atSec: 2, es: "Siéntate cómodo.", en: "Sit comfortably." },
-        { atSec: 14, es: "Columna recta.", en: "Spine straight." },
-        { atSec: 26, es: "Cierra los ojos.", en: "Close your eyes." },
-        { atSec: 40, es: "Suelta los hombros.", en: "Relax your shoulders." },
-        { atSec: 54, es: "Exhala todo el aire.", en: "Exhale all your air." },
-        { atSec: 66, es: "Empezamos a respirar juntos.", en: "We'll breathe together now." },
+        { atSec: 2, es: "Siéntate cómodo, columna recta.", en: "Sit comfortably, spine straight." },
+        { atSec: 13, es: "Cierra los ojos, suelta los hombros.", en: "Close your eyes, relax your shoulders." },
+        { atSec: 24, es: "Empezamos a respirar juntos.", en: "We'll breathe together now." },
       ],
       // openingEndsAtSec is when the breath cycle cues are allowed to start.
-      // Cycle cues are spoken for two full breath cycles only, then the
-      // circle becomes the silent guide.
-      openingEndsAtSec: 76,
+      // Kept around 30 s so the user can begin practicing quickly. Cycle cues
+      // are then spoken for two full breath cycles only, then the circle
+      // becomes the silent guide.
+      openingEndsAtSec: 32,
       cycleCues: {
         speakCycles: 2,
         phaseCues: [
@@ -428,14 +426,11 @@ const MEDITATION_PRACTICES = {
     showBreathCounter: false,
     script: {
       opening: [
-        { atSec: 2, es: "Vipassana es ver claro.", en: "Vipassana means seeing clearly." },
-        { atSec: 16, es: "Siéntate erguido.", en: "Sit upright." },
-        { atSec: 28, es: "Cierra los ojos.", en: "Close your eyes." },
-        { atSec: 42, es: "Lleva la atención a tu respiración natural.", en: "Bring attention to your natural breath." },
-        { atSec: 58, es: "No la cambies. Solo obsérvala.", en: "Don't change it. Just observe." },
-        { atSec: 74, es: "Empezamos.", en: "Let's begin." },
+        { atSec: 2, es: "Siéntate erguido y cierra los ojos.", en: "Sit upright and close your eyes." },
+        { atSec: 13, es: "Lleva la atención a tu respiración natural.", en: "Bring attention to your natural breath." },
+        { atSec: 25, es: "Observa, sin cambiar nada.", en: "Observe, without changing anything." },
       ],
-      openingEndsAtSec: 84,
+      openingEndsAtSec: 32,
       cycleCues: null,
       reminders: {
         everyMin: 5,
@@ -471,16 +466,11 @@ const MEDITATION_PRACTICES = {
     showBreathCounter: true,
     script: {
       opening: [
-        { atSec: 2, es: "Zazen es solo sentarse.", en: "Zazen is just sitting." },
-        { atSec: 16, es: "Coloca las manos en mudra cósmico.", en: "Place your hands in cosmic mudra." },
-        { atSec: 32, es: "Izquierda sobre derecha.", en: "Left over right." },
-        { atSec: 46, es: "Pulgares apenas tocándose.", en: "Thumbs barely touching." },
-        { atSec: 62, es: "Columna recta. Mentón ligeramente metido.", en: "Spine straight. Chin slightly tucked." },
-        { atSec: 80, es: "Ojos semi-abiertos al suelo.", en: "Eyes half-open to the floor." },
-        { atSec: 96, es: "Cuenta cada exhalación del uno al diez.", en: "Count each exhale from one to ten." },
-        { atSec: 114, es: "Empezamos.", en: "Let's begin." },
+        { atSec: 2, es: "Manos en mudra cósmico: izquierda sobre derecha.", en: "Hands in cosmic mudra: left over right." },
+        { atSec: 14, es: "Columna recta, ojos semi-abiertos al suelo.", en: "Spine straight, eyes half-open to the floor." },
+        { atSec: 25, es: "Cuenta cada exhalación, del uno al diez.", en: "Count each exhale, from one to ten." },
       ],
-      openingEndsAtSec: 122,
+      openingEndsAtSec: 34,
       cycleCues: null,
       reminders: {
         everyMin: 5,
@@ -517,15 +507,11 @@ const MEDITATION_PRACTICES = {
     safetyEn: "Advanced practice. DO NOT do this with low blood pressure, pregnant, in water, while driving, or with heart conditions. Stop if you feel dizzy.",
     script: {
       opening: [
-        { atSec: 2, es: "Tummo. Calor interno.", en: "Tummo. Inner heat." },
-        { atSec: 14, es: "Si te mareas, detente.", en: "If you feel dizzy, stop." },
-        { atSec: 28, es: "Siéntate erguido.", en: "Sit upright." },
-        { atSec: 42, es: "Cierra los ojos.", en: "Close your eyes." },
-        { atSec: 56, es: "Visualiza una llama en tu ombligo.", en: "Visualize a flame at your navel." },
-        { atSec: 72, es: "Crecerá con cada respiración.", en: "It will grow with each breath." },
-        { atSec: 86, es: "Empezamos.", en: "Let's begin." },
+        { atSec: 2, es: "Tummo. Si te mareas, detente.", en: "Tummo. If you feel dizzy, stop." },
+        { atSec: 13, es: "Siéntate erguido, cierra los ojos.", en: "Sit upright, close your eyes." },
+        { atSec: 24, es: "Visualiza una llama en tu ombligo.", en: "Visualize a flame at your navel." },
       ],
-      openingEndsAtSec: 94,
+      openingEndsAtSec: 32,
       cycleCues: {
         speakCycles: 2,
         phaseCues: [
