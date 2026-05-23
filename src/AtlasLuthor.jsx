@@ -2785,12 +2785,7 @@ export default function AtlasLuthor() {
     planned: text.calPlanned,
   };
   const activeThemeMode = appSettings.themeMode === "auto" ? getAutoTheme(clockNow.getHours()) : appSettings.themeMode;
-  // When a custom background (color/gradient/photo) is active, force dark
-  // styling so cards stay translucent and the chosen background shows
-  // through. In light mode all cards are opaque white, which would cover
-  // a photo with rectangles.
-  const _bgType = appSettings.background && appSettings.background.type;
-  const isLightMode = _bgType && _bgType !== "default" ? false : activeThemeMode === "light";
+  const isLightMode = activeThemeMode === "light";
   const themeFor = type => {
     const base = TYPE_THEME[type] || TYPE_THEME.CUSTOM;
     return isLightMode
@@ -4169,9 +4164,7 @@ export default function AtlasLuthor() {
     }
     if (bgConfig.type === "photo" && bgConfig.photo) {
       return {
-        // Stack a 35% black overlay on top of the photo so text stays
-        // readable regardless of how bright the chosen image is.
-        backgroundImage: `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), url(${bgConfig.photo})`,
+        backgroundImage: `url(${bgConfig.photo})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
