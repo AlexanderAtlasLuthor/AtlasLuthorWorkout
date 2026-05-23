@@ -21,6 +21,7 @@ import { getExerciseCues } from "./lib/exerciseInfo.js";
 import { renderShareCard } from "./lib/shareCard.js";
 import TrendChart from "./components/TrendChart.jsx";
 import { computeAchievementStats, computeAchievements } from "./lib/achievements.js";
+import { loadPhotos as loadPhotosFromIDB, savePhotos as savePhotosToIDB } from "./lib/photoStore.js";
 
 const pushSessions = [
   {
@@ -1651,6 +1652,7 @@ export default function AtlasLuthor() {
   const loadedUserRef = useRef("");
   const tapFeedbackRef = useRef(true);
   const pendingSaveRef = useRef(null);
+  const photosReadyRef = useRef(false);
 
   const day = workoutData[activeDay];
   const session = day.sessions[Math.min(activeSession, day.sessions.length - 1)];
@@ -1700,6 +1702,9 @@ export default function AtlasLuthor() {
   // so a burst of edits results in a single localStorage write.
   useEffect(() => {
     if (!activeUserId || !users[activeUserId] || loadedUserRef.current !== activeUserId) return undefined;
+    // Wait for the IndexedDB-backed photo store to finish migrating before
+    // overwriting localStorage with a payload that no longer carries photos.
+    if (!photosReadyRef.current) return undefined;
 
     const key = STORAGE_KEYS.dataPrefix + activeUserId;
     const payload = {
@@ -1711,7 +1716,6 @@ export default function AtlasLuthor() {
       progressLog,
       exerciseNotes,
       calendarLog,
-      progressPhotos,
       photoAlbums,
       cloudSettings,
       notificationSettings,
@@ -1747,7 +1751,6 @@ export default function AtlasLuthor() {
     progressLog,
     exerciseNotes,
     calendarLog,
-    progressPhotos,
     photoAlbums,
     cloudSettings,
     notificationSettings,
@@ -1783,6 +1786,46 @@ export default function AtlasLuthor() {
       window.removeEventListener("pagehide", flush);
     };
   }, []);
+
+  // Hydrates progress photos from IndexedDB when the active account changes.
+  // If IDB has no photos yet but state already does (loaded from a legacy
+  // localStorage payload), this writes the legacy set into IDB so the photos
+  // survive the next autosave that strips them from localStorage.
+  useEffect(() => {
+    if (!activeUserId || loadedUserRef.current !== activeUserId) return undefined;
+    photosReadyRef.current = false;
+    let cancelled = false;
+
+    (async () => {
+      const stored = await loadPhotosFromIDB(activeUserId);
+      if (cancelled) return;
+
+      if (Array.isArray(stored) && stored.length > 0) {
+        setProgressPhotos(stored);
+      } else if (progressPhotos.length > 0) {
+        await savePhotosToIDB(activeUserId, progressPhotos);
+      }
+      photosReadyRef.current = true;
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // progressPhotos is intentionally excluded — only the value at user-switch
+    // time matters for migration; later changes are handled by the save effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUserId]);
+
+  // Persists progress photos to IndexedDB on change. Debounced so a burst of
+  // edits (delete-many, etc.) results in a single write.
+  useEffect(() => {
+    if (!activeUserId || loadedUserRef.current !== activeUserId) return undefined;
+    if (!photosReadyRef.current) return undefined;
+    const timeoutId = window.setTimeout(() => {
+      savePhotosToIDB(activeUserId, progressPhotos);
+    }, 400);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeUserId, progressPhotos]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setClockNow(new Date()), 60000);
@@ -2264,6 +2307,9 @@ export default function AtlasLuthor() {
   const quickSetsLeft = Math.max(quickTotalSets - quickSetsDone, 0);
   const language = appSettings.language === "es" ? "es" : "en";
   const text = UI_TEXT[language];
+  // Inline translation helper for ad-hoc strings that don't belong in the
+  // UI_TEXT dictionary. Replaces `language === "es" ? a : b` ternaries.
+  const t = (es, en) => (language === "es" ? es : en);
   const calendarLabels = {
     completed: text.calCompleted,
     trained: text.calTrained,
@@ -3215,9 +3261,10 @@ export default function AtlasLuthor() {
     if (
       progressPhotos.length >= 24 &&
       !window.confirm(
-        language === "es"
-          ? "Has alcanzado el límite de 24 fotos. Guardar esta reemplazará tu foto más antigua. ¿Continuar?"
-          : "You've reached the 24-photo limit. Saving this will replace your oldest photo. Continue?"
+        t(
+          "Has alcanzado el límite de 24 fotos. Guardar esta reemplazará tu foto más antigua. ¿Continuar?",
+          "You've reached the 24-photo limit. Saving this will replace your oldest photo. Continue?"
+        )
       )
     ) {
       return;
@@ -3993,9 +4040,10 @@ export default function AtlasLuthor() {
             )}
 
             <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 12, lineHeight: 1.5, marginBottom: 14, textAlign: "center" }}>
-              {language === "es"
-                ? "Tu cuenta y tus datos se guardan solo en este dispositivo. Usa Respaldo / Sincronización para conservarlos o pasarlos a otro dispositivo."
-                : "Your account and data are stored only on this device. Use Backup / Sync to keep them safe or move them to another device."}
+              {t(
+                "Tu cuenta y tus datos se guardan solo en este dispositivo. Usa Respaldo / Sincronización para conservarlos o pasarlos a otro dispositivo.",
+                "Your account and data are stored only on this device. Use Backup / Sync to keep them safe or move them to another device."
+              )}
             </p>
 
             {authMode === "login" ? (
@@ -4885,7 +4933,7 @@ export default function AtlasLuthor() {
                       points={[...progressEntries].reverse().filter(entry => Number(entry.weight) > 0).slice(-24).map(entry => ({ value: Number(entry.weight) }))}
                       color="#90C8FF"
                       formatValue={value => fmtW(value)}
-                      emptyLabel={language === "es" ? "Registra tu peso para ver la tendencia." : "Log your weight to see the trend."}
+                      emptyLabel={t("Registra tu peso para ver la tendencia.", "Log your weight to see the trend.")}
                     />
                   </div>
                 </div>
@@ -5127,7 +5175,7 @@ export default function AtlasLuthor() {
                 ))}
                 {Object.keys(sessionHistory).length > 0 && (
                   <div className="home-card">
-                    <p className="detail-label">{language === "es" ? "HISTORIAL DE SESIONES" : "SESSION HISTORY"}</p>
+                    <p className="detail-label">{t("HISTORIAL DE SESIONES", "SESSION HISTORY")}</p>
                     <div className="detail-list" style={{ marginTop: 10 }}>
                       {Object.entries(sessionHistory)
                         .sort((a, b) => b[0].localeCompare(a[0]))
@@ -5476,9 +5524,10 @@ export default function AtlasLuthor() {
                       </p>
                       {calorieTarget <= 0 && (
                         <p style={{ fontSize: 12, color: "#FFD060", fontFamily: "'DM Sans', sans-serif", marginTop: 6, lineHeight: 1.45 }}>
-                          {language === "es"
-                            ? "Completa tu peso, altura, edad y sexo en el perfil para calcular tu meta de calorías."
-                            : "Add your weight, height, age and sex in your profile to calculate your calorie target."}
+                          {t(
+                            "Completa tu peso, altura, edad y sexo en el perfil para calcular tu meta de calorías.",
+                            "Add your weight, height, age and sex in your profile to calculate your calorie target."
+                          )}
                         </p>
                       )}
                     </div>
@@ -5530,7 +5579,7 @@ export default function AtlasLuthor() {
 
                   <div className="home-card">
                     <p className="detail-label">
-                      {language === "es" ? "CALORÍAS · ÚLTIMOS 14 DÍAS" : "CALORIES · LAST 14 DAYS"}
+                      {t("CALORÍAS · ÚLTIMOS 14 DÍAS", "CALORIES · LAST 14 DAYS")}
                     </p>
                     <div style={{ marginTop: 10 }}>
                       {hasCalorieData ? (
@@ -5542,9 +5591,7 @@ export default function AtlasLuthor() {
                         />
                       ) : (
                         <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center", padding: "10px 8px" }}>
-                          {language === "es"
-                            ? "Registra comidas para ver tu tendencia de calorías."
-                            : "Log meals to see your calorie trend."}
+                          {t("Registra comidas para ver tu tendencia de calorías.", "Log meals to see your calorie trend.")}
                         </p>
                       )}
                     </div>
@@ -5666,7 +5713,7 @@ export default function AtlasLuthor() {
                   {hasCardioTrend && (
                     <div className="home-card">
                       <p className="detail-label">
-                        {language === "es" ? "MINUTOS · ÚLTIMOS 14 DÍAS" : "MINUTES · LAST 14 DAYS"}
+                        {t("MINUTOS · ÚLTIMOS 14 DÍAS", "MINUTES · LAST 14 DAYS")}
                       </p>
                       <div style={{ marginTop: 10 }}>
                         <TrendChart
