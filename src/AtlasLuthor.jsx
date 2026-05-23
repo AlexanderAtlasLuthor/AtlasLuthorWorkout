@@ -230,6 +230,11 @@ const DEFAULT_APP_SETTINGS = {
   meditationPractice: "pranayama",
   meditationDurationMin: 10,
   meditationIntervalBellMin: 0,
+  meditationVoice: true,
+  meditationSound: "off",
+  meditationVoiceVolume: 0.95,
+  meditationTummoAck: false,
+  meditationReflections: {},
 };
 
 function withNameParts(settings) {
@@ -349,18 +354,13 @@ function muscleGroupFor(name) {
 const SET_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map(String);
 const REP_OPTIONS = [4, 5, 6, 8, 10, 12, 15, 20, "3x3", "AMRAP"].map(String);
 const RPE_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-const PAIN_OPTIONS = ["", "None", "Tight", "Mild", "Moderate", "Sharp", "Stop"];
-const PROGRESS_GOAL_OPTIONS = ["70", "75", "80", "85", "90", "95", "100"];
-const SESSION_GOAL_OPTIONS = Array.from({ length: 90 }, (_, i) => String(i + 1));
-const CARDIO_OPTIONS = ["", "10 min", "15 min", "20 min", "Run 1 mile", "Stairs Level 5", "Row Machine 15 min"];
-const SOUND_OPTIONS = ["silent", "chime", "pulse", "bell"];
 const MEDITATION_PRACTICES = {
   pranayama: {
     en: "Pranayama", es: "Pranayama",
     enSub: "Breath control",
     esSub: "Control de respiración",
-    enDesc: "Conscious breath ratios to regulate the nervous system and energy. Inhale 4, hold 2, exhale 6.",
-    esDesc: "Ratios conscientes de respiración para regular el sistema nervioso y la energía. Inhala 4, mantén 2, exhala 6.",
+    enDesc: "Conscious breath ratios to regulate the nervous system. Inhale 4, hold 2, exhale 6.",
+    esDesc: "Ratios conscientes de respiración para regular el sistema nervioso. Inhala 4, mantén 2, exhala 6.",
     accent: "#90C8FF",
     minMin: 5, maxMin: 45, defaultMin: 10, defaultIntervalBellMin: 0,
     cycleSec: 12,
@@ -371,25 +371,38 @@ const MEDITATION_PRACTICES = {
     ],
     showBreathCircle: true,
     showBreathCounter: false,
-    enSteps: [
-      "Siéntate con la columna recta, hombros relajados, manos en las rodillas.",
-      "Cierra los ojos. Exhala completo por la nariz antes de empezar.",
-      "Sigue el ritmo del círculo: inhala 4 segundos, mantén 2, exhala 6.",
-      "Respira siempre por la nariz, suave y sin forzar.",
-      "Si te mareas o sientes hormigueo, baja el ritmo o detente.",
-    ].map((line, i) => ({ es: line, en: [
-      "Sit upright, shoulders relaxed, hands on your knees.",
-      "Close your eyes. Exhale fully through the nose before starting.",
-      "Follow the circle: inhale 4 seconds, hold 2, exhale 6.",
-      "Always breathe through the nose, smoothly and without forcing.",
-      "If you feel dizzy or tingly, slow down or stop.",
-    ][i] })),
+    script: {
+      opening: [
+        { atSec: 1, es: "Siéntate cómodo, con la columna recta.", en: "Sit comfortably, spine straight." },
+        { atSec: 9, es: "Suelta los hombros. Suelta la mandíbula.", en: "Relax your shoulders. Relax your jaw." },
+        { atSec: 18, es: "Cierra los ojos suavemente.", en: "Close your eyes softly." },
+        { atSec: 26, es: "Exhala todo el aire que tengas.", en: "Exhale all the air you have." },
+        { atSec: 34, es: "Vamos a respirar juntos.", en: "Let's breathe together." },
+      ],
+      cycleCues: {
+        speakFirstCycles: 4,
+        phaseCues: [
+          { es: "Inhala", en: "Inhale" },
+          { es: "Mantén", en: "Hold" },
+          { es: "Exhala lento", en: "Exhale slowly" },
+        ],
+      },
+      reminders: [
+        { everyMin: 3, es: "Si te mareas, baja el ritmo.", en: "If you feel dizzy, slow down." },
+        { everyMin: 5, es: "Suave, sin forzar.", en: "Soft, without forcing." },
+      ],
+      closing: [
+        { secondsBeforeEnd: 28, es: "Vamos a cerrar la sesión.", en: "Let's close the session." },
+        { secondsBeforeEnd: 16, es: "Última respiración consciente.", en: "Last conscious breath." },
+        { secondsBeforeEnd: 4, es: "Cuando estés listo, abre los ojos.", en: "When you're ready, open your eyes." },
+      ],
+    },
   },
   vipassana: {
     en: "Vipassana", es: "Vipassana",
     enSub: "Insight meditation",
     esSub: "Observación profunda",
-    enDesc: "Observe sensations as they arise and pass, without reacting. No breath control — just watch.",
+    enDesc: "Observe sensations as they arise and pass, without reacting. No breath manipulation — just watch.",
     esDesc: "Observa las sensaciones que surgen y se van, sin reaccionar. Sin control de respiración — solo observa.",
     accent: "#3FB98A",
     minMin: 10, maxMin: 90, defaultMin: 20, defaultIntervalBellMin: 5,
@@ -397,21 +410,27 @@ const MEDITATION_PRACTICES = {
     phases: [],
     showBreathCircle: false,
     showBreathCounter: false,
-    enSteps: [
-      "Siéntate cómodo y erguido. Ojos cerrados o con mirada suave.",
-      "Lleva la atención a la respiración natural en las fosas nasales.",
-      "Observa todo lo que surge: picor, calor, sonidos, pensamientos.",
-      "Nómbralos en silencio (\"sensación, sensación\") y déjalos pasar.",
-      "No reacciones, no pelees, no sigas. Solo observa con ecuanimidad.",
-      "Cuando la mente divague, vuelve a la respiración sin juzgar.",
-    ].map((line, i) => ({ es: line, en: [
-      "Sit comfortably and upright. Eyes closed or soft gaze.",
-      "Bring attention to the natural breath at the nostrils.",
-      "Notice everything that arises: itches, warmth, sounds, thoughts.",
-      "Label them silently (\"feeling, feeling\") and let them pass.",
-      "Don't react, don't fight, don't follow. Just observe with equanimity.",
-      "When the mind wanders, return to the breath without judgment.",
-    ][i] })),
+    script: {
+      opening: [
+        { atSec: 1, es: "Vipassana significa ver claro.", en: "Vipassana means seeing clearly." },
+        { atSec: 11, es: "Siéntate cómodo, con la columna recta.", en: "Sit comfortably, spine straight." },
+        { atSec: 22, es: "Lleva la atención a tu respiración natural.", en: "Bring attention to your natural breath." },
+        { atSec: 34, es: "No la cambies. Solo obsérvala.", en: "Don't change it. Just observe it." },
+        { atSec: 45, es: "Empezamos.", en: "Let's begin." },
+      ],
+      cycleCues: null,
+      reminders: [
+        { everyMin: 4, es: "Si surge una sensación, nómbrala. Déjala pasar.", en: "If a sensation arises, name it. Let it pass." },
+        { everyMin: 6, es: "Vuelve siempre a la respiración natural.", en: "Always return to natural breath." },
+        { everyMin: 8, es: "No reacciones. Solo observa.", en: "Don't react. Just observe." },
+      ],
+      closing: [
+        { secondsBeforeEnd: 40, es: "Vamos a cerrar.", en: "Let's close." },
+        { secondsBeforeEnd: 26, es: "Lleva la atención a todo el cuerpo.", en: "Bring attention to the whole body." },
+        { secondsBeforeEnd: 12, es: "Siente el contacto con el asiento.", en: "Feel the contact with your seat." },
+        { secondsBeforeEnd: 4, es: "Cuando estés listo, abre los ojos.", en: "When you're ready, open your eyes." },
+      ],
+    },
   },
   zazen: {
     en: "Zazen", es: "Zazen",
@@ -428,21 +447,27 @@ const MEDITATION_PRACTICES = {
     ],
     showBreathCircle: true,
     showBreathCounter: true,
-    enSteps: [
-      "Siéntate en medio loto, loto completo o seiza, con un cojín bajo las caderas.",
-      "Columna recta, orejas alineadas con los hombros, mentón ligeramente metido.",
-      "Ojos semi-abiertos, mirada suave al suelo a un metro de distancia.",
-      "Manos en mudra cósmico: izquierda sobre derecha, pulgares apenas tocándose.",
-      "Cuenta mentalmente cada exhalación: 1, 2, 3... hasta 10, y empieza de nuevo.",
-      "Si pierdes la cuenta o te distraes, vuelve a 1 sin frustración.",
-    ].map((line, i) => ({ es: line, en: [
-      "Sit in half-lotus, full lotus or seiza, with a cushion under your hips.",
-      "Spine straight, ears aligned with shoulders, chin slightly tucked.",
-      "Eyes half-open, soft gaze to the floor about a meter away.",
-      "Hands in cosmic mudra: left over right, thumbs just touching.",
-      "Mentally count each exhale: 1, 2, 3... up to 10, then start over.",
-      "If you lose count or get distracted, return to 1 without frustration.",
-    ][i] })),
+    script: {
+      opening: [
+        { atSec: 1, es: "Zazen es solo sentarse.", en: "Zazen is just sitting." },
+        { atSec: 10, es: "Coloca las manos en mudra cósmico.", en: "Place your hands in cosmic mudra." },
+        { atSec: 20, es: "Izquierda sobre derecha, pulgares apenas tocándose.", en: "Left over right, thumbs barely touching." },
+        { atSec: 33, es: "Endereza la columna, mete ligeramente el mentón.", en: "Straighten the spine, slightly tuck the chin." },
+        { atSec: 46, es: "Ojos semi-abiertos, mirada suave al suelo.", en: "Eyes half-open, soft gaze to the floor." },
+        { atSec: 58, es: "Cuenta cada exhalación: del uno al diez.", en: "Count each exhale: from one to ten." },
+        { atSec: 70, es: "Empezamos.", en: "Let's begin." },
+      ],
+      cycleCues: null,
+      reminders: [
+        { everyMin: 4, es: "Si pierdes la cuenta, empieza en uno. Sin frustración.", en: "If you lose count, start at one. No frustration." },
+        { everyMin: 7, es: "Solo siéntate. Solo respira.", en: "Just sit. Just breathe." },
+      ],
+      closing: [
+        { secondsBeforeEnd: 25, es: "Vamos a cerrar.", en: "Let's close." },
+        { secondsBeforeEnd: 12, es: "Termina el ciclo en el que estás.", en: "Finish the cycle you're in." },
+        { secondsBeforeEnd: 4, es: "Junta las manos y haz una leve inclinación.", en: "Hands together, a slight bow." },
+      ],
+    },
   },
   tummo: {
     en: "Tummo", es: "Tummo",
@@ -462,24 +487,153 @@ const MEDITATION_PRACTICES = {
     showBreathCounter: false,
     safetyEs: "Práctica avanzada. NO la hagas con presión baja, embarazada, en el agua, conduciendo, o con condiciones cardíacas. Detente si te mareas.",
     safetyEn: "Advanced practice. DO NOT do this with low blood pressure, pregnant, in water, while driving, or with heart conditions. Stop if you feel dizzy.",
-    enSteps: [
-      "Siéntate erguido con la columna recta. Cierra los ojos.",
-      "Visualiza una pequeña llama brillante en tu ombligo.",
-      "Inhala profundo y completo por la nariz, llenando el abdomen como una vasija.",
-      "Mantén el aire. Contrae el bajo vientre y siente cómo la llama crece y irradia calor.",
-      "Cuando necesites, exhala lento por la nariz, suelta el calor.",
-      "Principiantes: empieza con retenciones más cortas. Solo practica en un lugar seguro.",
-    ].map((line, i) => ({ es: line, en: [
-      "Sit upright with spine straight. Close your eyes.",
-      "Visualize a small bright flame at your navel.",
-      "Inhale deep and full through the nose, filling the abdomen like a vase.",
-      "Hold the breath. Contract the lower belly and feel the flame grow and radiate heat.",
-      "When you need to, exhale slowly through the nose, releasing the heat.",
-      "Beginners: start with shorter holds. Only practice in a safe setting.",
-    ][i] })),
+    script: {
+      opening: [
+        { atSec: 1, es: "Tummo. Calor interno.", en: "Tummo. Inner heat." },
+        { atSec: 10, es: "Si te mareas, detente. Es importante.", en: "If you feel dizzy, stop. This matters." },
+        { atSec: 23, es: "Siéntate erguido, columna recta.", en: "Sit upright, spine straight." },
+        { atSec: 33, es: "Cierra los ojos.", en: "Close your eyes." },
+        { atSec: 43, es: "Visualiza una pequeña llama brillante en tu ombligo.", en: "Visualize a small bright flame at your navel." },
+        { atSec: 56, es: "Crecerá con cada respiración.", en: "It will grow with each breath." },
+        { atSec: 67, es: "Empezamos.", en: "Let's begin." },
+      ],
+      cycleCues: {
+        speakFirstCycles: 4,
+        phaseCues: [
+          { es: "Inhala profundo, llena la vasija", en: "Deep inhale, fill the vase" },
+          { es: "Mantén, siente el calor", en: "Hold, feel the heat" },
+          { es: "Suelta lento", en: "Release slowly" },
+        ],
+      },
+      reminders: [
+        { everyMin: 3, es: "El calor crece con cada retención.", en: "Heat grows with each hold." },
+        { everyMin: 5, es: "Si necesitas, acorta la retención.", en: "If needed, shorten the hold." },
+      ],
+      closing: [
+        { secondsBeforeEnd: 28, es: "Última retención.", en: "Last hold." },
+        { secondsBeforeEnd: 10, es: "Suelta despacio. El calor permanece.", en: "Release slowly. The heat remains." },
+        { secondsBeforeEnd: 2, es: "Vuelve a respirar normal.", en: "Return to normal breath." },
+      ],
+    },
   },
 };
 const MEDITATION_PRACTICE_KEYS = Object.keys(MEDITATION_PRACTICES);
+const AMBIENT_SOUND_OPTIONS = ["off", "rain", "ocean", "om"];
+
+// Voice + ambient sound helpers. The Web Speech and Web Audio APIs are
+// browser-native, so no audio assets are bundled.
+function speakMeditationCue(text, language, voiceEnabled, volume) {
+  if (!voiceEnabled || !text) return;
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = language === "es" ? "es-ES" : "en-US";
+  utterance.rate = 0.86;
+  utterance.pitch = 0.95;
+  utterance.volume = Math.max(0, Math.min(1, Number(volume) || 0.95));
+  window.speechSynthesis.speak(utterance);
+}
+
+function cancelMeditationSpeech() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
+}
+
+function meditationVibrate(pattern) {
+  if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  try { navigator.vibrate(pattern); } catch { /* ignore */ }
+}
+
+function startMeditationAmbient(type) {
+  if (!type || type === "off") return null;
+  if (typeof window === "undefined") return null;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ctx = new AC();
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.connect(ctx.destination);
+  masterGain.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 1.5);
+
+  const sources = [];
+
+  if (type === "rain") {
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 2200;
+    filter.Q.value = 0.7;
+    source.connect(filter);
+    filter.connect(masterGain);
+    source.start();
+    sources.push(source);
+  } else if (type === "ocean") {
+    const buffer = ctx.createBuffer(1, ctx.sampleRate * 4, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < data.length; i += 1) {
+      const white = Math.random() * 2 - 1;
+      last = (last + 0.02 * white) / 1.02;
+      data[i] = last * 3.5;
+    }
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 600;
+    filter.Q.value = 1.2;
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 0.07;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 220;
+    lfo.connect(lfoGain);
+    lfoGain.connect(filter.frequency);
+    source.connect(filter);
+    filter.connect(masterGain);
+    source.start();
+    lfo.start();
+    sources.push(source, lfo);
+  } else if (type === "om") {
+    masterGain.gain.linearRampToValueAtTime(0.10, ctx.currentTime + 1.5);
+    const o1 = ctx.createOscillator();
+    o1.type = "sine";
+    o1.frequency.value = 110;
+    const o2 = ctx.createOscillator();
+    o2.type = "sine";
+    o2.frequency.value = 110.6;
+    const o3 = ctx.createOscillator();
+    o3.type = "sine";
+    o3.frequency.value = 220;
+    const harmGain = ctx.createGain();
+    harmGain.gain.value = 0.22;
+    o3.connect(harmGain);
+    harmGain.connect(masterGain);
+    o1.connect(masterGain);
+    o2.connect(masterGain);
+    o1.start();
+    o2.start();
+    o3.start();
+    sources.push(o1, o2, o3);
+  }
+
+  return {
+    stop() {
+      try {
+        masterGain.gain.cancelScheduledValues(ctx.currentTime);
+        masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+      } catch { /* ignore */ }
+      window.setTimeout(() => {
+        sources.forEach(s => { try { s.stop(); } catch { /* ignore */ } });
+        try { ctx.close(); } catch { /* ignore */ }
+      }, 500);
+    },
+  };
+}
 const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
   { value: "es", label: "Español" },
@@ -1770,13 +1924,17 @@ export default function AtlasLuthor() {
     running: false,
     practice: "pranayama",
     durationSec: 600,
-    secondsLeft: 600,
-    startedAt: 0,
+    endsAt: 0,
+    remainingMs: 0,
     intervalBellMin: 0,
-    lastBellTick: 0,
   });
+  const [medTick, setMedTick] = useState(0);
   const [medCompleted, setMedCompleted] = useState(null);
-  const [medShowTeaching, setMedShowTeaching] = useState(false);
+  const [medReflection, setMedReflection] = useState("");
+  const [medShowAdjustments, setMedShowAdjustments] = useState(false);
+  const medSpokenRef = useRef(new Set());
+  const medAmbientRef = useRef(null);
+  const medLastBellSecRef = useRef(0);
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
   const [exerciseFilterMuscle, setExerciseFilterMuscle] = useState("All");
   const [addFoodTarget, setAddFoodTarget] = useState(null);
@@ -1941,41 +2099,144 @@ export default function AtlasLuthor() {
     };
   }, [restTimer.running, restTimer.endsAt, notificationSettings.sound]);
 
-  // Meditation session countdown. Each tick decrements secondsLeft; when it
-  // hits 0 the session is logged and a bell plays. Optional interval bells
-  // ring every N minutes during the session to redirect attention.
+  // Wall-clock-driven meditation session. The timer derives secondsLeft from
+  // endsAt - Date.now() so it stays accurate when the tab is in the
+  // background. Each tick checks for opening/cycle/reminder/closing voice
+  // cues and rings interval bells as configured.
   useEffect(() => {
-    if (!medTimer.running) return undefined;
-    const intervalId = window.setInterval(() => {
-      setMedTimer(prev => {
-        if (!prev.running) return prev;
-        if (prev.secondsLeft <= 1) {
-          const totalMin = Math.max(1, Math.round(prev.durationSec / 60));
-          logMeditationSession(totalMin, prev.practice);
-          playReminderSound("bell");
-          setMedCompleted({ durationMin: totalMin, practice: prev.practice, at: Date.now() });
-          return { ...prev, running: false, secondsLeft: 0 };
-        }
-        const nextLeft = prev.secondsLeft - 1;
-        const elapsed = prev.durationSec - nextLeft;
-        let nextLastBellTick = prev.lastBellTick;
-        if (prev.intervalBellMin > 0) {
-          const bellEvery = prev.intervalBellMin * 60;
-          const currentTick = Math.floor(elapsed / bellEvery);
-          // Only ring on a positive tick boundary that we haven't rung yet,
-          // and skip the final tick (the end-of-session bell handles it).
-          if (currentTick > prev.lastBellTick && nextLeft > 1 && elapsed % bellEvery === 0) {
-            playReminderSound("chime");
-            nextLastBellTick = currentTick;
+    if (!medTimer.running || !medTimer.endsAt) return undefined;
+
+    const def = MEDITATION_PRACTICES[medTimer.practice] || MEDITATION_PRACTICES.pranayama;
+    const voiceOn = appSettings.meditationVoice !== false;
+    const voiceVol = appSettings.meditationVoiceVolume;
+
+    const handleCues = (elapsed, secondsLeft) => {
+      // Opening cues
+      def.script.opening.forEach((cue, i) => {
+        if (elapsed >= cue.atSec && elapsed < cue.atSec + 2) {
+          const key = `opening-${i}`;
+          if (!medSpokenRef.current.has(key)) {
+            medSpokenRef.current.add(key);
+            speakMeditationCue(language === "es" ? cue.es : cue.en, language, voiceOn, voiceVol);
           }
         }
-        return { ...prev, secondsLeft: nextLeft, lastBellTick: nextLastBellTick };
       });
-    }, 1000);
+
+      // Cycle cues — only for the first N cycles, fired at phase boundaries.
+      if (def.script.cycleCues && def.cycleSec > 0) {
+        const cycleNum = Math.floor(elapsed / def.cycleSec);
+        if (cycleNum < def.script.cycleCues.speakFirstCycles) {
+          const cyclePos = elapsed % def.cycleSec;
+          let phaseStart = 0;
+          for (let pi = 0; pi < def.phases.length; pi += 1) {
+            if (cyclePos >= phaseStart && cyclePos < phaseStart + 2) {
+              const key = `cycle-${cycleNum}-${pi}`;
+              if (!medSpokenRef.current.has(key)) {
+                medSpokenRef.current.add(key);
+                const cue = def.script.cycleCues.phaseCues[pi];
+                if (cue) speakMeditationCue(language === "es" ? cue.es : cue.en, language, voiceOn, voiceVol);
+                if (pi === 0) meditationVibrate(60); // gentle nudge each inhale start
+              }
+              break;
+            }
+            phaseStart += def.phases[pi].sec;
+          }
+        }
+      }
+
+      // Reminders during the core practice (after opening, before closing).
+      const lastOpen = def.script.opening[def.script.opening.length - 1];
+      const openingEndSec = lastOpen ? lastOpen.atSec + 10 : 0;
+      const firstClose = def.script.closing[0];
+      const closingStartSec = firstClose ? medTimer.durationSec - firstClose.secondsBeforeEnd - 4 : medTimer.durationSec;
+      if (elapsed > openingEndSec && elapsed < closingStartSec) {
+        def.script.reminders.forEach((rem, ri) => {
+          const everySec = rem.everyMin * 60;
+          if (everySec <= 0) return;
+          // Anchor reminders to "elapsed since end of opening" so they don't
+          // collide with opening cues.
+          const since = elapsed - openingEndSec;
+          if (since > 0 && since % everySec === 0) {
+            const key = `reminder-${ri}-${Math.floor(since / everySec)}`;
+            if (!medSpokenRef.current.has(key)) {
+              medSpokenRef.current.add(key);
+              speakMeditationCue(language === "es" ? rem.es : rem.en, language, voiceOn, voiceVol);
+            }
+          }
+        });
+      }
+
+      // Closing cues (from end).
+      def.script.closing.forEach((cue, i) => {
+        if (secondsLeft <= cue.secondsBeforeEnd && secondsLeft > cue.secondsBeforeEnd - 2) {
+          const key = `closing-${i}`;
+          if (!medSpokenRef.current.has(key)) {
+            medSpokenRef.current.add(key);
+            speakMeditationCue(language === "es" ? cue.es : cue.en, language, voiceOn, voiceVol);
+          }
+        }
+      });
+    };
+
+    const tick = () => {
+      const now = Date.now();
+      const secondsLeft = Math.max(0, Math.ceil((medTimer.endsAt - now) / 1000));
+      const elapsed = medTimer.durationSec - secondsLeft;
+
+      if (secondsLeft <= 0) {
+        const totalMin = Math.max(1, Math.round(medTimer.durationSec / 60));
+        logMeditationSession(totalMin, medTimer.practice);
+        playReminderSound("bell");
+        meditationVibrate([400, 100, 400]);
+        cancelMeditationSpeech();
+        setMedCompleted({ durationMin: totalMin, practice: medTimer.practice, at: Date.now() });
+        setMedTimer(prev => ({ ...prev, running: false, endsAt: 0, remainingMs: 0 }));
+        return;
+      }
+
+      handleCues(elapsed, secondsLeft);
+
+      // Interval bell. Sound once each time elapsed crosses N minutes,
+      // skipping the last ~5 s so it never collides with the end-of-session
+      // bell. Tracked in a ref because the effect closure can't see fresh
+      // state updates without re-firing.
+      if (medTimer.intervalBellMin > 0 && elapsed > 0 && secondsLeft > 5) {
+        const bellEvery = medTimer.intervalBellMin * 60;
+        const targetTick = Math.floor(elapsed / bellEvery);
+        const lastTick = Math.floor(medLastBellSecRef.current / bellEvery);
+        if (targetTick > lastTick) {
+          playReminderSound("chime");
+          meditationVibrate(180);
+          medLastBellSecRef.current = elapsed;
+        }
+      }
+
+      setMedTick(t => (t + 1) & 0xffff);
+    };
+
+    tick(); // run once immediately for snappy UI
+    const intervalId = window.setInterval(tick, 500);
     return () => window.clearInterval(intervalId);
-    // logMeditationSession changes per render but is stable in behavior
+    // logMeditationSession is stable in effect; eslint exhaustive-deps off.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [medTimer.running]);
+  }, [medTimer.running, medTimer.endsAt, medTimer.practice, medTimer.durationSec, medTimer.intervalBellMin, language, appSettings.meditationVoice, appSettings.meditationVoiceVolume]);
+
+  // Ambient background sound (rain/ocean/om) created via WebAudio while a
+  // meditation session is running. No audio files are bundled — everything
+  // is synthesized at runtime.
+  useEffect(() => {
+    if (!medTimer.running) return undefined;
+    const type = appSettings.meditationSound || "off";
+    if (type === "off") return undefined;
+    const ambient = startMeditationAmbient(type);
+    medAmbientRef.current = ambient;
+    return () => {
+      if (medAmbientRef.current) {
+        medAmbientRef.current.stop();
+        medAmbientRef.current = null;
+      }
+    };
+  }, [medTimer.running, appSettings.meditationSound]);
 
   // Restore the user's last-used practice / duration / interval bell after
   // their account data is loaded.
@@ -1993,11 +2254,13 @@ export default function AtlasLuthor() {
         ...prev,
         practice: practiceKey,
         durationSec,
-        secondsLeft: durationSec,
+        endsAt: 0,
+        remainingMs: 0,
         intervalBellMin: Math.max(0, Number(appSettings.meditationIntervalBellMin) || 0),
       };
     });
   }, [activeUserId, appSettings.meditationPractice, appSettings.meditationDurationMin, appSettings.meditationIntervalBellMin]);
+
 
   const updateCalendarForToday = nextChecked => {
     const date = getDateKey();
@@ -2970,21 +3233,33 @@ export default function AtlasLuthor() {
     setRestTimer(prev => ({ ...prev, secondsLeft: 0, running: false, endsAt: null, notified: false }));
   };
 
+  const speakMedCueOnce = (cueKey, cue) => {
+    if (!cue) return;
+    if (medSpokenRef.current.has(cueKey)) return;
+    medSpokenRef.current.add(cueKey);
+    speakMeditationCue(language === "es" ? cue.es : cue.en, language, appSettings.meditationVoice, appSettings.meditationVoiceVolume);
+  };
+
   const startMeditation = (practice, durationMin, intervalBellMin) => {
     const practiceKey = MEDITATION_PRACTICES[practice] ? practice : "pranayama";
     const def = MEDITATION_PRACTICES[practiceKey];
     const safeMin = Math.min(def.maxMin, Math.max(def.minMin, Number(durationMin) || def.defaultMin));
     const durationSec = Math.max(1, Math.round(safeMin * 60));
     const bellMin = Math.max(0, Math.min(60, Number(intervalBellMin) || 0));
+
+    cancelMeditationSpeech();
+    medSpokenRef.current = new Set();
+    medLastBellSecRef.current = 0;
     setMedCompleted(null);
+    setMedReflection("");
+
     setMedTimer({
       running: true,
       practice: practiceKey,
       durationSec,
-      secondsLeft: durationSec,
-      startedAt: Date.now(),
+      endsAt: Date.now() + durationSec * 1000,
+      remainingMs: 0,
       intervalBellMin: bellMin,
-      lastBellTick: 0,
     });
     setAppSettings(prev => ({
       ...prev,
@@ -2992,23 +3267,50 @@ export default function AtlasLuthor() {
       meditationDurationMin: safeMin,
       meditationIntervalBellMin: bellMin,
     }));
+
     playReminderSound("bell");
+    meditationVibrate([200, 80, 200]);
+    // Speak the first opening cue inside the click handler so iOS Safari
+    // allows subsequent speechSynthesis calls without further user gestures.
+    if (appSettings.meditationVoice && def.script.opening[0]) {
+      const first = def.script.opening[0];
+      if (first.atSec === 0 || first.atSec === 1) {
+        medSpokenRef.current.add("opening-0");
+        speakMeditationCue(language === "es" ? first.es : first.en, language, true, appSettings.meditationVoiceVolume);
+      } else {
+        // Warm up the speech engine so later cues fire on iOS.
+        speakMeditationCue(" ", language, true, 0.01);
+      }
+    }
   };
 
   const pauseMeditation = () => {
-    setMedTimer(prev => ({ ...prev, running: !prev.running }));
+    setMedTimer(prev => {
+      if (prev.running && prev.endsAt) {
+        const remainingMs = Math.max(0, prev.endsAt - Date.now());
+        cancelMeditationSpeech();
+        return { ...prev, running: false, endsAt: 0, remainingMs };
+      }
+      if (!prev.running && prev.remainingMs > 0) {
+        return { ...prev, running: true, endsAt: Date.now() + prev.remainingMs, remainingMs: 0 };
+      }
+      return prev;
+    });
   };
 
   const stopMeditation = () => {
-    setMedTimer(prev => ({ ...prev, running: false, secondsLeft: prev.durationSec }));
+    cancelMeditationSpeech();
+    medSpokenRef.current = new Set();
+    setMedTimer(prev => ({ ...prev, running: false, endsAt: 0, remainingMs: 0 }));
   };
 
-  const logMeditationSession = (durationMin, practice) => {
+  const logMeditationSession = (durationMin, practice, note) => {
     const date = getDateKey();
     const entry = {
       id: `med-${Date.now()}`,
       durationMin,
       mode: practice,
+      note: note || "",
       completedAt: new Date().toISOString(),
     };
     setMeditationLog(prev => {
@@ -3016,6 +3318,36 @@ export default function AtlasLuthor() {
       return { ...prev, [date]: [entry, ...list] };
     });
   };
+
+  const saveMedReflection = () => {
+    const trimmed = (medReflection || "").trim();
+    if (!trimmed || !medCompleted) return;
+    setMeditationLog(prev => {
+      const date = getDateKey();
+      const list = Array.isArray(prev[date]) ? prev[date] : [];
+      if (list.length === 0) return prev;
+      const [latest, ...rest] = list;
+      return { ...prev, [date]: [{ ...latest, note: trimmed }, ...rest] };
+    });
+    setMedCompleted(null);
+    setMedReflection("");
+  };
+
+  const addMeditationReminder = () => {
+    const id = `med-reminder-${Date.now()}`;
+    const label = language === "es" ? "Meditar" : "Meditate";
+    const time = "21:00";
+    const message = language === "es" ? "Hora de tu meditación diaria." : "Time for your daily meditation.";
+    setNotificationSettings(prev => {
+      const current = Array.isArray(prev.customReminders) ? prev.customReminders : [];
+      if (current.some(r => r.message === message && r.time === time)) return prev;
+      return {
+        ...prev,
+        customReminders: [...current, { id, label, time, message, sound: "bell", enabled: true }],
+      };
+    });
+  };
+
 
   const addWater = (amount = 1) => {
     const date = getDateKey();
@@ -4507,9 +4839,17 @@ export default function AtlasLuthor() {
                     <div style={{ width: `${medPct}%`, height: "100%", background: medAccent, borderRadius: 5, transition: "width 0.4s ease" }} />
                   </div>
                   {medTimer.running ? (
-                    <button className="primary-btn" style={{ width: "100%" }} onClick={() => openFeaturePage("meditation")}>
-                      {language === "es" ? "Sesión en curso · Abrir" : "Session running · Open"}
-                    </button>
+                    (() => {
+                      const remaining = medTimer.endsAt > 0 ? Math.max(0, Math.ceil((medTimer.endsAt - Date.now()) / 1000)) : 0;
+                      const rm = Math.floor(remaining / 60);
+                      const rs = remaining % 60;
+                      const _ = medTick; void _;
+                      return (
+                        <button className="primary-btn" style={{ width: "100%" }} onClick={() => openFeaturePage("meditation")}>
+                          {selectedPractice && (language === "es" ? selectedPractice.es : selectedPractice.en)} · {rm}:{String(rs).padStart(2, "0")} {language === "es" ? "restantes" : "remaining"}
+                        </button>
+                      );
+                    })()
                   ) : (
                     <div style={{ display: "grid", gridTemplateColumns: `repeat(${quickPresets.length}, 1fr)`, gap: 8 }}>
                       {quickPresets.map(min => (
@@ -6134,12 +6474,21 @@ export default function AtlasLuthor() {
             {activeFeaturePage === "meditation" && (() => {
               const def = MEDITATION_PRACTICES[medTimer.practice] || MEDITATION_PRACTICES.pranayama;
               const accent = def.accent;
-              const elapsedSec = medTimer.durationSec - medTimer.secondsLeft;
+              const isRunning = medTimer.running && medTimer.endsAt > 0;
+              const isPaused = !medTimer.running && medTimer.remainingMs > 0;
+              const _tick = medTick; // dep so we recompute on each tick
+              void _tick;
+              const secondsLeft = isRunning
+                ? Math.max(0, Math.ceil((medTimer.endsAt - Date.now()) / 1000))
+                : isPaused
+                  ? Math.ceil(medTimer.remainingMs / 1000)
+                  : medTimer.durationSec;
+              const elapsedSec = medTimer.durationSec - secondsLeft;
               const progressPct = medTimer.durationSec > 0 ? Math.min(100, Math.round((elapsedSec / medTimer.durationSec) * 100)) : 0;
               const cycleSec = def.cycleSec;
               const cyclePos = cycleSec > 0 ? elapsedSec % cycleSec : 0;
               let phaseLabel = "";
-              if (cycleSec > 0) {
+              if (cycleSec > 0 && isRunning) {
                 let phaseStart = 0;
                 for (const phase of def.phases) {
                   if (cyclePos < phaseStart + phase.sec) {
@@ -6149,7 +6498,7 @@ export default function AtlasLuthor() {
                   phaseStart += phase.sec;
                 }
               }
-              const breathCount = def.showBreathCounter && cycleSec > 0
+              const breathCount = def.showBreathCounter && cycleSec > 0 && isRunning
                 ? ((Math.floor(elapsedSec / cycleSec) % 10) + 1)
                 : 0;
               const mmss = sec => {
@@ -6160,22 +6509,63 @@ export default function AtlasLuthor() {
               const ringR = 64;
               const ringC = 2 * Math.PI * ringR;
               const todayPct = Math.min(100, Math.round((meditationStats.todayMinutes / meditationGoalMin) * 100));
+              const currentMin = Math.round(medTimer.durationSec / 60);
+              const tummoBlocked = medTimer.practice === "tummo" && !appSettings.meditationTummoAck;
+
+              // Last 30 days for the heatmap (~5 rows × 7 cols).
+              const heatDays = (() => {
+                const arr = [];
+                for (let i = 34; i >= 0; i -= 1) {
+                  const d = new Date();
+                  d.setDate(d.getDate() - i);
+                  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                  const list = Array.isArray(meditationLog[key]) ? meditationLog[key] : [];
+                  const minutes = list.reduce((s, x) => s + (Number(x.durationMin) || 0), 0);
+                  arr.push({ key, minutes, isToday: i === 0 });
+                }
+                return arr;
+              })();
+              const heatMax = Math.max(meditationGoalMin, ...heatDays.map(d => d.minutes));
+              const heatColor = m => {
+                if (!m) return isLightMode ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)";
+                const ratio = Math.min(1, m / heatMax);
+                if (m >= meditationGoalMin) return "#3FB98A";
+                const alpha = 0.3 + ratio * 0.6;
+                return `${accent}${Math.round(alpha * 255).toString(16).padStart(2, "0")}`;
+              };
+
+              const perPracticeStats = MEDITATION_PRACTICE_KEYS.map(key => {
+                let sessions = 0;
+                let minutes = 0;
+                Object.values(meditationLog).forEach(list => {
+                  if (!Array.isArray(list)) return;
+                  list.forEach(item => {
+                    if (item.mode === key) {
+                      sessions += 1;
+                      minutes += Number(item.durationMin) || 0;
+                    }
+                  });
+                });
+                return { key, def: MEDITATION_PRACTICES[key], sessions, minutes };
+              });
+
+              const todaySessions = meditationLog[getDateKey()] || [];
               const recentDays = (() => {
-                const days7 = [];
+                const arr = [];
                 for (let i = 0; i < 7; i += 1) {
                   const d = new Date();
                   d.setDate(d.getDate() - i);
                   const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
                   const list = Array.isArray(meditationLog[key]) ? meditationLog[key] : [];
                   const minutes = list.reduce((sum, item) => sum + (Number(item.durationMin) || 0), 0);
-                  days7.push({ key, minutes, sessions: list.length });
+                  arr.push({ key, minutes, sessions: list.length });
                 }
-                return days7;
+                return arr;
               })();
-              const currentMin = Math.round(medTimer.durationSec / 60);
 
               return (
                 <div className="detail-list">
+                  {/* TOP: stats — keeps the score-style summary up high. */}
                   <div className="detail-grid">
                     <div className="detail-card"><p className="detail-label">{language === "es" ? "HOY" : "TODAY"}</p><p className="detail-value" style={{ color: accent }}>{meditationStats.todayMinutes} <span style={{ fontSize: 14, color: "#8A8F99", fontWeight: 400 }}>/ {meditationGoalMin} min</span></p></div>
                     <div className="detail-card"><p className="detail-label">{language === "es" ? "RACHA" : "STREAK"}</p><p className="detail-value" style={{ color: "#FFD060" }}>{meditationStats.streak} {language === "es" ? "días" : "days"}</p></div>
@@ -6183,74 +6573,10 @@ export default function AtlasLuthor() {
                     <div className="detail-card"><p className="detail-label">{language === "es" ? "TOTAL MIN" : "TOTAL MIN"}</p><p className="detail-value">{meditationStats.totalMinutes}</p></div>
                   </div>
 
-                  <div className="home-card" style={{ borderColor: medTimer.running ? `${accent}66` : undefined, padding: "22px 18px" }}>
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: accent, fontFamily: "'Orbitron', monospace", marginBottom: 4, textAlign: "center" }}>
-                      {(language === "es" ? def.es : def.en).toUpperCase()}
-                    </p>
-                    <p style={{ fontSize: 11, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginBottom: 16, textAlign: "center" }}>
-                      {language === "es" ? def.esSub : def.enSub}
-                    </p>
-
-                    <div style={{ position: "relative", width: "100%", maxWidth: 240, aspectRatio: "1", margin: "0 auto" }}>
-                      <svg viewBox="0 0 160 160" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
-                        <circle cx="80" cy="80" r={ringR} fill="none" stroke={isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"} strokeWidth="8" />
-                        <circle cx="80" cy="80" r={ringR} fill="none" stroke={accent} strokeWidth="8" strokeLinecap="round" strokeDasharray={ringC} strokeDashoffset={ringC * (1 - progressPct / 100)} style={{ transition: "stroke-dashoffset 0.9s linear" }} />
-                      </svg>
-                      <div
-                        className={medTimer.running && def.showBreathCircle ? `med-breath med-breath-${medTimer.practice}` : ""}
-                        style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: accent, pointerEvents: "none" }}
-                      >
-                        <p style={{ fontSize: 42, fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{mmss(medTimer.secondsLeft)}</p>
-                        {medTimer.running && def.showBreathCircle && phaseLabel && (
-                          <p style={{ fontSize: 12, letterSpacing: 3, marginTop: 8, fontFamily: "'Orbitron', monospace", fontWeight: 800, opacity: 0.9 }}>{phaseLabel.toUpperCase()}</p>
-                        )}
-                        {medTimer.running && def.showBreathCounter && breathCount > 0 && (
-                          <p style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Orbitron', monospace", marginTop: 4, opacity: 0.7, color: "#FFFFFF" }}>{breathCount}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {medTimer.running ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-                        <button className="dark-btn" onClick={pauseMeditation}>
-                          {language === "es" ? "Pausar" : "Pause"}
-                        </button>
-                        <button className="dark-btn" onClick={stopMeditation} style={{ color: "#E5604D" }}>
-                          {language === "es" ? "Detener" : "Stop"}
-                        </button>
-                      </div>
-                    ) : medTimer.secondsLeft > 0 && medTimer.secondsLeft < medTimer.durationSec ? (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
-                        <button className="primary-btn" onClick={pauseMeditation}>
-                          {language === "es" ? "Continuar" : "Resume"}
-                        </button>
-                        <button className="dark-btn" onClick={stopMeditation} style={{ color: "#E5604D" }}>
-                          {language === "es" ? "Detener" : "Stop"}
-                        </button>
-                      </div>
-                    ) : (
-                      <button className="primary-btn" style={{ marginTop: 16, width: "100%" }} onClick={() => startMeditation(medTimer.practice, currentMin, medTimer.intervalBellMin)}>
-                        {language === "es" ? "Empezar sesión" : "Start session"}
-                      </button>
-                    )}
-                  </div>
-
-                  {medCompleted && !medTimer.running && (
-                    <div className="home-card" style={{ borderColor: "#3FB98A66", background: isLightMode ? "rgba(63,185,138,0.08)" : "rgba(63,185,138,0.06)" }}>
-                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
-                        {language === "es" ? "SESIÓN COMPLETA" : "SESSION DONE"}
-                      </p>
-                      <p style={{ color: isLightMode ? "#1A3A2A" : "#A8E0C0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
-                        {language === "es"
-                          ? `Guardamos ${medCompleted.durationMin} min de ${MEDITATION_PRACTICES[medCompleted.practice]?.es || ""} en tu historial. Buena calma.`
-                          : `Logged ${medCompleted.durationMin} min of ${MEDITATION_PRACTICES[medCompleted.practice]?.en || ""} to your history. Nice calm.`}
-                      </p>
-                    </div>
-                  )}
-
+                  {/* PRACTICE PICKER — 2x2 compact grid. */}
                   <div className="home-card">
                     <p className="detail-label">{language === "es" ? "PRÁCTICA" : "PRACTICE"}</p>
-                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
                       {MEDITATION_PRACTICE_KEYS.map(key => {
                         const p = MEDITATION_PRACTICES[key];
                         const isSel = medTimer.practice === key;
@@ -6258,19 +6584,16 @@ export default function AtlasLuthor() {
                           <button
                             key={key}
                             className="dark-btn"
-                            disabled={medTimer.running}
+                            disabled={isRunning}
                             onClick={() => {
-                              setMedShowTeaching(false);
-                              setMedTimer(prev => {
-                                const newDurationMin = p.defaultMin;
-                                return {
-                                  ...prev,
-                                  practice: key,
-                                  durationSec: newDurationMin * 60,
-                                  secondsLeft: newDurationMin * 60,
-                                  intervalBellMin: p.defaultIntervalBellMin,
-                                };
-                              });
+                              setMedTimer(prev => ({
+                                ...prev,
+                                practice: key,
+                                durationSec: p.defaultMin * 60,
+                                endsAt: 0,
+                                remainingMs: 0,
+                                intervalBellMin: p.defaultIntervalBellMin,
+                              }));
                               setAppSettings(prev => ({
                                 ...prev,
                                 meditationPractice: key,
@@ -6280,148 +6603,362 @@ export default function AtlasLuthor() {
                             }}
                             style={{
                               textAlign: "left",
-                              borderColor: isSel ? `${p.accent}55` : undefined,
+                              borderColor: isSel ? `${p.accent}66` : undefined,
                               boxShadow: isSel ? `inset 0 0 0 1px ${p.accent}44` : "none",
-                              opacity: medTimer.running && !isSel ? 0.45 : 1,
-                              padding: "12px 14px",
+                              opacity: isRunning && !isSel ? 0.4 : 1,
+                              padding: "12px 12px",
                             }}
+                            aria-label={`${language === "es" ? p.es : p.en} ${language === "es" ? p.esSub : p.enSub}`}
                           >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                              <span style={{ fontWeight: 900, color: isSel ? p.accent : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif" }}>{language === "es" ? p.es : p.en}</span>
-                              <span style={{ fontSize: 9, letterSpacing: 2, color: isSel ? p.accent : "#8A8F99", fontFamily: "'Orbitron', monospace", fontWeight: 800 }}>{p.minMin}-{p.maxMin} MIN</span>
-                            </div>
-                            <p style={{ fontSize: 11, color: isSel ? p.accent : "#8A8F99", marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>{language === "es" ? p.esSub : p.enSub}</p>
-                            <p style={{ fontSize: 12, color: isLightMode ? "#5A6270" : "#9CA1AC", marginTop: 6, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{language === "es" ? p.esDesc : p.enDesc}</p>
+                            <span style={{ display: "block", fontWeight: 900, fontSize: 14, color: isSel ? p.accent : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif" }}>
+                              {language === "es" ? p.es : p.en}
+                            </span>
+                            <span style={{ display: "block", fontSize: 11, color: isSel ? p.accent : "#8A8F99", marginTop: 3, fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
+                              {language === "es" ? p.esSub : p.enSub}
+                            </span>
+                            <span style={{ display: "block", fontSize: 10, letterSpacing: 1, color: isSel ? p.accent : "#8A8F99", marginTop: 6, fontFamily: "'Orbitron', monospace", fontWeight: 800 }}>
+                              {p.minMin}-{p.maxMin} MIN
+                            </span>
                           </button>
                         );
                       })}
                     </div>
+                    <p style={{ fontSize: 12, color: isLightMode ? "#5A6270" : "#9CA1AC", marginTop: 12, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                      {language === "es" ? def.esDesc : def.enDesc}
+                    </p>
                   </div>
 
+                  {/* TUMMO SAFETY — only when Tummo is selected. SVG icon, no emoji. */}
                   {def.safetyEs && (
                     <div className="home-card" style={{ borderColor: "#FF986055", background: isLightMode ? "rgba(255,152,96,0.08)" : "rgba(255,152,96,0.06)" }}>
-                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#FF9860", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
-                        {language === "es" ? "⚠ SEGURIDAD" : "⚠ SAFETY"}
-                      </p>
-                      <p style={{ color: isLightMode ? "#7A3A20" : "#FFC8A0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
-                        {language === "es" ? def.safetyEs : def.safetyEn}
-                      </p>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF9860" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+                          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+                          <line x1="12" y1="9" x2="12" y2="13" />
+                          <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 10, letterSpacing: 3, color: "#FF9860", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                            {language === "es" ? "SEGURIDAD" : "SAFETY"}
+                          </p>
+                          <p style={{ color: isLightMode ? "#7A3A20" : "#FFC8A0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                            {language === "es" ? def.safetyEs : def.safetyEn}
+                          </p>
+                          {!appSettings.meditationTummoAck && (
+                            <button
+                              className="dark-btn"
+                              style={{ marginTop: 10, color: "#FF9860", borderColor: "#FF986044" }}
+                              onClick={() => setAppSettings(prev => ({ ...prev, meditationTummoAck: true }))}
+                            >
+                              {language === "es" ? "Entiendo las advertencias" : "I understand the warnings"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
 
+                  {/* TIMER CARD — the main action, prominent. */}
+                  <div className="home-card" style={{ borderColor: isRunning ? `${accent}99` : `${accent}33`, padding: "22px 18px", background: isLightMode ? `linear-gradient(180deg, #FFFFFF, ${accent}08)` : `linear-gradient(180deg, rgba(19,19,24,0.96), ${accent}10)` }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 10, letterSpacing: 3, color: accent, fontFamily: "'Orbitron', monospace" }}>
+                          {(language === "es" ? def.es : def.en).toUpperCase()}
+                        </p>
+                        <p style={{ fontSize: 12, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
+                          {currentMin} min · {language === "es" ? def.esSub : def.enSub}
+                        </p>
+                      </div>
+                      {appSettings.meditationVoice && (
+                        <span style={{ fontSize: 9, letterSpacing: 2, color: accent, fontFamily: "'Orbitron', monospace", padding: "4px 8px", border: `1px solid ${accent}44`, borderRadius: 999 }}>
+                          {language === "es" ? "VOZ ON" : "VOICE ON"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      style={{ position: "relative", width: "100%", maxWidth: 240, aspectRatio: "1", margin: "0 auto" }}
+                      role="img"
+                      aria-label={isRunning ? (language === "es" ? `Sesión en curso, ${mmss(secondsLeft)} restantes` : `Session running, ${mmss(secondsLeft)} remaining`) : (language === "es" ? "Timer de meditación detenido" : "Meditation timer stopped")}
+                    >
+                      <svg viewBox="0 0 160 160" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                        <circle cx="80" cy="80" r={ringR} fill="none" stroke={isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"} strokeWidth="8" />
+                        <circle cx="80" cy="80" r={ringR} fill="none" stroke={accent} strokeWidth="8" strokeLinecap="round" strokeDasharray={ringC} strokeDashoffset={ringC * (1 - progressPct / 100)} style={{ transition: "stroke-dashoffset 0.9s linear" }} />
+                      </svg>
+                      <div
+                        className={isRunning && def.showBreathCircle ? `med-breath med-breath-${medTimer.practice}` : ""}
+                        style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: accent, pointerEvents: "none" }}
+                      >
+                        {isRunning && def.showBreathCounter && breathCount > 0 ? (
+                          <>
+                            <p style={{ fontSize: 64, fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1, color: "#FFFFFF" }}>{breathCount}</p>
+                            <p style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Orbitron', monospace", marginTop: 6, opacity: 0.75 }}>{mmss(secondsLeft)}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p style={{ fontSize: 42, fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{mmss(secondsLeft)}</p>
+                            {isRunning && def.showBreathCircle && phaseLabel && (
+                              <p style={{ fontSize: 12, letterSpacing: 3, marginTop: 8, fontFamily: "'Orbitron', monospace", fontWeight: 800, opacity: 0.9 }}>{phaseLabel.toUpperCase()}</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {isRunning ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+                        <button className="dark-btn" onClick={pauseMeditation} aria-label={language === "es" ? "Pausar" : "Pause"}>
+                          ❙❙ {language === "es" ? "Pausar" : "Pause"}
+                        </button>
+                        <button className="dark-btn" onClick={stopMeditation} style={{ color: "#E5604D" }} aria-label={language === "es" ? "Detener" : "Stop"}>
+                          ■ {language === "es" ? "Detener" : "Stop"}
+                        </button>
+                      </div>
+                    ) : isPaused ? (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
+                        <button className="primary-btn" onClick={pauseMeditation}>
+                          ▶ {language === "es" ? "Continuar" : "Resume"}
+                        </button>
+                        <button className="dark-btn" onClick={stopMeditation} style={{ color: "#E5604D" }}>
+                          ■ {language === "es" ? "Detener" : "Stop"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="primary-btn"
+                        style={{ marginTop: 16, width: "100%", opacity: tummoBlocked ? 0.5 : 1, cursor: tummoBlocked ? "not-allowed" : "pointer" }}
+                        disabled={tummoBlocked}
+                        onClick={() => startMeditation(medTimer.practice, currentMin, medTimer.intervalBellMin)}
+                      >
+                        ▶ {language === "es" ? "Empezar sesión guiada" : "Start guided session"}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* COMPLETION + REFLECTION */}
+                  {medCompleted && !isRunning && (
+                    <div className="home-card" style={{ borderColor: "#3FB98A66", background: isLightMode ? "rgba(63,185,138,0.08)" : "rgba(63,185,138,0.06)" }}>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace", marginBottom: 6 }}>
+                        {language === "es" ? "SESIÓN COMPLETA" : "SESSION DONE"}
+                      </p>
+                      <p style={{ color: isLightMode ? "#1A3A2A" : "#A8E0C0", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.5 }}>
+                        {language === "es"
+                          ? `Guardamos ${medCompleted.durationMin} min de ${MEDITATION_PRACTICES[medCompleted.practice]?.es || ""} en tu historial.`
+                          : `Logged ${medCompleted.durationMin} min of ${MEDITATION_PRACTICES[medCompleted.practice]?.en || ""} to your history.`}
+                      </p>
+                      <label style={{ display: "block", marginTop: 12 }}>
+                        <span className="field-label">{language === "es" ? "REFLEXIÓN (OPCIONAL)" : "REFLECTION (OPTIONAL)"}</span>
+                        <input
+                          className="input"
+                          value={medReflection}
+                          onChange={event => setMedReflection(event.target.value)}
+                          placeholder={language === "es" ? "¿Cómo te sientes?" : "How do you feel?"}
+                          maxLength={140}
+                        />
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                        <button className="dark-btn" onClick={() => { setMedCompleted(null); setMedReflection(""); }}>
+                          {language === "es" ? "Saltar" : "Skip"}
+                        </button>
+                        <button className="primary-btn" onClick={saveMedReflection} disabled={!medReflection.trim()} style={{ opacity: medReflection.trim() ? 1 : 0.4 }}>
+                          {language === "es" ? "Guardar nota" : "Save note"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ADJUSTMENTS — collapsed by default to keep the page tight. */}
                   <div className="home-card">
                     <button
-                      className="edit-btn"
-                      onClick={() => setMedShowTeaching(v => !v)}
-                      style={{ width: "100%", textAlign: "left", padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", color: accent }}
+                      onClick={() => setMedShowAdjustments(v => !v)}
+                      style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: "transparent", border: "none", padding: 0, color: accent, cursor: "pointer", font: "inherit" }}
+                      aria-expanded={medShowAdjustments}
                     >
                       <span style={{ fontSize: 10, letterSpacing: 3, fontFamily: "'Orbitron', monospace", fontWeight: 800 }}>
-                        {language === "es" ? "CÓMO HACERLO" : "HOW TO"}
+                        {language === "es" ? "AJUSTES" : "ADJUSTMENTS"}
                       </span>
-                      <span>{medShowTeaching ? "↑" : "↓"}</span>
+                      <span>{medShowAdjustments ? "↑" : "↓"}</span>
                     </button>
-                    {medShowTeaching && (
-                      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                        {def.enSteps.map((step, i) => (
-                          <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                            <div style={{ width: 22, height: 22, borderRadius: "50%", background: `${accent}22`, color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, fontFamily: "'Orbitron', monospace", flexShrink: 0 }}>
-                              {i + 1}
-                            </div>
-                            <p style={{ color: isLightMode ? "#2A3A4A" : "#C8D0DC", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.55 }}>
-                              {language === "es" ? step.es : step.en}
+
+                    {medShowAdjustments && (
+                      <div style={{ display: "grid", gap: 16, marginTop: 14 }}>
+                        {/* Duration */}
+                        <div>
+                          <p className="detail-label">{language === "es" ? "DURACIÓN" : "DURATION"}</p>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+                            <input
+                              type="range"
+                              min={def.minMin}
+                              max={def.maxMin}
+                              step="1"
+                              value={currentMin}
+                              disabled={isRunning}
+                              onChange={event => {
+                                const minutes = Number(event.target.value);
+                                setMedTimer(prev => ({ ...prev, durationSec: minutes * 60, remainingMs: 0 }));
+                                setAppSettings(prev => ({ ...prev, meditationDurationMin: minutes }));
+                              }}
+                              style={{ flex: 1, accentColor: accent }}
+                              aria-label={language === "es" ? "Duración en minutos" : "Duration in minutes"}
+                            />
+                            <span style={{ minWidth: 64, textAlign: "right", color: accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{currentMin} min</span>
+                          </div>
+                        </div>
+
+                        {/* Interval bell */}
+                        <div>
+                          <p className="detail-label">{language === "es" ? "CAMPANA DURANTE LA SESIÓN" : "INTERVAL BELL"}</p>
+                          <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 4, lineHeight: 1.4 }}>
+                            {language === "es" ? "Tono cada N minutos. Útil para Vipassana." : "Chime every N minutes. Useful for Vipassana."}
+                          </p>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8, alignItems: "center" }}>
+                            {[0, 1, 2, 5, 10].map(min => {
+                              const isSel = medTimer.intervalBellMin === min;
+                              return (
+                                <button
+                                  key={min}
+                                  disabled={isRunning}
+                                  onClick={() => {
+                                    setMedTimer(prev => ({ ...prev, intervalBellMin: min }));
+                                    setAppSettings(prev => ({ ...prev, meditationIntervalBellMin: min }));
+                                  }}
+                                  style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, cursor: isRunning ? "not-allowed" : "pointer", opacity: isRunning ? 0.5 : 1 }}
+                                >
+                                  {min === 0 ? "Off" : `${min} min`}
+                                </button>
+                              );
+                            })}
+                            <button
+                              className="edit-btn"
+                              onClick={() => { playReminderSound("chime"); meditationVibrate(120); }}
+                              style={{ color: accent }}
+                              aria-label={language === "es" ? "Probar tono" : "Test chime"}
+                            >
+                              ▶ {language === "es" ? "Probar" : "Test"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Ambient sound */}
+                        <div>
+                          <p className="detail-label">{language === "es" ? "SONIDO AMBIENTE" : "AMBIENT SOUND"}</p>
+                          <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 4, lineHeight: 1.4 }}>
+                            {language === "es" ? "Generado en el dispositivo. Bajo volumen, no compite con la voz." : "Generated on-device. Low volume, doesn't fight the voice."}
+                          </p>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                            {AMBIENT_SOUND_OPTIONS.map(snd => {
+                              const isSel = (appSettings.meditationSound || "off") === snd;
+                              const label = {
+                                off: language === "es" ? "Apagado" : "Off",
+                                rain: language === "es" ? "Lluvia" : "Rain",
+                                ocean: language === "es" ? "Océano" : "Ocean",
+                                om: language === "es" ? "Drone Om" : "Om Drone",
+                              }[snd];
+                              return (
+                                <button
+                                  key={snd}
+                                  onClick={() => setAppSettings(prev => ({ ...prev, meditationSound: snd }))}
+                                  style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, cursor: "pointer" }}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Voice guidance toggle */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                          <div style={{ minWidth: 0 }}>
+                            <p className="detail-label">{language === "es" ? "VOZ GUÍA" : "VOICE GUIDE"}</p>
+                            <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 4, lineHeight: 1.4 }}>
+                              {language === "es" ? "Te enseña la práctica con instrucciones habladas. Pausa o detén para silenciar." : "Teaches the practice with spoken instructions. Pause or stop to silence."}
                             </p>
                           </div>
-                        ))}
+                          <button
+                            className="dark-btn"
+                            onClick={() => setAppSettings(prev => ({ ...prev, meditationVoice: prev.meditationVoice === false }))}
+                            style={{ color: appSettings.meditationVoice ? accent : "#8A8F99", borderColor: appSettings.meditationVoice ? `${accent}44` : undefined, flexShrink: 0 }}
+                            aria-pressed={!!appSettings.meditationVoice}
+                          >
+                            {appSettings.meditationVoice ? (language === "es" ? "Activada" : "On") : (language === "es" ? "Apagada" : "Off")}
+                          </button>
+                        </div>
+
+                        {/* Daily goal */}
+                        <div>
+                          <p className="detail-label">{language === "es" ? "META DIARIA" : "DAILY GOAL"}</p>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+                            <input
+                              type="range"
+                              min="1"
+                              max="60"
+                              step="1"
+                              value={meditationGoalMin}
+                              onChange={event => setAppSettings(prev => ({ ...prev, meditationGoalMin: Number(event.target.value) }))}
+                              style={{ flex: 1, accentColor: accent }}
+                              aria-label={language === "es" ? "Meta diaria en minutos" : "Daily goal in minutes"}
+                            />
+                            <span style={{ minWidth: 56, textAlign: "right", color: accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{meditationGoalMin} min</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 10 }}>
+                            <div style={{ width: `${todayPct}%`, height: "100%", background: accent, borderRadius: 4, transition: "width 0.4s ease" }} />
+                          </div>
+                          <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6 }}>
+                            {meditationStats.todayMinutes} / {meditationGoalMin} min · {todayPct}%
+                          </p>
+                        </div>
+
+                        {/* Daily reminder shortcut */}
+                        <button className="dark-btn" onClick={addMeditationReminder} style={{ color: accent }}>
+                          + {language === "es" ? "Agregar recordatorio diario a las 21:00" : "Add daily reminder at 21:00"}
+                        </button>
                       </div>
                     )}
                   </div>
 
+                  {/* HEATMAP — last 35 days. */}
                   <div className="home-card">
-                    <p className="detail-label">{language === "es" ? "DURACIÓN" : "DURATION"}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
-                      <input
-                        type="range"
-                        min={def.minMin}
-                        max={def.maxMin}
-                        step="1"
-                        value={currentMin}
-                        disabled={medTimer.running}
-                        onChange={event => {
-                          const minutes = Number(event.target.value);
-                          setMedTimer(prev => ({ ...prev, durationSec: minutes * 60, secondsLeft: minutes * 60 }));
-                          setAppSettings(prev => ({ ...prev, meditationDurationMin: minutes }));
-                        }}
-                        style={{ flex: 1, accentColor: accent }}
-                      />
-                      <span style={{ minWidth: 64, textAlign: "right", color: accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{currentMin} min</span>
+                    <p className="detail-label">{language === "es" ? "ÚLTIMAS 5 SEMANAS" : "LAST 5 WEEKS"}</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 10 }}>
+                      {heatDays.map(day => (
+                        <div
+                          key={day.key}
+                          title={`${day.key}: ${day.minutes} min`}
+                          style={{
+                            aspectRatio: "1",
+                            borderRadius: 4,
+                            background: heatColor(day.minutes),
+                            border: day.isToday ? `1.5px solid ${accent}` : `1px solid ${isLightMode ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)"}`,
+                          }}
+                        />
+                      ))}
                     </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                      {[def.minMin, def.defaultMin, def.maxMin].filter((v, i, a) => a.indexOf(v) === i).map(min => {
-                        const isSel = currentMin === min;
-                        return (
-                          <button
-                            key={min}
-                            disabled={medTimer.running}
-                            onClick={() => {
-                              setMedTimer(prev => ({ ...prev, durationSec: min * 60, secondsLeft: min * 60 }));
-                              setAppSettings(prev => ({ ...prev, meditationDurationMin: min }));
-                            }}
-                            style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, cursor: medTimer.running ? "not-allowed" : "pointer", opacity: medTimer.running ? 0.5 : 1 }}
-                          >
-                            {min} min
-                          </button>
-                        );
-                      })}
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                      <span>{language === "es" ? "MENOS" : "LESS"}</span>
+                      <span>{language === "es" ? "MÁS" : "MORE"}</span>
                     </div>
                   </div>
 
+                  {/* PER-PRACTICE BREAKDOWN */}
                   <div className="home-card">
-                    <p className="detail-label">{language === "es" ? "CAMPANA DURANTE LA SESIÓN" : "INTERVAL BELL"}</p>
-                    <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6, lineHeight: 1.5 }}>
-                      {language === "es" ? "Tono suave cada N minutos para redirigir la atención. Útil para Vipassana." : "Soft chime every N minutes to redirect attention. Useful for Vipassana."}
-                    </p>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                      {[0, 1, 2, 5, 10].map(min => {
-                        const isSel = medTimer.intervalBellMin === min;
-                        return (
-                          <button
-                            key={min}
-                            disabled={medTimer.running}
-                            onClick={() => {
-                              setMedTimer(prev => ({ ...prev, intervalBellMin: min }));
-                              setAppSettings(prev => ({ ...prev, meditationIntervalBellMin: min }));
-                            }}
-                            style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${isSel ? `${accent}66` : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: isSel ? (isLightMode ? `${accent}15` : `${accent}18`) : "transparent", color: isSel ? accent : "#888", fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, cursor: medTimer.running ? "not-allowed" : "pointer", opacity: medTimer.running ? 0.5 : 1 }}
-                          >
-                            {min === 0 ? (language === "es" ? "Off" : "Off") : `${min} min`}
-                          </button>
-                        );
-                      })}
+                    <p className="detail-label">{language === "es" ? "POR PRÁCTICA" : "BY PRACTICE"}</p>
+                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                      {perPracticeStats.map(stat => (
+                        <div key={stat.key} className="detail-row">
+                          <div>
+                            <p className="detail-row-main">{language === "es" ? stat.def.es : stat.def.en}</p>
+                            <p className="detail-row-sub">{stat.sessions} {language === "es" ? "sesiones" : "sessions"} · {stat.minutes} min</p>
+                          </div>
+                          <span style={{ color: stat.def.accent, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900 }}>
+                            {stat.sessions > 0 ? Math.round(stat.minutes / stat.sessions) : 0} {language === "es" ? "min/ses" : "min/ses"}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="home-card">
-                    <p className="detail-label">{language === "es" ? "META DIARIA" : "DAILY GOAL"}</p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
-                      <input
-                        type="range"
-                        min="1"
-                        max="60"
-                        step="1"
-                        value={meditationGoalMin}
-                        onChange={event => setAppSettings(prev => ({ ...prev, meditationGoalMin: Number(event.target.value) }))}
-                        style={{ flex: 1, accentColor: accent }}
-                      />
-                      <span style={{ minWidth: 56, textAlign: "right", color: accent, fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>{meditationGoalMin} min</span>
-                    </div>
-                    <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 10 }}>
-                      <div style={{ width: `${todayPct}%`, height: "100%", background: accent, borderRadius: 4, transition: "width 0.4s ease" }} />
-                    </div>
-                    <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6 }}>
-                      {meditationStats.todayMinutes} / {meditationGoalMin} min · {todayPct}%
-                    </p>
-                  </div>
-
+                  {/* 7-DAY BARS */}
                   <div className="home-card">
                     <p className="detail-label">{language === "es" ? "ÚLTIMOS 7 DÍAS" : "LAST 7 DAYS"}</p>
                     <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
@@ -6446,11 +6983,12 @@ export default function AtlasLuthor() {
                     </div>
                   </div>
 
-                  {(meditationLog[getDateKey()] || []).length > 0 && (
+                  {/* TODAY'S SESSIONS */}
+                  {todaySessions.length > 0 && (
                     <div className="home-card">
                       <p className="detail-label">{language === "es" ? "SESIONES DE HOY" : "TODAY'S SESSIONS"}</p>
                       <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
-                        {(meditationLog[getDateKey()] || []).map(entry => {
+                        {todaySessions.map(entry => {
                           const p = MEDITATION_PRACTICES[entry.mode];
                           const name = p ? (language === "es" ? p.es : p.en) : (entry.mode || "—");
                           const c = p?.accent || accent;
@@ -6459,7 +6997,9 @@ export default function AtlasLuthor() {
                             <div key={entry.id} className="detail-row">
                               <div>
                                 <p className="detail-row-main">{name}</p>
-                                <p className="detail-row-sub">{time}</p>
+                                <p className="detail-row-sub">
+                                  {time}{entry.note ? ` · ${entry.note}` : ""}
+                                </p>
                               </div>
                               <span style={{ color: c, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900 }}>{entry.durationMin} min</span>
                             </div>
@@ -6468,30 +7008,6 @@ export default function AtlasLuthor() {
                       </div>
                     </div>
                   )}
-
-                  <div className="home-card">
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                      {language === "es" ? "POR QUÉ IMPORTA" : "WHY IT MATTERS"}
-                    </p>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {(language === "es" ? [
-                        "Reduce el cortisol y acelera la recuperación entre sesiones de entreno.",
-                        "Mejora el enfoque y la conexión mente-músculo durante las series.",
-                        "Estabiliza el ritmo cardíaco y la calidad del sueño.",
-                        "10 minutos al día son suficientes para empezar a sentir el cambio.",
-                      ] : [
-                        "Lowers cortisol and speeds recovery between training sessions.",
-                        "Sharpens focus and mind-muscle connection during lifts.",
-                        "Stabilizes heart rate and improves sleep quality.",
-                        "10 minutes a day is enough to start noticing the shift.",
-                      ]).map((line, ii) => (
-                        <div key={ii} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <div style={{ width: 5, height: 5, borderRadius: "50%", background: accent, marginTop: 5, flexShrink: 0 }} />
-                          <p style={{ color: isLightMode ? "#2A3A4A" : "#B8C8D8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.55 }}>{line}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               );
             })()}
