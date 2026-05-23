@@ -26,6 +26,16 @@ import CardioPage from "./features/CardioPage.jsx";
 import ChallengesPage from "./features/ChallengesPage.jsx";
 import PhotosPage from "./features/PhotosPage.jsx";
 import BodyPage from "./features/BodyPage.jsx";
+import TodayPage from "./features/TodayPage.jsx";
+import ScorePage from "./features/ScorePage.jsx";
+import CalendarPage from "./features/CalendarPage.jsx";
+import PrsPage from "./features/PrsPage.jsx";
+import FatiguePage from "./features/FatiguePage.jsx";
+import GoalsPage from "./features/GoalsPage.jsx";
+import MetricsPage from "./features/MetricsPage.jsx";
+import WeekPage from "./features/WeekPage.jsx";
+import WaterPage from "./features/WaterPage.jsx";
+import CoachPage from "./features/CoachPage.jsx";
 
 const pushSessions = [
   {
@@ -316,7 +326,6 @@ const BODY_TYPE_GOAL_OPTIONS = [
   { value: "muscular", label: "Build Muscle / Bulk" },
   { value: "maintain", label: "Maintain & Tone" },
 ];
-const WATER_GOAL_OPTIONS = ["4", "6", "8", "10", "12", "14", "16"];
 const COMMON_EXERCISES = {
   "Chest": ["Bench Press","DB Bench Press","Incline Bench Press","Incline DB Press","Decline Bench Press","Push Up","Cable Chest Fly","DB Chest Fly","Chest Machine Press","Pec Deck Fly","Cable Crossover","Weighted Dip","Supine Press"],
   "Back": ["Deadlift","Pull Up","Chin Up","Lat Pull Down","Seated Cable Row","Row Barbell","Row Dumbbell","T-Bar Row","Rack Pull","Lower Back Extension","Face Pull","Shrugs","Upright Row Front","Upright Row Back"],
@@ -4771,46 +4780,18 @@ export default function AtlasLuthor() {
             </div>
 
             {activeFeaturePage === "today" && (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  <div className="detail-card">
-                    <p className="detail-label">{text.daySection}</p>
-                    <p className="detail-value" style={{ color: themeFor(weeklyMetrics.todayType).accent }}>{todayDisplayName} - {weeklyMetrics.todayType}</p>
-                  </div>
-                  <div className="detail-card">
-                    <p className="detail-label">{text.mWeekly}</p>
-                    <p className="detail-value" style={{ color: "#90C8FF" }}>{weeklyMetrics.weeklyProgress}%</p>
-                  </div>
-                  <div className="detail-card">
-                    <p className="detail-label">{text.mDone}</p>
-                    <p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedExercises}/{weeklyMetrics.totalExercises}</p>
-                  </div>
-                  <div className="detail-card">
-                    <p className="detail-label">{text.mSessions}</p>
-                    <p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedSessions}/{weeklyMetrics.workoutSessions}</p>
-                  </div>
-                </div>
-                <button className="primary-btn" onClick={() => openWorkout(weeklyMetrics.today)}>
-                  {text.startToday}
-                </button>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
-                  <button className="dark-btn" onClick={resetWeek}>{text.resetWeek}</button>
-                </div>
-                <div className="home-card">
-                  <p className="detail-label">{t("PRÓXIMAS PRIORIDADES", "NEXT PRIORITIES")}</p>
-                  <div className="detail-list">
-                    {(incompleteExerciseRows.length ? incompleteExerciseRows : [{ key: "done", exercise: { name: t("Todos los ejercicios completados", "All exercises completed"), weight: "" }, dayName: weeklyMetrics.today, sessionName: t("Protocolo", "Protocol"), setsDone: 0, setsTotal: 0, setsLeft: 0 }]).slice(0, 4).map(row => (
-                      <div key={`${row.key}-today-priority`} className="detail-row">
-                        <div>
-                          <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {row.setsDone}/{row.setsTotal} {text.setsWord}</p>
-                        </div>
-                        <span style={{ color: themeFor(weeklyMetrics.todayType).accent, fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtExW(row.exercise.weight)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <TodayPage
+                text={text}
+                t={t}
+                themeFor={themeFor}
+                weeklyMetrics={weeklyMetrics}
+                todayDisplayName={todayDisplayName}
+                fmtExW={fmtExW}
+                openWorkout={openWorkout}
+                resetWeek={resetWeek}
+                incompleteExerciseRows={incompleteExerciseRows}
+                displayDay={displayDay}
+              />
             )}
 
             {activeFeaturePage === "body" && (
@@ -4846,181 +4827,73 @@ export default function AtlasLuthor() {
             )}
 
             {activeFeaturePage === "score" && (
-              <div className="detail-list">
-                {(() => {
-                  const scoreColor = atlasScore >= 80 ? "#3FB98A" : atlasScore >= 50 ? "#90C8FF" : "#FFD060";
-                  return (
-                    <div className="detail-card" style={{ textAlign: "center", padding: "24px 20px", borderColor: `${scoreColor}55` }}>
-                      <p style={{ color: scoreColor, fontSize: 58, fontFamily: "'Orbitron', monospace", fontWeight: 900, lineHeight: 1, textShadow: `0 0 28px ${scoreColor}55` }}>{atlasScore}</p>
-                      <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden", margin: "12px auto 10px", maxWidth: 220 }}>
-                        <div style={{ width: `${atlasScore}%`, height: "100%", background: scoreColor, borderRadius: 4, boxShadow: `0 0 10px ${scoreColor}88` }} />
-                      </div>
-                      <p className="detail-row-sub">{deloadWarning ? text.deloadActive : text.protocolStable}</p>
-                    </div>
-                  );
-                })()}
-                <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.mWeekly}</p><p className="detail-value" style={{ color: "#90C8FF" }}>{weeklyMetrics.weeklyProgress}%</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.mSessions}</p><p className="detail-value" style={{ color: "#3FB98A" }}>{weeklyMetrics.completedSessions}/{weeklySessionsGoal}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.streakLabel}</p><p className="detail-value" style={{ color: "#FFD060" }}>{weeklyStreak}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.prsLabel}</p><p className="detail-value" style={{ color: "#FFD060" }}>{prEntries.length}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.avgRpeLabel}</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.deloadLabel}</p><p className="detail-value" style={{ color: deloadWarning ? "#E5604D" : "#3FB98A" }}>{deloadWarning ? "-10" : "+5"}</p></div>
-                </div>
-                <div className="home-card">
-                  <p className="detail-label">{text.scoreBreakdown}</p>
-                  <div className="detail-list">
-                    <div className="detail-row"><p className="detail-row-main">{text.weeklyCompletion}</p><span>{Math.round(weeklyMetrics.weeklyProgress * 0.45)} pts</span></div>
-                    <div className="detail-row"><p className="detail-row-main">{text.sessionTarget}</p><span>{Math.round(Math.min(weeklyMetrics.completedSessions / weeklySessionsGoal, 1) * 25)} pts</span></div>
-                    <div className="detail-row"><p className="detail-row-main">{text.streakPressure}</p><span>{Math.min(weeklyStreak, 4) * 5} pts</span></div>
-                    <div className="detail-row"><p className="detail-row-main">{text.prMomentum}</p><span>{prEntries.length * 3} pts</span></div>
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  <button className="dark-btn" onClick={shareWorkoutSummary}>{text.shareProgress}</button>
-                  <button className="primary-btn" onClick={shareProgressCard}>{text.shareCard}</button>
-                </div>
-              </div>
+              <ScorePage
+                text={text}
+                isLightMode={isLightMode}
+                atlasScore={atlasScore}
+                weeklyMetrics={weeklyMetrics}
+                weeklySessionsGoal={weeklySessionsGoal}
+                weeklyStreak={weeklyStreak}
+                prEntries={prEntries}
+                averageRpe={averageRpe}
+                deloadWarning={deloadWarning}
+                shareWorkoutSummary={shareWorkoutSummary}
+                shareProgressCard={shareProgressCard}
+              />
             )}
 
             {activeFeaturePage === "calendar" && (
-              <div className="detail-list">
-                <div className="home-card">
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: 6 }}>
-                    {weekHeaderLabels.map((label, index) => (
-                      <p key={`${label}-${index}`} style={{ color: isLightMode ? "#7A8090" : "#555", fontFamily: "'Orbitron', monospace", fontSize: 10, textAlign: "center" }}>{label}</p>
-                    ))}
-                    {calendarCells.map((cell, index) => {
-                      if (!cell) return <div key={`blank-detail-${index}`} />;
-                      const isToday = cell.key === getDateKey();
-                      const status = getCalendarStatus(cell);
-                      const visual = getCalendarVisual(status, isLightMode);
-                      return (
-                        <div key={cell.key} title={`${cell.key} - ${status}`} style={{ aspectRatio: "1", borderRadius: 8, background: visual.bg, color: visual.fg, border: isToday ? `2px solid ${isLightMode ? "#101015" : "#FFFFFF"}` : "1px solid transparent", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 900 }}>
-                          {cell.dayNumber}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
-                    {["completed", "trained", "missed", "rest", "planned"].map(status => {
-                      const visual = getCalendarVisual(status, isLightMode);
-                      return (
-                        <span key={status} style={{ display: "flex", alignItems: "center", gap: 5, color: isLightMode ? "#7A8090" : "#888", fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700 }}>
-                          <span style={{ width: 11, height: 11, borderRadius: 3, background: visual.bg, display: "inline-block" }} />
-                          {calendarLabels[status]}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="detail-grid">
-                  {Object.entries(calendarStatusCounts).map(([status, count]) => (
-                    <div key={status} className="detail-card">
-                      <p className="detail-label">{status.toUpperCase()}</p>
-                      <p className="detail-value">{count}</p>
-                    </div>
-                  ))}
-                </div>
-                {calendarCells.filter(Boolean).slice(-10).map(cell => {
-                  const logged = calendarLog[cell.key];
-                  const status = getCalendarStatus(cell);
-                  return (
-                    <div key={`${cell.key}-row`} className="detail-row">
-                      <div>
-                        <p className="detail-row-main">{cell.key} - {displayDay(cell.dayName)}</p>
-                        <p className="detail-row-sub">{logged ? `${logged.completed}/${logged.total} ${text.exercisesLogged}` : text.noEntrySaved}</p>
-                      </div>
-                      <span style={{ color: "#FFFFFF", fontFamily: "'Orbitron', monospace", fontSize: 10 }}>{status.toUpperCase()}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              <CalendarPage
+                text={text}
+                isLightMode={isLightMode}
+                weekHeaderLabels={weekHeaderLabels}
+                calendarCells={calendarCells}
+                calendarLog={calendarLog}
+                calendarLabels={calendarLabels}
+                calendarStatusCounts={calendarStatusCounts}
+                getCalendarStatus={getCalendarStatus}
+                getCalendarVisual={getCalendarVisual}
+                getDateKey={getDateKey}
+                displayDay={displayDay}
+              />
             )}
 
             {activeFeaturePage === "prs" && (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.totalPrs}</p><p className="detail-value">{prEntries.length}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.heaviestLabel}</p><p className="detail-value">{heaviestExerciseRows[0] ? fmtExW(heaviestExerciseRows[0].exercise.weight) : "--"}</p></div>
-                </div>
-                {(prEntries.length ? prEntries : [{ key: "empty-pr", exerciseName: text.noPrsYet, sessionName: text.markPrHint, weight: "", date: "" }]).map(entry => (
-                  <div key={entry.key} className="detail-row">
-                    <div>
-                      <p className="detail-row-main">{entry.exerciseName}</p>
-                      <p className="detail-row-sub">{entry.dayName ? displayDay(entry.dayName) : "PR"} — {entry.sessionName}</p>
-                    </div>
-                    <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtExW(entry.weight)} {entry.date}</span>
-                  </div>
-                ))}
-                <div className="home-card">
-                  <p className="detail-label">{text.heaviestLoads}</p>
-                  <div className="detail-list">
-                    {heaviestExerciseRows.slice(0, 5).map(row => (
-                      <div key={`${row.key}-heavy`} className="detail-row">
-                        <div>
-                          <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} · {text.estimatedOneRM} {fmtW(estimate1RMFromExercise(row.exercise.weight, row.exercise.reps))}</p>
-                        </div>
-                        <span style={{ color: "#FFD060", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{fmtExW(row.exercise.weight)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <PrsPage
+                text={text}
+                fmtW={fmtW}
+                fmtExW={fmtExW}
+                prEntries={prEntries}
+                heaviestExerciseRows={heaviestExerciseRows}
+                displayDay={displayDay}
+              />
             )}
 
             {activeFeaturePage === "fatigue" && (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.avgRpeLabel}</p><p className="detail-value">{averageRpe || "N/A"}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.highNotes}</p><p className="detail-value">{highFatigueNotes}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.deloadLabel}</p><p className="detail-value">{deloadWarning ? text.deloadActiveVal : text.deloadClearVal}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.thisWeek}</p><p className="detail-value">{currentWeekKey.slice(5)}</p></div>
-                </div>
-                <div className="home-card" style={{ borderColor: deloadWarning ? "#FFD06066" : "rgba(255,255,255,0.075)" }}>
-                  <p className="detail-row-main">{deloadWarning ? text.lowerLoadAdvice : text.noFatigueWarning}</p>
-                  <p className="detail-row-sub">{text.painSignalNote}</p>
-                </div>
-                <div className="home-card">
-                  <p className="detail-label">{text.recentSignals}</p>
-                  <div className="detail-list">
-                    {(noteRows.length ? noteRows : [{ key: "empty-note", exercise: { name: text.noExerciseNotes }, dayName: t("Notas", "Notes"), sessionName: text.addPainRPE, note: {} }]).slice(0, 6).map(row => (
-                      <div key={`${row.key}-fatigue-note`} className="detail-row">
-                        <div>
-                          <p className="detail-row-main">{row.exercise.name}</p>
-                          <p className="detail-row-sub">{displayDay(row.dayName)} - {row.sessionName} - {t("Dolor", "Pain")} {row.note?.pain || "N/A"} - RPE {row.note?.difficulty || "N/A"}</p>
-                        </div>
-                        <span style={{ color: row.note?.pr ? "#FFD060" : "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 11 }}>{row.note?.pr ? "PR" : (t("NOTA", "NOTE"))}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <FatiguePage
+                text={text}
+                t={t}
+                averageRpe={averageRpe}
+                highFatigueNotes={highFatigueNotes}
+                deloadWarning={deloadWarning}
+                currentWeekKey={currentWeekKey}
+                noteRows={noteRows}
+                displayDay={displayDay}
+              />
             )}
 
             {activeFeaturePage === "goals" && (
-              <div className="detail-list">
-                <div className="home-card">
-                  <p className="detail-label">{text.mainFocus}</p>
-                  <p className="detail-row-main">{goals.focusGoal}</p>
-                  <p className="detail-row-sub">{text.targetDateSub} {goals.targetDate}</p>
-                </div>
-                {[{ label: text.weeklyProtocol, current: `${weeklyMetrics.weeklyProgress}%`, target: `${goals.weeklyProgressGoal}%`, pct: weeklyGoalPct, color: "#90C8FF" }, { label: text.completedSessions, current: weeklyMetrics.completedSessions, target: goals.weeklySessionsGoal, pct: sessionsGoalPct, color: "#3FB98A" }].map(goal => (
-                  <div key={goal.label} className="detail-card">
-                    <p className="detail-label">{goal.label.toUpperCase()}</p>
-                    <p className="detail-value" style={{ color: goal.color }}>{goal.current} / {goal.target}</p>
-                    <div style={{ height: 9, background: isLightMode ? "#E2E4E9" : "rgba(255,255,255,0.07)", borderRadius: 6, overflow: "hidden", marginTop: 10 }}>
-                      <div style={{ width: `${goal.pct}%`, height: "100%", background: goal.color, borderRadius: 6, transition: "width 0.4s ease", boxShadow: `0 0 10px ${goal.color}77` }} />
-                    </div>
-                  </div>
-                ))}
-                <button className="primary-btn" onClick={() => setEditingGoals({ ...goals })}>{text.setMyGoals}</button>
-                <div className="detail-grid">
-                  <div className="detail-card"><p className="detail-label">{text.remainingExercises}</p><p className="detail-value">{remainingExercises}</p></div>
-                  <div className="detail-card"><p className="detail-label">{text.setCompletionLabel}</p><p className="detail-value">{setCompletionPct}%</p></div>
-                </div>
-              </div>
+              <GoalsPage
+                text={text}
+                isLightMode={isLightMode}
+                goals={goals}
+                weeklyMetrics={weeklyMetrics}
+                weeklyGoalPct={weeklyGoalPct}
+                sessionsGoalPct={sessionsGoalPct}
+                remainingExercises={remainingExercises}
+                setCompletionPct={setCompletionPct}
+                setEditingGoals={setEditingGoals}
+              />
             )}
 
             {activeFeaturePage === "progress" && (
@@ -5085,77 +4958,27 @@ export default function AtlasLuthor() {
             )}
 
             {activeFeaturePage === "metrics" && (
-              <div className="detail-list">
-                <div className="detail-grid">
-                  {[
-                    { label: text.mWeekly, val: `${weeklyMetrics.weeklyProgress}%`, color: "#90C8FF" },
-                    { label: text.mDone, val: weeklyMetrics.completedExercises, color: "#3FB98A" },
-                    { label: text.mExercises, val: weeklyMetrics.totalExercises, color: null },
-                    { label: text.mSets, val: weeklyMetrics.totalSets, color: null },
-                    { label: text.setProgressLabel, val: `${weeklySetProgress}/${weeklyMetrics.totalSets}`, color: "#90C8FF" },
-                    { label: text.mSessions, val: weeklyMetrics.workoutSessions, color: null },
-                    { label: text.mCompleted, val: weeklyMetrics.completedSessions, color: "#3FB98A" },
-                    { label: text.mCardio, val: weeklyMetrics.cardioSessions, color: "#FF9860" },
-                  ].map(metric => (
-                    <div key={metric.label} className="detail-card">
-                      <p className="detail-label">{metric.label}</p>
-                      <p className="detail-value" style={metric.color ? { color: metric.color } : undefined}>{metric.val}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="home-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <p className="detail-label">{text.muscleBalance.toUpperCase()}</p>
-                    <p style={{ fontSize: 11, color: "#B8A0FF", fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                      {text.totalVolume}: {Math.round(weeklyVolume).toLocaleString()}
-                    </p>
-                  </div>
-                  <div style={{ display: "grid", gap: 9, marginTop: 12 }}>
-                    {Object.entries(volumeByGroup).sort((a, b) => b[1] - a[1]).map(([group, vol]) => {
-                      const pct = weeklyVolume > 0 ? Math.round((vol / weeklyVolume) * 100) : 0;
-                      return (
-                        <div key={group}>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: isLightMode ? "#5A6270" : "#8A8F99", marginBottom: 4 }}>
-                            <span>{group}</span><span>{pct}%</span>
-                          </div>
-                          <div style={{ height: 7, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                            <div style={{ width: `${pct}%`, height: "100%", background: "#B8A0FF", borderRadius: 4, transition: "width 0.4s ease" }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {weeklyVolume === 0 && (
-                      <p style={{ color: "#8A8F99", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
-                        {t("Completa series para ver tu volumen y balance muscular.", "Complete sets to see your volume and muscle balance.")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <MetricsPage
+                text={text}
+                t={t}
+                isLightMode={isLightMode}
+                weeklyMetrics={weeklyMetrics}
+                weeklySetProgress={weeklySetProgress}
+                volumeByGroup={volumeByGroup}
+                weeklyVolume={weeklyVolume}
+              />
             )}
 
             {activeFeaturePage === "week" && (
-              <div className="detail-list">
-                {days.map(dayName => {
-                  const currentDay = workoutData[dayName];
-                  const currentTheme = themeFor(currentDay.type);
-                  const dayExercises = currentDay.sessions.reduce((sum, currentSession) => sum + currentSession.exercises.length, 0);
-                  const daySets = currentDay.sessions.reduce((sum, currentSession) => sum + currentSession.exercises.reduce((setSum, exercise) => setSum + Number(exercise.sets || 0), 0), 0);
-
-                  return (
-                    <div key={`${dayName}-feature`} className="detail-row">
-                      <div>
-                        <p className="detail-row-main">{displayDayShort(dayName, currentDay.label)} - {displayDay(dayName)}</p>
-                        <p className="detail-row-sub">{currentDay.sessions.map(item => item.name).join(" / ")} - {dayExercises} {text.exercisesWord} - {daySets} {text.setsWord}</p>
-                      </div>
-                      <button className="edit-btn" onClick={() => openWorkout(dayName)} style={{ color: currentTheme.accent }}>
-                        {currentDay.type}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+              <WeekPage
+                text={text}
+                days={days}
+                workoutData={workoutData}
+                themeFor={themeFor}
+                displayDay={displayDay}
+                displayDayShort={displayDayShort}
+                openWorkout={openWorkout}
+              />
             )}
 
             {activeFeaturePage === "nutrition" && (() => {
@@ -5363,243 +5186,44 @@ export default function AtlasLuthor() {
               />
             )}
 
-            {activeFeaturePage === "water" && (() => {
-              const wAccent = waterPct >= 100 ? "#3FB98A" : "#90C8FF";
-              const waterStreakDays = (() => {
-                const sortedKeys = Object.keys(waterLog).sort((a, b) => b.localeCompare(a));
-                let streak = 0;
-                const today2 = getDateKey();
-                for (let si = 0; si < sortedKeys.length; si++) {
-                  const d = sortedKeys[si];
-                  if (si === 0 && d !== today2) break;
-                  const e = waterLog[d];
-                  if (Number(e.glasses || 0) >= Number(e.goal || 8)) streak++;
-                  else break;
-                }
-                return streak;
-              })();
-              return (
-                <div className="detail-list">
-                  <div className="detail-grid">
-                    <div className="detail-card">
-                      <p className="detail-label">{text.waterToday.toUpperCase()}</p>
-                      <p className="detail-value" style={{ color: wAccent }}>{waterGlasses}/{waterGoalNum}</p>
-                      <p style={{ fontSize: 10, color: isLightMode ? "#7A8090" : "#666", fontFamily: "'Orbitron', monospace", marginTop: 4, letterSpacing: 1 }}>{text.glasses.toUpperCase()}</p>
-                    </div>
-                    <div className="detail-card">
-                      <p className="detail-label">{t("COMPLETADO", "COMPLETED")}</p>
-                      <p className="detail-value" style={{ color: wAccent }}>{waterPct}%</p>
-                      {waterStreakDays > 0 && <p style={{ fontSize: 10, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginTop: 4, letterSpacing: 1 }}>{waterStreakDays} {t("DÍAS SEGUIDOS", "DAY STREAK")}</p>}
-                    </div>
-                  </div>
+            {activeFeaturePage === "water" && (
+              <WaterPage
+                text={text}
+                t={t}
+                language={language}
+                isLightMode={isLightMode}
+                waterLog={waterLog}
+                waterGlasses={waterGlasses}
+                waterGoalNum={waterGoalNum}
+                waterPct={waterPct}
+                addWater={addWater}
+                removeWater={removeWater}
+                setWaterGoalForToday={setWaterGoalForToday}
+                getDateKey={getDateKey}
+              />
+            )}
 
-                  <div>
-                    <div style={{ width: "100%", height: 48, borderRadius: 10, overflow: "hidden", background: isLightMode ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", position: "relative", marginBottom: 10 }}>
-                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: `${waterPct}%`, background: wAccent, opacity: 0.85, transition: "height 0.6s cubic-bezier(0.4,0,0.2,1)", borderRadius: "0 0 8px 8px" }}>
-                        {waterGlasses > 0 && (
-                          <div style={{ position: "absolute", top: -4, left: "-50%", width: "200%", height: 8, background: "rgba(255,255,255,0.2)", borderRadius: "50%", animation: "waterWave 3s ease-in-out infinite" }} />
-                        )}
-                      </div>
-                      {waterPct >= 30 && (
-                        <p style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Orbitron', monospace", fontSize: 14, fontWeight: 900, color: "#FFFFFF" }}>
-                          {waterPct}%
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      {Array.from({ length: waterGoalNum }).map((_, gi) => {
-                        const filled = gi < waterGlasses;
-                        return (
-                          <div
-                            key={gi}
-                            onClick={() => filled ? removeWater() : addWater()}
-                            style={{ flex: 1, height: 6, borderRadius: 3, background: filled ? wAccent : (isLightMode ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"), cursor: "pointer", transition: "background 0.2s ease" }}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {waterPct >= 100 && (
-                    <div className="detail-card" style={{ borderColor: "#3FB98A44" }}>
-                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace" }}>
-                        {t("META DIARIA ALCANZADA", "DAILY GOAL REACHED")}
-                      </p>
-                    </div>
-                  )}
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <button className="dark-btn" onClick={() => removeWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900, color: isLightMode ? "#7A8090" : "#8A8F99" }}>
-                      − {text.glassWord}
-                    </button>
-                    <button className="primary-btn" onClick={() => addWater()} style={{ padding: "14px 10px", fontSize: 16, fontWeight: 900 }}>
-                      + {text.glassWord}
-                    </button>
-                  </div>
-
-                  <div className="detail-card">
-                    <p className="detail-label">{text.waterGoal.toUpperCase()}</p>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                      {WATER_GOAL_OPTIONS.map(option => {
-                        const sel = String(waterGoalNum) === option;
-                        return (
-                          <button
-                            key={option}
-                            onClick={() => setWaterGoalForToday(option)}
-                            style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${sel ? "#90C8FF66" : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.1)")}`, background: sel ? (isLightMode ? "rgba(144,200,255,0.12)" : "rgba(144,200,255,0.1)") : "transparent", color: sel ? "#90C8FF" : "#888", fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 900, cursor: "pointer" }}
-                          >
-                            {option}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                      {t("HISTORIAL RECIENTE", "RECENT HISTORY")}
-                    </p>
-                    <div style={{ display: "grid", gap: 6 }}>
-                      {Object.entries(waterLog)
-                        .sort((a, b) => b[0].localeCompare(a[0]))
-                        .slice(0, 7)
-                        .map(([date, entry]) => {
-                          const g = Number(entry.glasses || 0);
-                          const gl = Number(entry.goal || 8);
-                          const pctH = Math.min(100, gl > 0 ? Math.round((g / gl) * 100) : 0);
-                          const hColor = pctH >= 100 ? "#3FB98A" : pctH >= 50 ? "#90C8FF" : "#666";
-                          const isToday = date === getDateKey();
-                          return (
-                            <div key={date} className="detail-row" style={{ borderColor: isToday ? "#90C8FF22" : undefined }}>
-                              <div style={{ minWidth: 72 }}>
-                                <p className="detail-row-main" style={{ fontSize: 12, color: isToday ? "#90C8FF" : undefined }}>
-                                  {isToday ? (t("HOY", "TODAY")) : date}
-                                </p>
-                              </div>
-                              <div style={{ flex: 1, height: 4, borderRadius: 4, overflow: "hidden", background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)" }}>
-                                <div style={{ width: `${pctH}%`, height: "100%", background: hColor, borderRadius: 4, transition: "width 0.4s ease" }} />
-                              </div>
-                              <p style={{ fontSize: 12, fontWeight: 900, color: hColor, fontFamily: "'Orbitron', monospace", minWidth: 40, textAlign: "right" }}>{g}/{gl}</p>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-
-                  <div className="home-card">
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                      {t("POR QUÉ IMPORTA", "WHY IT MATTERS")}
-                    </p>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {(language === "es" ? [
-                        "Mejora la fuerza y resistencia muscular hasta un 10-15%.",
-                        "Aumenta el enfoque mental y reduce la fatiga durante el entrenamiento.",
-                        "Acelera el metabolismo y optimiza la quema de grasa.",
-                        "Mejora la recuperación muscular post-entrenamiento.",
-                      ] : [
-                        "Boosts muscle strength and endurance by up to 10-15%.",
-                        "Improves mental focus and reduces fatigue during training.",
-                        "Speeds up metabolism and optimizes fat burning.",
-                        "Enhances muscle recovery post-workout.",
-                      ]).map((line, ii) => (
-                        <div key={ii} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#90C8FF", marginTop: 5, flexShrink: 0 }} />
-                          <p style={{ color: isLightMode ? "#2A3A4A" : "#B8C8D8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, lineHeight: 1.55 }}>{line}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {activeFeaturePage === "coach" && (() => {
-              const bmiCategory = bmi <= 0 ? null : bmi < 18.5 ? { label: t("Bajo Peso", "Underweight"), color: "#90C8FF" } : bmi < 25 ? { label: t("Normal", "Normal"), color: "#3FB98A" } : bmi < 30 ? { label: t("Sobrepeso", "Overweight"), color: "#FFD060" } : { label: t("Obeso", "Obese"), color: "#FF9860" };
-              const bfCategory = bodyFatPct <= 0 ? null : profileSex === "male"
-                ? (bodyFatPct < 14 ? { label: t("En Forma", "Fit"), color: "#3FB98A" } : bodyFatPct < 25 ? { label: t("Normal", "Normal"), color: "#FFD060" } : { label: t("Alto", "High"), color: "#FF9860" })
-                : (bodyFatPct < 21 ? { label: t("En Forma", "Fit"), color: "#3FB98A" } : bodyFatPct < 32 ? { label: t("Normal", "Normal"), color: "#FFD060" } : { label: t("Alto", "High"), color: "#FF9860" });
-              const selectedGoal = goals.bodyTypeGoal || "athletic";
-              const goalColors = { lean: "#FF9860", athletic: "#90C8FF", muscular: "#B8A0FF", maintain: "#3FB98A" };
-              const goalAccent = goalColors[selectedGoal] || "#90C8FF";
-              return (
-                <div className="detail-list">
-                  <div className="detail-grid">
-                    {[
-                      { label: text.bmiLabel, val: bmi > 0 ? String(bmi) : "—", sub: bmiCategory?.label || "", color: bmiCategory?.color || "#8A8F99" },
-                      { label: text.bodyFatLabel, val: bmi > 0 ? `${bodyFatPct}%` : "—", sub: bfCategory?.label || "", color: bfCategory?.color || "#8A8F99" },
-                      { label: text.leanMassLabel, val: bmi > 0 ? fmtW(leanMassLb) : "—", sub: t("MASA ACTIVA", "ACTIVE MASS"), color: "#90C8FF" },
-                      { label: text.ibwLabel, val: ibwLb > 0 ? fmtW(ibwLb) : "—", sub: t("FÓRMULA DEVINE", "DEVINE FORMULA"), color: "#B8A0FF" },
-                    ].map(item => (
-                      <div key={item.label} className="detail-card">
-                        <p className="detail-label">{item.label}</p>
-                        <p className="detail-value" style={{ color: item.color }}>{item.val}</p>
-                        {item.sub && <p style={{ fontSize: 9, letterSpacing: 1, color: item.color, fontFamily: "'Orbitron', monospace", marginTop: 4, opacity: 0.8 }}>{item.sub}</p>}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="detail-row">
-                    <div>
-                      <p className="detail-row-main">{profileSex === "male" ? text.maleLabel : text.femaleLabel} · {profile.age || "--"} {t("años", "yrs")}</p>
-                      <p className="detail-row-sub">{fmtH(profile.height)} · {fmtW(profile.currentWeight)}</p>
-                    </div>
-                    <button className="edit-btn" onClick={() => setEditingProfile({ ...profile })}>{text.edit}</button>
-                  </div>
-
-                  <div>
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
-                      {text.bodyTypeLabel.toUpperCase()}
-                    </p>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      {BODY_TYPE_GOAL_OPTIONS.map(option => {
-                        const selected = selectedGoal === option.value;
-                        const acc = goalColors[option.value] || "#90C8FF";
-                        const label = language === "es"
-                          ? ({ lean: "Definir / Cortar", athletic: "Recomposición Atlética", muscular: "Ganar Músculo", maintain: "Mantener & Tonificar" }[option.value] || option.label)
-                          : option.label;
-                        return (
-                          <button
-                            key={option.value}
-                            className="dark-btn"
-                            onClick={() => setGoals(prev => ({ ...prev, bodyTypeGoal: option.value }))}
-                            style={{ textAlign: "left", borderColor: selected ? `${acc}55` : undefined, boxShadow: selected ? `inset 0 0 0 1px ${acc}44` : "none" }}
-                          >
-                            <span style={{ display: "block", fontWeight: 900, color: selected ? acc : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="home-card" style={{ borderColor: `${goalAccent}22` }}>
-                    <p style={{ fontSize: 10, letterSpacing: 3, color: goalAccent, fontFamily: "'Orbitron', monospace", marginBottom: 14 }}>
-                      {text.tipsTitle.toUpperCase()}
-                    </p>
-                    <div style={{ display: "grid", gap: 18 }}>
-                      {coachTips.map(section => (
-                        <div key={section.title}>
-                          <p style={{ fontSize: 9, letterSpacing: 2, color: section.accent, fontFamily: "'Orbitron', monospace", marginBottom: 9 }}>
-                            {section.title}
-                          </p>
-                          <div style={{ display: "grid", gap: 9 }}>
-                            {section.tips.map((tip, index) => (
-                              <div key={index} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-                                <div style={{ width: 5, height: 5, borderRadius: "50%", background: section.accent, marginTop: 6, flexShrink: 0 }} />
-                                <p style={{ color: isLightMode ? "#1A1A2E" : "#C8D0DC", fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.6 }}>{tip}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button className="dark-btn" onClick={() => setEditingProfile({ ...profile })}>
-                    {text.editBodyStatus}
-                  </button>
-                </div>
-              );
-            })()}
+            {activeFeaturePage === "coach" && (
+              <CoachPage
+                text={text}
+                t={t}
+                language={language}
+                isLightMode={isLightMode}
+                profile={profile}
+                profileSex={profileSex}
+                goals={goals}
+                setGoals={setGoals}
+                setEditingProfile={setEditingProfile}
+                bmi={bmi}
+                bodyFatPct={bodyFatPct}
+                leanMassLb={leanMassLb}
+                ibwLb={ibwLb}
+                fmtW={fmtW}
+                fmtH={fmtH}
+                coachTips={coachTips}
+                bodyTypeGoalOptions={BODY_TYPE_GOAL_OPTIONS}
+              />
+            )}
           </div>
         )}
 
