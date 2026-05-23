@@ -377,29 +377,40 @@ const MEDITATION_PRACTICES = {
     showBreathCircle: true,
     showBreathCounter: false,
     script: {
+      // Short phrases with 10-15 s of silence between, so you actually have
+      // time to do what the voice asks before the next instruction arrives.
       opening: [
-        { atSec: 1, es: "Siéntate cómodo, con la columna recta.", en: "Sit comfortably, spine straight." },
-        { atSec: 9, es: "Suelta los hombros. Suelta la mandíbula.", en: "Relax your shoulders. Relax your jaw." },
-        { atSec: 18, es: "Cierra los ojos suavemente.", en: "Close your eyes softly." },
-        { atSec: 26, es: "Exhala todo el aire que tengas.", en: "Exhale all the air you have." },
-        { atSec: 34, es: "Vamos a respirar juntos.", en: "Let's breathe together." },
+        { atSec: 2, es: "Siéntate cómodo.", en: "Sit comfortably." },
+        { atSec: 14, es: "Columna recta.", en: "Spine straight." },
+        { atSec: 26, es: "Cierra los ojos.", en: "Close your eyes." },
+        { atSec: 40, es: "Suelta los hombros.", en: "Relax your shoulders." },
+        { atSec: 54, es: "Exhala todo el aire.", en: "Exhale all your air." },
+        { atSec: 66, es: "Empezamos a respirar juntos.", en: "We'll breathe together now." },
       ],
+      // openingEndsAtSec is when the breath cycle cues are allowed to start.
+      // Cycle cues are spoken for two full breath cycles only, then the
+      // circle becomes the silent guide.
+      openingEndsAtSec: 76,
       cycleCues: {
-        speakFirstCycles: 4,
+        speakCycles: 2,
         phaseCues: [
           { es: "Inhala", en: "Inhale" },
           { es: "Mantén", en: "Hold" },
           { es: "Exhala lento", en: "Exhale slowly" },
         ],
       },
-      reminders: [
-        { everyMin: 3, es: "Si te mareas, baja el ritmo.", en: "If you feel dizzy, slow down." },
-        { everyMin: 5, es: "Suave, sin forzar.", en: "Soft, without forcing." },
-      ],
+      reminders: {
+        everyMin: 4,
+        cues: [
+          { es: "Suave, sin forzar.", en: "Soft, without forcing." },
+          { es: "Si te mareas, baja el ritmo.", en: "If you feel dizzy, slow down." },
+          { es: "Sigue el círculo.", en: "Follow the circle." },
+        ],
+      },
       closing: [
-        { secondsBeforeEnd: 28, es: "Vamos a cerrar la sesión.", en: "Let's close the session." },
+        { secondsBeforeEnd: 32, es: "Vamos a cerrar.", en: "Let's close." },
         { secondsBeforeEnd: 16, es: "Última respiración consciente.", en: "Last conscious breath." },
-        { secondsBeforeEnd: 4, es: "Cuando estés listo, abre los ojos.", en: "When you're ready, open your eyes." },
+        { secondsBeforeEnd: 4, es: "Abre los ojos cuando estés listo.", en: "Open your eyes when ready." },
       ],
     },
   },
@@ -417,23 +428,29 @@ const MEDITATION_PRACTICES = {
     showBreathCounter: false,
     script: {
       opening: [
-        { atSec: 1, es: "Vipassana significa ver claro.", en: "Vipassana means seeing clearly." },
-        { atSec: 11, es: "Siéntate cómodo, con la columna recta.", en: "Sit comfortably, spine straight." },
-        { atSec: 22, es: "Lleva la atención a tu respiración natural.", en: "Bring attention to your natural breath." },
-        { atSec: 34, es: "No la cambies. Solo obsérvala.", en: "Don't change it. Just observe it." },
-        { atSec: 45, es: "Empezamos.", en: "Let's begin." },
+        { atSec: 2, es: "Vipassana es ver claro.", en: "Vipassana means seeing clearly." },
+        { atSec: 16, es: "Siéntate erguido.", en: "Sit upright." },
+        { atSec: 28, es: "Cierra los ojos.", en: "Close your eyes." },
+        { atSec: 42, es: "Lleva la atención a tu respiración natural.", en: "Bring attention to your natural breath." },
+        { atSec: 58, es: "No la cambies. Solo obsérvala.", en: "Don't change it. Just observe." },
+        { atSec: 74, es: "Empezamos.", en: "Let's begin." },
       ],
+      openingEndsAtSec: 84,
       cycleCues: null,
-      reminders: [
-        { everyMin: 4, es: "Si surge una sensación, nómbrala. Déjala pasar.", en: "If a sensation arises, name it. Let it pass." },
-        { everyMin: 6, es: "Vuelve siempre a la respiración natural.", en: "Always return to natural breath." },
-        { everyMin: 8, es: "No reacciones. Solo observa.", en: "Don't react. Just observe." },
-      ],
+      reminders: {
+        everyMin: 5,
+        cues: [
+          { es: "Si surge una sensación, nómbrala. Déjala pasar.", en: "If a sensation arises, name it. Let it pass." },
+          { es: "Vuelve siempre a la respiración natural.", en: "Always return to natural breath." },
+          { es: "No reacciones. Solo observa.", en: "Don't react. Just observe." },
+          { es: "Sin juzgar, sin perseguir.", en: "Without judging, without chasing." },
+        ],
+      },
       closing: [
         { secondsBeforeEnd: 40, es: "Vamos a cerrar.", en: "Let's close." },
-        { secondsBeforeEnd: 26, es: "Lleva la atención a todo el cuerpo.", en: "Bring attention to the whole body." },
-        { secondsBeforeEnd: 12, es: "Siente el contacto con el asiento.", en: "Feel the contact with your seat." },
-        { secondsBeforeEnd: 4, es: "Cuando estés listo, abre los ojos.", en: "When you're ready, open your eyes." },
+        { secondsBeforeEnd: 24, es: "Lleva la atención a todo el cuerpo.", en: "Bring attention to the whole body." },
+        { secondsBeforeEnd: 10, es: "Siente el contacto con el asiento.", en: "Feel the contact with your seat." },
+        { secondsBeforeEnd: 3, es: "Abre los ojos cuando estés listo.", en: "Open your eyes when ready." },
       ],
     },
   },
@@ -454,23 +471,29 @@ const MEDITATION_PRACTICES = {
     showBreathCounter: true,
     script: {
       opening: [
-        { atSec: 1, es: "Zazen es solo sentarse.", en: "Zazen is just sitting." },
-        { atSec: 10, es: "Coloca las manos en mudra cósmico.", en: "Place your hands in cosmic mudra." },
-        { atSec: 20, es: "Izquierda sobre derecha, pulgares apenas tocándose.", en: "Left over right, thumbs barely touching." },
-        { atSec: 33, es: "Endereza la columna, mete ligeramente el mentón.", en: "Straighten the spine, slightly tuck the chin." },
-        { atSec: 46, es: "Ojos semi-abiertos, mirada suave al suelo.", en: "Eyes half-open, soft gaze to the floor." },
-        { atSec: 58, es: "Cuenta cada exhalación: del uno al diez.", en: "Count each exhale: from one to ten." },
-        { atSec: 70, es: "Empezamos.", en: "Let's begin." },
+        { atSec: 2, es: "Zazen es solo sentarse.", en: "Zazen is just sitting." },
+        { atSec: 16, es: "Coloca las manos en mudra cósmico.", en: "Place your hands in cosmic mudra." },
+        { atSec: 32, es: "Izquierda sobre derecha.", en: "Left over right." },
+        { atSec: 46, es: "Pulgares apenas tocándose.", en: "Thumbs barely touching." },
+        { atSec: 62, es: "Columna recta. Mentón ligeramente metido.", en: "Spine straight. Chin slightly tucked." },
+        { atSec: 80, es: "Ojos semi-abiertos al suelo.", en: "Eyes half-open to the floor." },
+        { atSec: 96, es: "Cuenta cada exhalación del uno al diez.", en: "Count each exhale from one to ten." },
+        { atSec: 114, es: "Empezamos.", en: "Let's begin." },
       ],
+      openingEndsAtSec: 122,
       cycleCues: null,
-      reminders: [
-        { everyMin: 4, es: "Si pierdes la cuenta, empieza en uno. Sin frustración.", en: "If you lose count, start at one. No frustration." },
-        { everyMin: 7, es: "Solo siéntate. Solo respira.", en: "Just sit. Just breathe." },
-      ],
+      reminders: {
+        everyMin: 5,
+        cues: [
+          { es: "Si pierdes la cuenta, empieza en uno.", en: "If you lose count, start at one." },
+          { es: "Sin frustración. Solo siéntate.", en: "No frustration. Just sit." },
+          { es: "Solo respira. Solo cuenta.", en: "Just breathe. Just count." },
+        ],
+      },
       closing: [
-        { secondsBeforeEnd: 25, es: "Vamos a cerrar.", en: "Let's close." },
-        { secondsBeforeEnd: 12, es: "Termina el ciclo en el que estás.", en: "Finish the cycle you're in." },
-        { secondsBeforeEnd: 4, es: "Junta las manos y haz una leve inclinación.", en: "Hands together, a slight bow." },
+        { secondsBeforeEnd: 28, es: "Vamos a cerrar.", en: "Let's close." },
+        { secondsBeforeEnd: 14, es: "Termina el ciclo que estás contando.", en: "Finish the cycle you're counting." },
+        { secondsBeforeEnd: 4, es: "Junta las manos. Haz una leve inclinación.", en: "Hands together. A slight bow." },
       ],
     },
   },
@@ -494,30 +517,34 @@ const MEDITATION_PRACTICES = {
     safetyEn: "Advanced practice. DO NOT do this with low blood pressure, pregnant, in water, while driving, or with heart conditions. Stop if you feel dizzy.",
     script: {
       opening: [
-        { atSec: 1, es: "Tummo. Calor interno.", en: "Tummo. Inner heat." },
-        { atSec: 10, es: "Si te mareas, detente. Es importante.", en: "If you feel dizzy, stop. This matters." },
-        { atSec: 23, es: "Siéntate erguido, columna recta.", en: "Sit upright, spine straight." },
-        { atSec: 33, es: "Cierra los ojos.", en: "Close your eyes." },
-        { atSec: 43, es: "Visualiza una pequeña llama brillante en tu ombligo.", en: "Visualize a small bright flame at your navel." },
-        { atSec: 56, es: "Crecerá con cada respiración.", en: "It will grow with each breath." },
-        { atSec: 67, es: "Empezamos.", en: "Let's begin." },
+        { atSec: 2, es: "Tummo. Calor interno.", en: "Tummo. Inner heat." },
+        { atSec: 14, es: "Si te mareas, detente.", en: "If you feel dizzy, stop." },
+        { atSec: 28, es: "Siéntate erguido.", en: "Sit upright." },
+        { atSec: 42, es: "Cierra los ojos.", en: "Close your eyes." },
+        { atSec: 56, es: "Visualiza una llama en tu ombligo.", en: "Visualize a flame at your navel." },
+        { atSec: 72, es: "Crecerá con cada respiración.", en: "It will grow with each breath." },
+        { atSec: 86, es: "Empezamos.", en: "Let's begin." },
       ],
+      openingEndsAtSec: 94,
       cycleCues: {
-        speakFirstCycles: 4,
+        speakCycles: 2,
         phaseCues: [
-          { es: "Inhala profundo, llena la vasija", en: "Deep inhale, fill the vase" },
+          { es: "Inhala profundo", en: "Deep inhale" },
           { es: "Mantén, siente el calor", en: "Hold, feel the heat" },
           { es: "Suelta lento", en: "Release slowly" },
         ],
       },
-      reminders: [
-        { everyMin: 3, es: "El calor crece con cada retención.", en: "Heat grows with each hold." },
-        { everyMin: 5, es: "Si necesitas, acorta la retención.", en: "If needed, shorten the hold." },
-      ],
+      reminders: {
+        everyMin: 4,
+        cues: [
+          { es: "El calor crece con cada retención.", en: "Heat grows with each hold." },
+          { es: "Si necesitas, acorta la retención.", en: "If needed, shorten the hold." },
+        ],
+      },
       closing: [
-        { secondsBeforeEnd: 28, es: "Última retención.", en: "Last hold." },
-        { secondsBeforeEnd: 10, es: "Suelta despacio. El calor permanece.", en: "Release slowly. The heat remains." },
-        { secondsBeforeEnd: 2, es: "Vuelve a respirar normal.", en: "Return to normal breath." },
+        { secondsBeforeEnd: 32, es: "Última retención.", en: "Last hold." },
+        { secondsBeforeEnd: 14, es: "Suelta despacio. El calor permanece.", en: "Release slowly. The heat remains." },
+        { secondsBeforeEnd: 3, es: "Respira normal. Abre los ojos.", en: "Breathe normally. Open your eyes." },
       ],
     },
   },
@@ -530,9 +557,13 @@ const AMBIENT_SOUND_OPTIONS = ["off", "rain", "ocean", "om"];
 function speakMeditationCue(text, language, voiceEnabled, volume) {
   if (!voiceEnabled || !text) return;
   if (typeof window === "undefined" || !window.speechSynthesis) return;
+  // Cancel any in-progress or queued utterance before speaking the new one.
+  // Without this, cues pile up in the speechSynthesis queue and play
+  // back-to-back, which feels rushed and stacked.
+  try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = language === "es" ? "es-ES" : "en-US";
-  utterance.rate = 0.86;
+  utterance.rate = 0.8;
   utterance.pitch = 0.95;
   utterance.volume = Math.max(0, Math.min(1, Number(volume) || 0.95));
   window.speechSynthesis.speak(utterance);
@@ -2119,8 +2150,13 @@ export default function AtlasLuthor() {
     const voiceOn = appSettings.meditationVoice !== false;
     const voiceVol = appSettings.meditationVoiceVolume;
 
+    const openingEndSec = def.script.openingEndsAtSec
+      || (def.script.opening.length > 0 ? def.script.opening[def.script.opening.length - 1].atSec + 8 : 0);
+    const firstClose = def.script.closing[0];
+    const closingStartSec = firstClose ? medTimer.durationSec - firstClose.secondsBeforeEnd - 4 : medTimer.durationSec;
+
     const handleCues = (elapsed, secondsLeft) => {
-      // Opening cues
+      // Opening cues — fire as elapsed crosses each cue's atSec.
       def.script.opening.forEach((cue, i) => {
         if (elapsed >= cue.atSec && elapsed < cue.atSec + 2) {
           const key = `opening-${i}`;
@@ -2131,11 +2167,15 @@ export default function AtlasLuthor() {
         }
       });
 
-      // Cycle cues — only for the first N cycles, fired at phase boundaries.
-      if (def.script.cycleCues && def.cycleSec > 0) {
-        const cycleNum = Math.floor(elapsed / def.cycleSec);
-        if (cycleNum < def.script.cycleCues.speakFirstCycles) {
-          const cyclePos = elapsed % def.cycleSec;
+      // Cycle cues — only after opening ends, for the next N full breath
+      // cycles. Each phase boundary gets a short cue (e.g. "Inhala") so the
+      // user learns the rhythm, then the voice goes silent and the
+      // breathing circle becomes the guide.
+      if (def.script.cycleCues && def.cycleSec > 0 && elapsed >= openingEndSec) {
+        const sinceOpening = elapsed - openingEndSec;
+        const cycleNum = Math.floor(sinceOpening / def.cycleSec);
+        if (cycleNum < def.script.cycleCues.speakCycles) {
+          const cyclePos = sinceOpening % def.cycleSec;
           let phaseStart = 0;
           for (let pi = 0; pi < def.phases.length; pi += 1) {
             if (cyclePos >= phaseStart && cyclePos < phaseStart + 2) {
@@ -2144,7 +2184,7 @@ export default function AtlasLuthor() {
                 medSpokenRef.current.add(key);
                 const cue = def.script.cycleCues.phaseCues[pi];
                 if (cue) speakMeditationCue(language === "es" ? cue.es : cue.en, language, voiceOn, voiceVol);
-                if (pi === 0) meditationVibrate(60); // gentle nudge each inhale start
+                if (pi === 0) meditationVibrate(60);
               }
               break;
             }
@@ -2153,29 +2193,27 @@ export default function AtlasLuthor() {
         }
       }
 
-      // Reminders during the core practice (after opening, before closing).
-      const lastOpen = def.script.opening[def.script.opening.length - 1];
-      const openingEndSec = lastOpen ? lastOpen.atSec + 10 : 0;
-      const firstClose = def.script.closing[0];
-      const closingStartSec = firstClose ? medTimer.durationSec - firstClose.secondsBeforeEnd - 4 : medTimer.durationSec;
-      if (elapsed > openingEndSec && elapsed < closingStartSec) {
-        def.script.reminders.forEach((rem, ri) => {
-          const everySec = rem.everyMin * 60;
-          if (everySec <= 0) return;
-          // Anchor reminders to "elapsed since end of opening" so they don't
-          // collide with opening cues.
-          const since = elapsed - openingEndSec;
-          if (since > 0 && since % everySec === 0) {
-            const key = `reminder-${ri}-${Math.floor(since / everySec)}`;
-            if (!medSpokenRef.current.has(key)) {
-              medSpokenRef.current.add(key);
-              speakMeditationCue(language === "es" ? rem.es : rem.en, language, voiceOn, voiceVol);
+      // Reminders during the core practice. A single everyMin schedule
+      // rotates through the cue array so the same line never repeats twice
+      // in a row.
+      if (def.script.reminders && def.script.reminders.everyMin > 0 && elapsed > openingEndSec && elapsed < closingStartSec) {
+        const everySec = def.script.reminders.everyMin * 60;
+        const since = elapsed - openingEndSec;
+        if (since > 0 && since % everySec === 0) {
+          const tick = Math.floor(since / everySec);
+          const key = `reminder-${tick}`;
+          if (!medSpokenRef.current.has(key)) {
+            medSpokenRef.current.add(key);
+            const cues = def.script.reminders.cues || [];
+            if (cues.length > 0) {
+              const cue = cues[(tick - 1) % cues.length];
+              speakMeditationCue(language === "es" ? cue.es : cue.en, language, voiceOn, voiceVol);
             }
           }
-        });
+        }
       }
 
-      // Closing cues (from end).
+      // Closing cues (anchored to time-from-end).
       def.script.closing.forEach((cue, i) => {
         if (secondsLeft <= cue.secondsBeforeEnd && secondsLeft > cue.secondsBeforeEnd - 2) {
           const key = `closing-${i}`;
@@ -6926,27 +6964,43 @@ export default function AtlasLuthor() {
                   </div>
 
                   {/* HEATMAP — last 35 days. */}
-                  <div className="home-card">
-                    <p className="detail-label">{language === "es" ? "ÚLTIMAS 5 SEMANAS" : "LAST 5 WEEKS"}</p>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 10 }}>
-                      {heatDays.map(day => (
-                        <div
-                          key={day.key}
-                          title={`${day.key}: ${day.minutes} min`}
-                          style={{
-                            aspectRatio: "1",
-                            borderRadius: 4,
-                            background: heatColor(day.minutes),
-                            border: day.isToday ? `1.5px solid ${accent}` : `1px solid ${isLightMode ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)"}`,
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
-                      <span>{language === "es" ? "MENOS" : "LESS"}</span>
-                      <span>{language === "es" ? "MÁS" : "MORE"}</span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const hasAnyMeditation = heatDays.some(d => d.minutes > 0);
+                    return (
+                      <div className="home-card">
+                        <p className="detail-label">{language === "es" ? "ÚLTIMAS 5 SEMANAS" : "LAST 5 WEEKS"}</p>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 10 }}>
+                          {heatDays.map(day => (
+                            <div
+                              key={day.key}
+                              title={`${day.key}: ${day.minutes} min`}
+                              style={{
+                                aspectRatio: "1",
+                                borderRadius: 4,
+                                background: heatColor(day.minutes),
+                                border: day.isToday
+                                  ? `2px solid ${accent}`
+                                  : `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.07)"}`,
+                                boxShadow: day.isToday ? `0 0 8px ${accent}55` : "none",
+                              }}
+                            />
+                          ))}
+                        </div>
+                        {hasAnyMeditation ? (
+                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                            <span>{language === "es" ? "MENOS" : "LESS"}</span>
+                            <span>{language === "es" ? "MÁS" : "MORE"}</span>
+                          </div>
+                        ) : (
+                          <p style={{ marginTop: 10, fontSize: 12, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, textAlign: "center" }}>
+                            {language === "es"
+                              ? "Tu calendario aparece aquí cuando completas tu primera sesión. El cuadro con borde es hoy."
+                              : "Your calendar appears here after your first session. The bordered square is today."}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* PER-PRACTICE BREAKDOWN */}
                   <div className="home-card">
