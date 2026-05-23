@@ -550,7 +550,7 @@ const MEDITATION_PRACTICES = {
   },
 };
 const MEDITATION_PRACTICE_KEYS = Object.keys(MEDITATION_PRACTICES);
-const AMBIENT_SOUND_OPTIONS = ["off", "rain", "ocean", "om"];
+const AMBIENT_SOUND_OPTIONS = ["off", "rain", "ocean", "om", "metronome"];
 
 // Voice + ambient sound helpers. The Web Speech and Web Audio APIs are
 // browser-native, so no audio assets are bundled.
@@ -655,6 +655,47 @@ function startMeditationAmbient(type) {
     o2.start();
     o3.start();
     sources.push(o1, o2, o3);
+  } else if (type === "metronome") {
+    // Slow meditative tick at 60 BPM. We schedule individual short
+    // oscillator pulses ahead in audio-clock time so the timing is sample
+    // accurate even when JS is busy. A setInterval re-schedules every
+    // second so the queue always has ~3 s of ticks ahead.
+    masterGain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.6);
+    const intervalSec = 1.0; // 60 BPM
+    let active = true;
+    let nextTime = ctx.currentTime + 0.4;
+
+    const scheduleClick = when => {
+      if (!active) return;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 1200;
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0, when);
+      env.gain.linearRampToValueAtTime(0.18, when + 0.001);
+      env.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
+      osc.connect(env);
+      env.connect(masterGain);
+      osc.start(when);
+      osc.stop(when + 0.06);
+    };
+
+    const fill = () => {
+      const horizon = ctx.currentTime + 3;
+      while (nextTime < horizon) {
+        scheduleClick(nextTime);
+        nextTime += intervalSec;
+      }
+    };
+    fill();
+    const schedulerId = window.setInterval(fill, 1000);
+
+    sources.push({
+      stop() {
+        active = false;
+        window.clearInterval(schedulerId);
+      },
+    });
   }
 
   return {
@@ -6899,6 +6940,7 @@ export default function AtlasLuthor() {
                                 rain: language === "es" ? "Lluvia" : "Rain",
                                 ocean: language === "es" ? "Océano" : "Ocean",
                                 om: language === "es" ? "Drone Om" : "Om Drone",
+                                metronome: language === "es" ? "Metrónomo" : "Metronome",
                               }[snd];
                               return (
                                 <button
@@ -6970,21 +7012,41 @@ export default function AtlasLuthor() {
                       <div className="home-card">
                         <p className="detail-label">{language === "es" ? "ÚLTIMAS 5 SEMANAS" : "LAST 5 WEEKS"}</p>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 10 }}>
-                          {heatDays.map(day => (
-                            <div
-                              key={day.key}
-                              title={`${day.key}: ${day.minutes} min`}
-                              style={{
-                                aspectRatio: "1",
-                                borderRadius: 4,
-                                background: heatColor(day.minutes),
-                                border: day.isToday
-                                  ? `2px solid ${accent}`
-                                  : `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.07)"}`,
-                                boxShadow: day.isToday ? `0 0 8px ${accent}55` : "none",
-                              }}
-                            />
-                          ))}
+                          {heatDays.map(day => {
+                            const dayNum = Number(day.key.slice(-2));
+                            const isGoalMet = day.minutes >= meditationGoalMin;
+                            const hasData = day.minutes > 0;
+                            const numberColor = isGoalMet
+                              ? "#FFFFFF"
+                              : hasData
+                                ? (isLightMode ? "#101015" : "#FFFFFF")
+                                : (isLightMode ? "rgba(0,0,0,0.32)" : "rgba(255,255,255,0.32)");
+                            const isFirstOfMonth = dayNum === 1;
+                            return (
+                              <div
+                                key={day.key}
+                                title={`${day.key}: ${day.minutes} min`}
+                                style={{
+                                  aspectRatio: "1",
+                                  borderRadius: 4,
+                                  background: heatColor(day.minutes),
+                                  border: day.isToday
+                                    ? `2px solid ${accent}`
+                                    : isFirstOfMonth
+                                      ? `1px solid ${isLightMode ? "rgba(0,0,0,0.22)" : "rgba(255,255,255,0.22)"}`
+                                      : `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.07)"}`,
+                                  boxShadow: day.isToday ? `0 0 8px ${accent}55` : "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'Orbitron', monospace", color: numberColor, lineHeight: 1 }}>
+                                  {dayNum}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                         {hasAnyMeditation ? (
                           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
