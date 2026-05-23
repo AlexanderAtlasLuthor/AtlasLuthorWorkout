@@ -6573,9 +6573,18 @@ export default function AtlasLuthor() {
               const elapsedSec = medTimer.durationSec - secondsLeft;
               const progressPct = medTimer.durationSec > 0 ? Math.min(100, Math.round((elapsedSec / medTimer.durationSec) * 100)) : 0;
               const cycleSec = def.cycleSec;
-              const cyclePos = cycleSec > 0 ? elapsedSec % cycleSec : 0;
+              // The breath cycle (visual + voice) only starts after the
+              // opening narration ends. During the opening the circle stays
+              // static and no phase label or counter shows, so the visuals
+              // never disagree with what the voice is saying.
+              const openingEndSec = def.script && def.script.openingEndsAtSec
+                ? def.script.openingEndsAtSec
+                : 0;
+              const breathActive = isRunning && elapsedSec >= openingEndSec;
+              const breathElapsed = breathActive ? elapsedSec - openingEndSec : 0;
+              const cyclePos = cycleSec > 0 ? breathElapsed % cycleSec : 0;
               let phaseLabel = "";
-              if (cycleSec > 0 && isRunning) {
+              if (cycleSec > 0 && breathActive) {
                 let phaseStart = 0;
                 for (const phase of def.phases) {
                   if (cyclePos < phaseStart + phase.sec) {
@@ -6585,8 +6594,8 @@ export default function AtlasLuthor() {
                   phaseStart += phase.sec;
                 }
               }
-              const breathCount = def.showBreathCounter && cycleSec > 0 && isRunning
-                ? ((Math.floor(elapsedSec / cycleSec) % 10) + 1)
+              const breathCount = def.showBreathCounter && cycleSec > 0 && breathActive
+                ? ((Math.floor(breathElapsed / cycleSec) % 10) + 1)
                 : 0;
               const mmss = sec => {
                 const m = Math.floor(sec / 60);
@@ -6773,10 +6782,10 @@ export default function AtlasLuthor() {
                         <circle cx="80" cy="80" r={ringR} fill="none" stroke={accent} strokeWidth="8" strokeLinecap="round" strokeDasharray={ringC} strokeDashoffset={ringC * (1 - progressPct / 100)} style={{ transition: "stroke-dashoffset 0.9s linear" }} />
                       </svg>
                       <div
-                        className={isRunning && def.showBreathCircle ? `med-breath med-breath-${medTimer.practice}` : ""}
+                        className={breathActive && def.showBreathCircle ? `med-breath med-breath-${medTimer.practice}` : ""}
                         style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: accent, pointerEvents: "none" }}
                       >
-                        {isRunning && def.showBreathCounter && breathCount > 0 ? (
+                        {breathActive && def.showBreathCounter && breathCount > 0 ? (
                           <>
                             <p style={{ fontSize: 64, fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1, color: "#FFFFFF" }}>{breathCount}</p>
                             <p style={{ fontSize: 14, fontWeight: 800, fontFamily: "'Orbitron', monospace", marginTop: 6, opacity: 0.75 }}>{mmss(secondsLeft)}</p>
@@ -6784,7 +6793,7 @@ export default function AtlasLuthor() {
                         ) : (
                           <>
                             <p style={{ fontSize: 42, fontWeight: 900, fontFamily: "'Orbitron', monospace", lineHeight: 1 }}>{mmss(secondsLeft)}</p>
-                            {isRunning && def.showBreathCircle && phaseLabel && (
+                            {breathActive && def.showBreathCircle && phaseLabel && (
                               <p style={{ fontSize: 12, letterSpacing: 3, marginTop: 8, fontFamily: "'Orbitron', monospace", fontWeight: 800, opacity: 0.9 }}>{phaseLabel.toUpperCase()}</p>
                             )}
                           </>
