@@ -225,6 +225,7 @@ const DEFAULT_APP_SETTINGS = {
   themeMode: "auto",
   tapFeedback: true,
   unitSystem: "imperial",
+  manualCalorieTarget: 0,
   restSeconds: 90,
   meditationGoalMin: 10,
   meditationPractice: "pranayama",
@@ -2863,7 +2864,9 @@ export default function AtlasLuthor() {
   const isAutoActivity = !ACTIVITY_LEVELS.includes(profile.activityLevel);
   const effectiveActivityLevel = isAutoActivity ? autoActivityLevel : profile.activityLevel;
   const nutritionTDEE = calcTDEE(nutritionBMR, effectiveActivityLevel);
-  const calorieTarget = goalCalorieTarget(nutritionTDEE, goals.bodyTypeGoal || "athletic");
+  const autoCalorieTarget = goalCalorieTarget(nutritionTDEE, goals.bodyTypeGoal || "athletic");
+  const manualCalorieTarget = Number(appSettings.manualCalorieTarget) || 0;
+  const calorieTarget = manualCalorieTarget > 0 ? manualCalorieTarget : autoCalorieTarget;
   const macroTargets = macroSplit(calorieTarget, goals.bodyTypeGoal || "athletic");
   const todayFood = foodLog[getDateKey()] || {};
   const todayMacros = sumDayMacros(todayFood);
@@ -6159,7 +6162,208 @@ export default function AtlasLuthor() {
                             ? "Definido manualmente. Elige Automático para que se ajuste a tu entrenamiento real."
                             : "Set manually. Choose Automatic to match your actual training.")}
                     </p>
+
+                    <div style={{ height: 1, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", margin: "14px 0" }} />
+
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>
+                      {language === "es" ? "META MANUAL" : "MANUAL GOAL"}
+                    </p>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input
+                        className="input"
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        value={manualCalorieTarget > 0 ? manualCalorieTarget : ""}
+                        placeholder={String(autoCalorieTarget)}
+                        onChange={event => {
+                          const next = Math.max(0, Number(event.target.value) || 0);
+                          setAppSettings(prev => ({ ...prev, manualCalorieTarget: next }));
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      {manualCalorieTarget > 0 && (
+                        <button
+                          className="edit-btn"
+                          onClick={() => setAppSettings(prev => ({ ...prev, manualCalorieTarget: 0 }))}
+                          style={{ color: "#8A8F99", whiteSpace: "nowrap" }}
+                        >
+                          {language === "es" ? "Auto" : "Auto"}
+                        </button>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 8, lineHeight: 1.5 }}>
+                      {manualCalorieTarget > 0
+                        ? (language === "es"
+                            ? `Usando meta manual de ${manualCalorieTarget} kcal/día. Cálculo automático sería ${autoCalorieTarget}.`
+                            : `Using manual goal of ${manualCalorieTarget} kcal/day. Automatic calculation would be ${autoCalorieTarget}.`)
+                        : (language === "es"
+                            ? "Deja vacío para usar el cálculo automático basado en tu peso, altura, edad y nivel de actividad."
+                            : "Leave empty to use the automatic calculation based on your weight, height, age, and activity level.")}
+                    </p>
                   </div>
+
+                  {(() => {
+                    const sample = [];
+                    for (let i = 0; i < 7; i += 1) {
+                      const d = new Date();
+                      d.setDate(d.getDate() - i);
+                      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                      const foodKcal = sumDayMacros(foodLog[key] || {}).kcal;
+                      const cardioKcal = (cardioLog[key] || []).reduce((sum, item) => sum + (Number(item.calories) || 0), 0);
+                      if (foodKcal > 0 || cardioKcal > 0) sample.push({ foodKcal, cardioKcal });
+                    }
+                    const sampleCount = sample.length;
+                    const headerLabel = language === "es" ? "PREDICCIÓN DE PESO" : "WEIGHT PREDICTION";
+                    if (nutritionTDEE <= 0) {
+                      return (
+                        <div className="home-card">
+                          <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>{headerLabel}</p>
+                          <p style={{ fontSize: 13, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                            {language === "es"
+                              ? "Completa tu perfil (peso, altura, edad, sexo) para ver tu predicción."
+                              : "Complete your profile (weight, height, age, sex) to see your prediction."}
+                          </p>
+                        </div>
+                      );
+                    }
+                    if (sampleCount < 3) {
+                      return (
+                        <div className="home-card">
+                          <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace", marginBottom: 8 }}>{headerLabel}</p>
+                          <p style={{ fontSize: 13, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>
+                            {language === "es"
+                              ? `Registra al menos 3 días de comida (y cardio si haces) para ver tu predicción. Llevas ${sampleCount}.`
+                              : `Log at least 3 days of food (and cardio if you do) to see your prediction. You have ${sampleCount}.`}
+                          </p>
+                        </div>
+                      );
+                    }
+                    const avgFood = Math.round(sample.reduce((sum, day) => sum + day.foodKcal, 0) / sampleCount);
+                    const avgCardio = Math.round(sample.reduce((sum, day) => sum + day.cardioKcal, 0) / sampleCount);
+                    const avgBurn = nutritionTDEE + avgCardio;
+                    const avgDelta = avgFood - avgBurn;
+                    const lbPerDay = avgDelta / 3500;
+                    const deltaColor = avgDelta < 0 ? "#3FB98A" : avgDelta > 0 ? "#FF9860" : "#8A8F99";
+                    const projectAt = days => {
+                      const projectedLb = currentWeight + lbPerDay * days;
+                      const diff = projectedLb - currentWeight;
+                      return { value: projectedLb, diff };
+                    };
+                    const proj30 = projectAt(30);
+                    const proj60 = projectAt(60);
+                    const proj90 = projectAt(90);
+                    const fmtLb = lb => `${Math.round(lb * 10) / 10} lb`;
+                    const fmtDiff = diff => {
+                      const rounded = Math.round(diff * 10) / 10;
+                      if (rounded === 0) return "±0";
+                      return rounded > 0 ? `+${rounded}` : `${rounded}`;
+                    };
+                    const projCell = (label, projection) => (
+                      <div className="detail-card">
+                        <p className="detail-label">{label.toUpperCase()}</p>
+                        <p className="detail-value" style={{ fontSize: 18 }}>{fmtLb(projection.value)}</p>
+                        <p style={{ fontSize: 11, fontFamily: "'Orbitron', monospace", color: projection.diff < 0 ? "#3FB98A" : projection.diff > 0 ? "#FF9860" : "#8A8F99", marginTop: 2 }}>
+                          {fmtDiff(projection.diff)} lb
+                        </p>
+                      </div>
+                    );
+                    let targetRow = null;
+                    if (currentWeight > 0 && targetWeight > 0 && goals.targetDate && daysToGoal !== null && daysToGoal > 0) {
+                      const projAtTarget = projectAt(daysToGoal);
+                      const gap = Math.round((projAtTarget.value - targetWeight) * 10) / 10;
+                      const wantsToLose = currentWeight > targetWeight;
+                      const wantsToGain = currentWeight < targetWeight;
+                      let bannerColor = "#FFD060";
+                      let bannerText = "";
+                      const onTrack = Math.abs(gap) <= 2;
+                      if (onTrack) {
+                        bannerColor = "#3FB98A";
+                        bannerText = language === "es" ? "Vas en camino." : "You're on track.";
+                      } else {
+                        const targetTotalDelta = (targetWeight - currentWeight) * 3500;
+                        const neededKcalPerDay = Math.round(targetTotalDelta / daysToGoal + avgBurn);
+                        const adjust = Math.round(neededKcalPerDay - avgFood);
+                        if (wantsToLose && gap > 0) {
+                          bannerColor = "#FF9860";
+                          bannerText = language === "es"
+                            ? `A este ritmo te quedarás en ${fmtLb(projAtTarget.value)}. Para llegar a ${fmtLb(targetWeight)} necesitas comer ~${Math.abs(adjust)} kcal/día menos (o quemar más).`
+                            : `At this rate you'll be ${fmtLb(projAtTarget.value)}. To reach ${fmtLb(targetWeight)} you need ~${Math.abs(adjust)} kcal/day less (or burn more).`;
+                        } else if (wantsToGain && gap < 0) {
+                          bannerColor = "#FF9860";
+                          bannerText = language === "es"
+                            ? `A este ritmo te quedarás en ${fmtLb(projAtTarget.value)}. Para llegar a ${fmtLb(targetWeight)} necesitas comer ~${Math.abs(adjust)} kcal/día más.`
+                            : `At this rate you'll be ${fmtLb(projAtTarget.value)}. To reach ${fmtLb(targetWeight)} you need ~${Math.abs(adjust)} kcal/day more.`;
+                        } else {
+                          bannerColor = "#3FB98A";
+                          bannerText = language === "es"
+                            ? `Vas a pasar tu meta. Predicho: ${fmtLb(projAtTarget.value)}.`
+                            : `You'll pass your goal. Predicted: ${fmtLb(projAtTarget.value)}.`;
+                        }
+                      }
+                      targetRow = (
+                        <div style={{ marginTop: 12 }}>
+                          <div className="detail-row" style={{ alignItems: "center" }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p className="detail-row-main">
+                                {language === "es" ? "Al" : "By"} {goals.targetDate}
+                              </p>
+                              <p className="detail-row-sub">
+                                {daysToGoal} {language === "es" ? "días · meta" : "days · goal"} {fmtLb(targetWeight)}
+                              </p>
+                            </div>
+                            <span style={{ color: "#90C8FF", fontFamily: "'Orbitron', monospace", fontSize: 14, fontWeight: 700 }}>
+                              {fmtLb(projAtTarget.value)}
+                            </span>
+                          </div>
+                          <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 10, background: isLightMode ? `${bannerColor}22` : `${bannerColor}1A`, border: `1px solid ${bannerColor}55` }}>
+                            <p style={{ fontSize: 12, color: bannerColor, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5 }}>{bannerText}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="home-card">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
+                          <p style={{ fontSize: 10, letterSpacing: 3, color: "#90C8FF", fontFamily: "'Orbitron', monospace" }}>{headerLabel}</p>
+                          <p style={{ fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                            {language === "es" ? `Últimos ${sampleCount} días` : `Last ${sampleCount} days`}
+                          </p>
+                        </div>
+                        <div style={{ display: "grid", gap: 6, marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                            <span style={{ color: "#8A8F99" }}>{language === "es" ? "Comido (promedio)" : "Eaten (avg)"}</span>
+                            <span style={{ fontFamily: "'Orbitron', monospace", color: "#FFD060" }}>{avgFood} kcal</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                            <span style={{ color: "#8A8F99" }}>{language === "es" ? "Quemado en cardio" : "Cardio burn"}</span>
+                            <span style={{ fontFamily: "'Orbitron', monospace", color: "#FF9860" }}>{avgCardio} kcal</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                            <span style={{ color: "#8A8F99" }}>{language === "es" ? "Gasto total" : "Total burn"}</span>
+                            <span style={{ fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF" }}>{avgBurn} kcal</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontFamily: "'DM Sans', sans-serif", paddingTop: 6, borderTop: `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}` }}>
+                            <span style={{ color: "#8A8F99" }}>{language === "es" ? "Balance" : "Balance"}</span>
+                            <span style={{ fontFamily: "'Orbitron', monospace", color: deltaColor, fontWeight: 700 }}>
+                              {avgDelta > 0 ? "+" : ""}{avgDelta} kcal/{language === "es" ? "día" : "day"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="detail-grid">
+                          {projCell(language === "es" ? "En 30 días" : "In 30 days", proj30)}
+                          {projCell(language === "es" ? "En 60 días" : "In 60 days", proj60)}
+                          {projCell(language === "es" ? "En 90 días" : "In 90 days", proj90)}
+                        </div>
+                        {targetRow}
+                        <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 12, lineHeight: 1.5 }}>
+                          {language === "es"
+                            ? "Estimación basada en 1 lb ≈ 3500 kcal. El resultado real puede variar."
+                            : "Estimate based on 1 lb ≈ 3500 kcal. Actual result may vary."}
+                        </p>
+                      </div>
+                    );
+                  })()}
 
                   <div className="detail-grid">
                     {macroRows.map(macro => {
