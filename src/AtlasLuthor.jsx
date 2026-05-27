@@ -6234,11 +6234,11 @@ export default function AtlasLuthor() {
                   className="home-card"
                   role="button"
                   tabIndex={0}
-                  onClick={() => setActiveFeaturePage("achievements")}
+                  onClick={() => openFeaturePage("achievements")}
                   onKeyDown={event => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      setActiveFeaturePage("achievements");
+                      openFeaturePage("achievements");
                     }
                   }}
                   style={{
@@ -7113,7 +7113,7 @@ export default function AtlasLuthor() {
                     </span>
                   ))}
                 </div>
-                <button className="dark-btn" onClick={() => setActiveFeaturePage("achievements")}>
+                <button className="dark-btn" onClick={() => openFeaturePage("achievements")}>
                   {text.viewAchievements} →
                 </button>
               </div>
