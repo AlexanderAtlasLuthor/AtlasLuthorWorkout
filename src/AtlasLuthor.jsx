@@ -6035,6 +6035,102 @@ export default function AtlasLuthor() {
               );
             })()}
 
+            {(() => {
+              const rankColor = rankInfo.rank.color;
+              const rankName = language === "es" ? rankInfo.rank.es : rankInfo.rank.en;
+              const questsDone = todayQuestStatus.filter(s => s.done).length;
+              const questsTotal = todayQuestStatus.length;
+              return (
+                <div
+                  className="home-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openFeaturePage("achievements")}
+                  onKeyDown={event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openFeaturePage("achievements");
+                    }
+                  }}
+                  style={{
+                    marginBottom: 14,
+                    cursor: "pointer",
+                    background: isLightMode
+                      ? `linear-gradient(135deg, ${rankColor}14 0%, rgba(255,255,255,0.6) 100%)`
+                      : `linear-gradient(135deg, ${rankColor}1F 0%, rgba(12,12,16,0.85) 100%)`,
+                    border: `1px solid ${rankColor}44`,
+                    boxShadow: `0 0 24px ${rankColor}1A, inset 0 0 0 1px ${rankColor}22`,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <p style={{ fontSize: 9, letterSpacing: 3, color: rankColor, fontFamily: "'Orbitron', monospace" }}>
+                      {text.progressAtlas}
+                    </p>
+                    <span style={{ background: rankColor, color: "#050507", padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 900, fontFamily: "'Orbitron', monospace", letterSpacing: 2, boxShadow: `0 2px 10px ${rankColor}66` }}>
+                      {subRankInfo.tierName}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: rankColor, lineHeight: 1, marginBottom: 10, textShadow: `0 0 18px ${rankColor}44` }}>
+                    {rankName}
+                  </p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontSize: 22, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1 }}>{totalXp}</span>
+                      <span style={{ fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>XP</span>
+                    </div>
+                    {dailyStreak > 0 && (
+                      <span style={{ fontSize: 12, color: "#FFD060", fontFamily: "'Orbitron', monospace", fontWeight: 900, padding: "4px 9px", borderRadius: 999, border: "1px solid rgba(255,208,96,0.4)", background: "rgba(255,208,96,0.10)" }}>
+                        🔥 {dailyStreak}
+                      </span>
+                    )}
+                    <span style={{ marginLeft: "auto", fontSize: 11, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
+                      🏅 {earnedBadgeIds.length}/{BADGE_TIER_ENTRIES.length}
+                    </span>
+                  </div>
+                  {rankInfo.next ? (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 1, marginBottom: 5 }}>
+                        <span>{rankInfo.xpIntoRank}/{rankInfo.xpToNext}</span>
+                        <span>→ {language === "es" ? rankInfo.next.es : rankInfo.next.en}</span>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 6, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: 14 }}>
+                        <div style={{ height: "100%", width: `${rankInfo.progressPct}%`, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)`, borderRadius: 6, boxShadow: `0 0 8px ${rankColor}88`, transition: "width 0.4s ease" }} />
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ fontSize: 11, color: rankColor, fontFamily: "'Orbitron', monospace", letterSpacing: 2, marginBottom: 14 }}>{text.maxRank} ✓</p>
+                  )}
+                  {questsTotal > 0 && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <p style={{ fontSize: 9, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                          {(language === "es" ? "MISIONES HOY" : "TODAY'S MISSIONS")}
+                        </p>
+                        <p style={{ fontSize: 11, color: questsDone === questsTotal ? "#3FB98A" : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                          {questsDone}/{questsTotal}{questsDone === questsTotal ? " ✓" : ""}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {todayQuestStatus.map(({ quest, done }) => (
+                          <div
+                            key={quest.id}
+                            style={{
+                              flex: 1,
+                              height: 6,
+                              borderRadius: 4,
+                              background: done ? "#3FB98A" : (isLightMode ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.08)"),
+                              boxShadow: done ? "0 0 6px rgba(63,185,138,0.55)" : "none",
+                              transition: "background 0.3s ease",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="home-card" style={{ marginBottom: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div>
@@ -6223,111 +6319,6 @@ export default function AtlasLuthor() {
                 </div>
               </div>
             </div>
-
-            {(() => {
-              const rankColor = rankInfo.rank.color;
-              const rankName = language === "es" ? rankInfo.rank.es : rankInfo.rank.en;
-              const questsDone = todayQuestStatus.filter(s => s.done).length;
-              const questsTotal = todayQuestStatus.length;
-              return (
-                <div
-                  className="home-card"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openFeaturePage("achievements")}
-                  onKeyDown={event => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openFeaturePage("achievements");
-                    }
-                  }}
-                  style={{
-                    marginBottom: 14,
-                    cursor: "pointer",
-                    background: isLightMode
-                      ? `linear-gradient(135deg, ${rankColor}14 0%, rgba(255,255,255,0.6) 100%)`
-                      : `linear-gradient(135deg, ${rankColor}1F 0%, rgba(12,12,16,0.85) 100%)`,
-                    border: `1px solid ${rankColor}44`,
-                    boxShadow: `0 0 24px ${rankColor}1A, inset 0 0 0 1px ${rankColor}22`,
-                  }}
-                >
-                  {/* Top row: rank label + tier chip */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <p style={{ fontSize: 9, letterSpacing: 3, color: rankColor, fontFamily: "'Orbitron', monospace" }}>
-                      {text.progressAtlas}
-                    </p>
-                    <span style={{ background: rankColor, color: "#050507", padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 900, fontFamily: "'Orbitron', monospace", letterSpacing: 2, boxShadow: `0 2px 10px ${rankColor}66` }}>
-                      {subRankInfo.tierName}
-                    </span>
-                  </div>
-
-                  {/* Rank name as protagonist */}
-                  <p style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: rankColor, lineHeight: 1, marginBottom: 10, textShadow: `0 0 18px ${rankColor}44` }}>
-                    {rankName}
-                  </p>
-
-                  {/* Stats row */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1 }}>{totalXp}</span>
-                      <span style={{ fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>XP</span>
-                    </div>
-                    {dailyStreak > 0 && (
-                      <span style={{ fontSize: 12, color: "#FFD060", fontFamily: "'Orbitron', monospace", fontWeight: 900, padding: "4px 9px", borderRadius: 999, border: "1px solid rgba(255,208,96,0.4)", background: "rgba(255,208,96,0.10)" }}>
-                        🔥 {dailyStreak}
-                      </span>
-                    )}
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
-                      🏅 {earnedBadgeIds.length}/{BADGE_TIER_ENTRIES.length}
-                    </span>
-                  </div>
-
-                  {/* Progress bar to next rank */}
-                  {rankInfo.next ? (
-                    <>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 1, marginBottom: 5 }}>
-                        <span>{rankInfo.xpIntoRank}/{rankInfo.xpToNext}</span>
-                        <span>→ {language === "es" ? rankInfo.next.es : rankInfo.next.en}</span>
-                      </div>
-                      <div style={{ height: 8, borderRadius: 6, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: 14 }}>
-                        <div style={{ height: "100%", width: `${rankInfo.progressPct}%`, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)`, borderRadius: 6, boxShadow: `0 0 8px ${rankColor}88`, transition: "width 0.4s ease" }} />
-                      </div>
-                    </>
-                  ) : (
-                    <p style={{ fontSize: 11, color: rankColor, fontFamily: "'Orbitron', monospace", letterSpacing: 2, marginBottom: 14 }}>{text.maxRank} ✓</p>
-                  )}
-
-                  {/* Today's quests progress as dots */}
-                  {questsTotal > 0 && (
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                        <p style={{ fontSize: 9, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
-                          {(language === "es" ? "MISIONES HOY" : "TODAY'S MISSIONS")}
-                        </p>
-                        <p style={{ fontSize: 11, color: questsDone === questsTotal ? "#3FB98A" : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
-                          {questsDone}/{questsTotal}{questsDone === questsTotal ? " ✓" : ""}
-                        </p>
-                      </div>
-                      <div style={{ display: "flex", gap: 4 }}>
-                        {todayQuestStatus.map(({ quest, done }) => (
-                          <div
-                            key={quest.id}
-                            style={{
-                              flex: 1,
-                              height: 6,
-                              borderRadius: 4,
-                              background: done ? "#3FB98A" : (isLightMode ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.08)"),
-                              boxShadow: done ? "0 0 6px rgba(63,185,138,0.55)" : "none",
-                              transition: "background 0.3s ease",
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
 
             <div className="home-card" style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
