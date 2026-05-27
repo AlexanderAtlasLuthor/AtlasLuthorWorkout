@@ -448,55 +448,204 @@ function rankFor(xp) {
   return { rank, next, xpIntoRank, xpToNext, progressPct };
 }
 
-const BADGE_DEFS = [
-  { id: "first-step",       es: "Primer Paso",            en: "First Step",        category: "protocol",  color: "#8A8F99", test: ctx => ctx.checkedCount >= 1 },
-  { id: "protocol-clear",   es: "Protocolo Completo",     en: "Protocol Clear",    category: "protocol",  color: "#FFD060", test: ctx => ctx.weeklyProgress >= 100 },
-  { id: "session-hunter",   es: "Cazador de Sesiones",    en: "Session Hunter",    category: "protocol",  color: "#FFD060", test: ctx => ctx.completedSessions >= ctx.weeklySessionsGoal },
-  { id: "daily-grind",      es: "Constancia",             en: "Daily Grind",       category: "streak",    color: "#FFD060", test: ctx => ctx.dailyStreak >= 7 },
-  { id: "week-warrior",     es: "Guerrero Semanal",       en: "Week Warrior",      category: "streak",    color: "#B8A0FF", test: ctx => ctx.weeklyStreak >= 2 },
-  { id: "iron-month",       es: "Mes de Hierro",          en: "Iron Month",        category: "streak",    color: "#B8A0FF", test: ctx => ctx.weeklyStreak >= 4 },
-  { id: "cardio-rookie",    es: "Cardio Rookie",          en: "Cardio Rookie",     category: "cardio",    color: "#FF9860", test: ctx => ctx.cardioCompleted >= 1 },
-  { id: "cardio-marathon",  es: "Maratón",                en: "Marathoner",        category: "cardio",    color: "#FF9860", test: ctx => ctx.cardioCompleted >= 10 },
-  { id: "hydrated",         es: "Hidratado",              en: "Hydrated",          category: "nutrition", color: "#90C8FF", test: ctx => ctx.waterGoalDays >= 7 },
-  { id: "nutrition-master", es: "Maestro Nutrición",      en: "Nutrition Master",  category: "nutrition", color: "#3FB98A", test: ctx => ctx.foodGoalDays >= 7 },
-  { id: "mind-clear",       es: "Mente Clara",            en: "Mind Clear",        category: "mind",      color: "#B8A0FF", test: ctx => ctx.meditationStreak >= 7 },
-  { id: "meditation-300",   es: "5h Zen",                 en: "5h Zen",            category: "mind",      color: "#B8A0FF", test: ctx => ctx.meditationMinutes >= 300 },
-  { id: "first-pr",         es: "Primer Récord",          en: "First PR",          category: "pr",        color: "#FFD060", test: ctx => ctx.prCount >= 1 },
-  { id: "pr-collector",     es: "Coleccionista PR",       en: "PR Collector",      category: "pr",        color: "#FFD060", test: ctx => ctx.prCount >= 5 },
-  { id: "pr-legend",        es: "Leyenda PR",             en: "PR Legend",         category: "pr",        color: "#FFD060", test: ctx => ctx.prCount >= 15 },
-  { id: "progress-logged",  es: "Progreso Registrado",    en: "Progress Logged",   category: "body",      color: "#90C8FF", test: ctx => ctx.manualProgressCount >= 1 },
-  { id: "body-tracker",     es: "Rastreador Corporal",    en: "Body Tracker",      category: "body",      color: "#3FB98A", test: ctx => ctx.measurementCount >= 4 },
-  { id: "photo-journey",    es: "Diario Visual",          en: "Photo Journey",     category: "body",      color: "#90C8FF", test: ctx => ctx.photoCount >= 6 },
-  { id: "rank-elite",       es: "Élite",                  en: "Elite",             category: "rank",      color: "#FF9860", test: ctx => ctx.totalXp >= 1500 },
-  { id: "atlas-luthor",     es: "Atlas Luthor",           en: "Atlas Luthor",      category: "rank",      color: "#E5604D", test: ctx => ctx.totalXp >= 10000 },
+const SUB_TIER_NAMES = ["I", "II", "III"];
+
+function subRankFor(xp) {
+  const info = rankFor(xp);
+  if (!info.next) return { ...info, tier: 3, tierName: "III", subRankId: `${info.rank.id}-III` };
+  const third = info.xpToNext / 3;
+  let tier = 1;
+  if (info.xpIntoRank >= third * 2) tier = 3;
+  else if (info.xpIntoRank >= third) tier = 2;
+  return { ...info, tier, tierName: SUB_TIER_NAMES[tier - 1], subRankId: `${info.rank.id}-${SUB_TIER_NAMES[tier - 1]}` };
+}
+
+// Each tier: { id, threshold, emoji, color, xp }
+const TIER_BRONZE = { emoji: "🥉", color: "#CD7F32", xp: 20 };
+const TIER_SILVER = { emoji: "🥈", color: "#C0C0C0", xp: 50 };
+const TIER_GOLD   = { emoji: "🥇", color: "#FFD700", xp: 150 };
+
+// Tiered badges: each has up to 3 thresholds. ID is `${baseId}-${tierName}`.
+const BADGE_DEFS_TIERED = [
+  // Single-tier (no escalonado)
+  { id: "first-step",      es: "Primer Paso",          en: "First Step",        category: "protocol", baseColor: "#8A8F99", metric: "checkedCount",      thresholds: [{ ...TIER_BRONZE, name: "bronze", value: 1 }] },
+  { id: "protocol-clear",  es: "Protocolo Completo",   en: "Protocol Clear",    category: "protocol", baseColor: "#FFD060", metric: "weeklyProgress",    thresholds: [{ ...TIER_GOLD,   name: "gold",   value: 100 }] },
+  { id: "session-hunter",  es: "Cazador de Sesiones",  en: "Session Hunter",    category: "protocol", baseColor: "#FFD060", metric: "sessionsGoalMet",   thresholds: [{ ...TIER_GOLD,   name: "gold",   value: 1 }] },
+  { id: "rank-elite",      es: "Élite",                en: "Elite",             category: "rank",     baseColor: "#FF9860", metric: "totalXp",           thresholds: [{ ...TIER_GOLD,   name: "gold",   value: 1500 }] },
+  { id: "atlas-luthor",    es: "Atlas Luthor",         en: "Atlas Luthor",      category: "rank",     baseColor: "#E5604D", metric: "totalXp",           thresholds: [{ ...TIER_GOLD,   name: "gold",   value: 10000 }] },
+  // Escalonado bronze/silver/gold
+  { id: "cardio",          es: "Cardio",               en: "Cardio",            category: "cardio",    baseColor: "#FF9860", metric: "cardioCompleted", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 5 },
+      { ...TIER_SILVER, name: "silver", value: 25 },
+      { ...TIER_GOLD,   name: "gold",   value: 100 },
+  ] },
+  { id: "meditation",      es: "Meditación",            en: "Meditation",        category: "mind",     baseColor: "#B8A0FF", metric: "meditationCount", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 10 },
+      { ...TIER_SILVER, name: "silver", value: 50 },
+      { ...TIER_GOLD,   name: "gold",   value: 200 },
+  ] },
+  { id: "med-minutes",     es: "Minutos Zen",           en: "Zen Minutes",       category: "mind",     baseColor: "#B8A0FF", metric: "meditationMinutes", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 60 },
+      { ...TIER_SILVER, name: "silver", value: 300 },
+      { ...TIER_GOLD,   name: "gold",   value: 1500 },
+  ] },
+  { id: "hydrated",        es: "Hidratado",             en: "Hydrated",          category: "nutrition", baseColor: "#90C8FF", metric: "waterGoalDays", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 7 },
+      { ...TIER_SILVER, name: "silver", value: 30 },
+      { ...TIER_GOLD,   name: "gold",   value: 90 },
+  ] },
+  { id: "nutrition",       es: "Nutrición",             en: "Nutrition",         category: "nutrition", baseColor: "#3FB98A", metric: "foodGoalDays", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 7 },
+      { ...TIER_SILVER, name: "silver", value: 30 },
+      { ...TIER_GOLD,   name: "gold",   value: 90 },
+  ] },
+  { id: "prs",             es: "Récords",               en: "PRs",               category: "pr",        baseColor: "#FFD060", metric: "prCount", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 5 },
+      { ...TIER_SILVER, name: "silver", value: 25 },
+      { ...TIER_GOLD,   name: "gold",   value: 100 },
+  ] },
+  { id: "weeks-perfect",   es: "Semanas Perfectas",     en: "Perfect Weeks",     category: "streak",    baseColor: "#B8A0FF", metric: "weeklyStreak", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 2 },
+      { ...TIER_SILVER, name: "silver", value: 8 },
+      { ...TIER_GOLD,   name: "gold",   value: 26 },
+  ] },
+  { id: "daily-grind",     es: "Constancia Diaria",     en: "Daily Grind",       category: "streak",    baseColor: "#FFD060", metric: "dailyStreak", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 7 },
+      { ...TIER_SILVER, name: "silver", value: 30 },
+      { ...TIER_GOLD,   name: "gold",   value: 100 },
+  ] },
+  { id: "exercises",       es: "Ejercicios Totales",    en: "Total Exercises",   category: "protocol",  baseColor: "#90C8FF", metric: "checkedCount", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 50 },
+      { ...TIER_SILVER, name: "silver", value: 250 },
+      { ...TIER_GOLD,   name: "gold",   value: 1000 },
+  ] },
+  { id: "days-done",       es: "Días Completados",      en: "Days Completed",    category: "protocol",  baseColor: "#3FB98A", metric: "daysDone", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 7 },
+      { ...TIER_SILVER, name: "silver", value: 30 },
+      { ...TIER_GOLD,   name: "gold",   value: 100 },
+  ] },
+  { id: "photo-journey",   es: "Diario Visual",         en: "Photo Journey",     category: "body",      baseColor: "#90C8FF", metric: "photoCount", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 6 },
+      { ...TIER_SILVER, name: "silver", value: 25 },
+      { ...TIER_GOLD,   name: "gold",   value: 100 },
+  ] },
+  { id: "measurements",    es: "Mediciones",            en: "Measurements",      category: "body",      baseColor: "#3FB98A", metric: "measurementCount", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 4 },
+      { ...TIER_SILVER, name: "silver", value: 16 },
+      { ...TIER_GOLD,   name: "gold",   value: 52 },
+  ] },
+  { id: "progress-logged", es: "Progreso Registrado",   en: "Progress Logged",   category: "body",      baseColor: "#90C8FF", metric: "manualProgressCount", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 1 },
+      { ...TIER_SILVER, name: "silver", value: 12 },
+      { ...TIER_GOLD,   name: "gold",   value: 52 },
+  ] },
+  { id: "challenges",      es: "Retos",                 en: "Challenges",        category: "protocol",  baseColor: "#B8A0FF", metric: "challengesDone", thresholds: [
+      { ...TIER_BRONZE, name: "bronze", value: 1 },
+      { ...TIER_SILVER, name: "silver", value: 5 },
+      { ...TIER_GOLD,   name: "gold",   value: 20 },
+  ] },
 ];
 
-function badgeCriterionLabel(badgeId, language) {
-  const es = language === "es";
-  const map = {
-    "first-step": es ? "Marca tu primer ejercicio." : "Mark your first exercise.",
-    "protocol-clear": es ? "Llega a 100% del protocolo semanal." : "Reach 100% weekly protocol.",
-    "session-hunter": es ? "Completa tus sesiones semanales." : "Complete your weekly sessions.",
-    "daily-grind": es ? "7 días seguidos con al menos un entreno." : "7 days in a row with at least one workout.",
-    "week-warrior": es ? "Racha de 2 semanas completas." : "2-week streak.",
-    "iron-month": es ? "Racha de 4 semanas completas." : "4-week streak.",
-    "cardio-rookie": es ? "Completa 1 sesión de cardio." : "Complete 1 cardio session.",
-    "cardio-marathon": es ? "Completa 10 sesiones de cardio." : "Complete 10 cardio sessions.",
-    "hydrated": es ? "Cumple tu meta de agua 7 días." : "Hit water goal on 7 days.",
-    "nutrition-master": es ? "7 días dentro de tu meta de kcal." : "7 days within kcal target.",
-    "mind-clear": es ? "Racha de meditación de 7 días." : "7-day meditation streak.",
-    "meditation-300": es ? "5 horas totales de meditación." : "5 total hours of meditation.",
-    "first-pr": es ? "Logra tu primer récord personal." : "Hit your first PR.",
-    "pr-collector": es ? "Acumula 5 récords personales." : "Hit 5 PRs.",
-    "pr-legend": es ? "Acumula 15 récords personales." : "Hit 15 PRs.",
-    "progress-logged": es ? "Registra peso manualmente." : "Log weight manually.",
-    "body-tracker": es ? "Registra 4 mediciones corporales." : "Log 4 body measurements.",
-    "photo-journey": es ? "Sube 6 fotos de progreso." : "Upload 6 progress photos.",
-    "rank-elite": es ? "Alcanza el rango Élite (1500 XP)." : "Reach Elite rank (1500 XP).",
-    "atlas-luthor": es ? "Alcanza el rango máximo Luthor (10000 XP)." : "Reach max Luthor rank (10000 XP).",
-  };
-  return map[badgeId] || "";
+function metricValueFor(ctx, metric) {
+  if (metric === "sessionsGoalMet") return ctx.completedSessions >= ctx.weeklySessionsGoal ? 1 : 0;
+  return Number(ctx[metric]) || 0;
 }
+
+// Flattens BADGE_DEFS_TIERED into per-tier badge entries.
+function flattenBadgeTiers() {
+  const out = [];
+  BADGE_DEFS_TIERED.forEach(def => {
+    def.thresholds.forEach(t => {
+      out.push({
+        baseId: def.id,
+        id: `${def.id}-${t.name}`,
+        tierName: t.name,
+        emoji: t.emoji,
+        tierColor: t.color,
+        xp: t.xp,
+        es: def.es,
+        en: def.en,
+        category: def.category,
+        metric: def.metric,
+        threshold: t.value,
+        color: def.baseColor,
+      });
+    });
+  });
+  return out;
+}
+
+const BADGE_TIER_ENTRIES = flattenBadgeTiers();
+
+function badgeTierTest(entry, ctx) {
+  return metricValueFor(ctx, entry.metric) >= entry.threshold;
+}
+
+function badgeCriterionLabel(entry, language) {
+  const es = language === "es";
+  const labels = {
+    checkedCount: es ? "ejercicios" : "exercises",
+    weeklyProgress: es ? "% de protocolo" : "% protocol",
+    sessionsGoalMet: es ? "meta semanal" : "weekly goal",
+    totalXp: "XP",
+    cardioCompleted: es ? "cardios" : "cardios",
+    meditationCount: es ? "meditaciones" : "meditations",
+    meditationMinutes: es ? "min de meditación" : "min meditation",
+    waterGoalDays: es ? "días meta agua" : "water goal days",
+    foodGoalDays: es ? "días meta kcal" : "kcal goal days",
+    prCount: "PRs",
+    weeklyStreak: es ? "semanas perfectas" : "perfect weeks",
+    dailyStreak: es ? "días seguidos" : "days in a row",
+    daysDone: es ? "días completados" : "days completed",
+    photoCount: es ? "fotos" : "photos",
+    measurementCount: es ? "mediciones" : "measurements",
+    manualProgressCount: es ? "pesadas registradas" : "weights logged",
+    challengesDone: es ? "retos" : "challenges",
+  };
+  const unit = labels[entry.metric] || "";
+  return `${entry.threshold} ${unit}`;
+}
+
+const DAILY_QUEST_POOL = [
+  { id: "d-3ex",    es: "Marca 3 ejercicios",           en: "Mark 3 exercises",         xp: 15, target: 3,  metric: "todayExercisesDone" },
+  { id: "d-cardio", es: "Completa 1 cardio",            en: "Complete 1 cardio",        xp: 20, target: 1,  metric: "todayCardioDone" },
+  { id: "d-water",  es: "Cumple tu meta de agua",       en: "Hit your water goal",      xp: 15, target: 1,  metric: "todayWaterHit" },
+  { id: "d-med",    es: "1 sesión de meditación",       en: "1 meditation session",     xp: 15, target: 1,  metric: "todayMeditation" },
+  { id: "d-meal",   es: "Registra una comida",          en: "Log a meal",               xp: 10, target: 1,  metric: "todayMealEntries" },
+  { id: "d-day",    es: "Completa el día entero",       en: "Complete the full day",    xp: 30, target: 1,  metric: "todayCompleted" },
+  { id: "d-pr",     es: "Marca un PR",                  en: "Hit a PR",                 xp: 40, target: 1,  metric: "todayPrs" },
+  { id: "d-weight", es: "Registra tu peso",             en: "Log your weight",          xp: 12, target: 1,  metric: "todayWeightLogged" },
+];
+
+const WEEKLY_QUEST_POOL = [
+  { id: "w-3days",   es: "3 días de entreno",           en: "3 training days",          xp: 60,  target: 3, metric: "weekTrainingDays" },
+  { id: "w-5cardio", es: "5 cardios esta semana",       en: "5 cardios this week",      xp: 80,  target: 5, metric: "weekCardioDone" },
+  { id: "w-100",     es: "Protocolo al 100%",           en: "100% protocol",            xp: 100, target: 100, metric: "weeklyProgress" },
+  { id: "w-water5",  es: "Meta de agua 5 días",         en: "Water goal 5 days",        xp: 60,  target: 5, metric: "weekWaterDays" },
+  { id: "w-kcal3",   es: "Meta de kcal 3 días",         en: "Kcal goal 3 days",         xp: 50,  target: 3, metric: "weekFoodDays" },
+  { id: "w-med5",    es: "5 meditaciones",              en: "5 meditations",            xp: 60,  target: 5, metric: "weekMeditationCount" },
+];
+
+// Deterministic quest picker: same seed → same quests, but adjacent seeds give
+// substantially different selections (good shuffling).
+function pickQuests(pool, count, seedStr) {
+  const base = [...String(seedStr)].reduce((a, c) => Math.imul(a ^ c.charCodeAt(0), 2654435761) >>> 0, 0xdeadbeef);
+  const indexed = pool.map((q, i) => {
+    const mix = Math.imul(base ^ ((i + 1) * 0x85ebca6b), 0xc2b2ae35) >>> 0;
+    return { q, score: mix };
+  });
+  indexed.sort((a, b) => a.score - b.score);
+  return indexed.slice(0, count).map(x => x.q);
+}
+
+function questProgress(quest, ctx) {
+  const value = Number(ctx[quest.metric]) || 0;
+  const done = value >= quest.target;
+  return { done, value, target: quest.target };
+}
+
+const DAILY_LOGIN_XP = 10;
+const CONFETTI_PALETTE = ["#FFD060", "#3FB98A", "#90C8FF", "#FF9860", "#B8A0FF"];
 
 function deriveDailyStreak(calendarLog) {
   let streak = 0;
@@ -1095,6 +1244,17 @@ const UI_TEXT = {
     xpFromBody: "Body tracking",
     xpFromStreaks: "Streaks",
     featDescAchievements: "Your XP, current rank, daily and weekly streaks, and all unlockable badges.",
+    dailyQuests: "Today's Quests",
+    weeklyQuests: "Weekly Quests",
+    questCompleted: "Quest done · +{xp} XP",
+    questProgressText: "{done} / {target}",
+    dailyCheckIn: "+{xp} XP · Day {day} streak",
+    activityHeatmap: "ACTIVITY (90 DAYS)",
+    subRankUp: "{rank} ⬆",
+    tierBronze: "Bronze",
+    tierSilver: "Silver",
+    tierGold: "Gold",
+    questsTodayMini: "Today: {done}/{total} quests",
     photosLabel: "PHOTOS",
     albumsLabel: "ALBUMS",
     addPhotoLabel: "ADD PHOTO",
@@ -1468,6 +1628,17 @@ const UI_TEXT = {
     xpFromBody: "Mediciones",
     xpFromStreaks: "Rachas",
     featDescAchievements: "Tu XP, rango actual, rachas diarias y semanales, y todas las insignias por desbloquear.",
+    dailyQuests: "Misiones de Hoy",
+    weeklyQuests: "Misiones Semanales",
+    questCompleted: "Misión completada · +{xp} XP",
+    questProgressText: "{done} / {target}",
+    dailyCheckIn: "+{xp} XP · Día {day} de racha",
+    activityHeatmap: "ACTIVIDAD (90 DÍAS)",
+    subRankUp: "{rank} ⬆",
+    tierBronze: "Bronce",
+    tierSilver: "Plata",
+    tierGold: "Oro",
+    questsTodayMini: "Hoy: {done}/{total} misiones",
     photosLabel: "FOTOS",
     albumsLabel: "ÁLBUMES",
     addPhotoLabel: "AGREGAR FOTO",
@@ -2219,7 +2390,16 @@ export default function AtlasLuthor() {
   const [seenBadges, setSeenBadges] = useState([]);
   const [lastSeenXp, setLastSeenXp] = useState(0);
   const [lastSeenRankId, setLastSeenRankId] = useState("initiate");
+  const [lastSeenSubRank, setLastSeenSubRank] = useState("initiate-I");
+  const [bonusXp, setBonusXp] = useState(0);
+  const [lastLoginDate, setLastLoginDate] = useState("");
+  const [completedQuests, setCompletedQuests] = useState({});
+  const [claimedQuestXp, setClaimedQuestXp] = useState([]);
+  const [xpFloats, setXpFloats] = useState([]);
+  const [confettiActive, setConfettiActive] = useState(false);
   const gamificationSeedRef = useRef(null);
+  const questSeedRef = useRef(null);
+  const dailyLoginRef = useRef(null);
   const [medTimer, setMedTimer] = useState({
     running: false,
     practice: "pranayama",
@@ -2325,6 +2505,11 @@ export default function AtlasLuthor() {
       seenBadges,
       lastSeenXp,
       lastSeenRankId,
+      lastSeenSubRank,
+      bonusXp,
+      lastLoginDate,
+      completedQuests,
+      claimedQuestXp,
     });
 
     setStorageFull(!saved);
@@ -2357,6 +2542,11 @@ export default function AtlasLuthor() {
     seenBadges,
     lastSeenXp,
     lastSeenRankId,
+    lastSeenSubRank,
+    bonusXp,
+    lastLoginDate,
+    completedQuests,
+    claimedQuestXp,
   ]);
 
   useEffect(() => {
@@ -2646,6 +2836,7 @@ export default function AtlasLuthor() {
       }));
       setPrToast(name);
       window.setTimeout(() => setPrToast(""), 2600);
+      floatXp(XP_VALUES.pr, "pr");
     }
   };
 
@@ -2661,7 +2852,10 @@ export default function AtlasLuthor() {
 
     if (totalSets > 0 && nextSets >= totalSets) {
       nextChecked[key] = true;
-      if (!wasChecked) recordExerciseCompletion(exercise, key);
+      if (!wasChecked) {
+        recordExerciseCompletion(exercise, key);
+        floatXp(XP_VALUES.exerciseDone, "ex");
+      }
       const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
       setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
       startRestTimer(restSecondsSetting);
@@ -2690,6 +2884,7 @@ export default function AtlasLuthor() {
       const nextIndex = session.exercises.findIndex((_, index) => index > exerciseIndex && !nextChecked[getExerciseKey(activeDay, activeSession, index)]);
       setHighlightedExerciseIndex(nextIndex >= 0 ? nextIndex : exerciseIndex);
       startRestTimer(restSecondsSetting);
+      floatXp(XP_VALUES.exerciseDone, "ex");
     } else {
       setSetProgress(prev => ({ ...prev, [key]: 0 }));
       setHighlightedExerciseIndex(exerciseIndex);
@@ -3251,6 +3446,95 @@ export default function AtlasLuthor() {
     calorieTarget,
   ]);
 
+  const todayKey = getDateKey();
+  const currentWeekSeed = currentWeekKey;
+
+  const todayCounters = useMemo(() => {
+    const today = todayKey;
+    const todayFoodEntries = Object.values(foodLog[today] || {}).reduce(
+      (sum, meal) => sum + (Array.isArray(meal) ? meal.length : 0),
+      0
+    );
+    const todayCardioDone = (cardioLog[today] || []).filter(isCardioCompleted).length;
+    const todayMeditation = Array.isArray(meditationLog[today]) ? meditationLog[today].length : 0;
+    const waterEntry = waterLog[today];
+    const todayWaterHit = waterEntry && Number(waterEntry.glasses || 0) >= Number(waterEntry.goal || 8) ? 1 : 0;
+    const calStatus = calendarLog[today]?.status;
+    const todayCompleted = calStatus === "completed" ? 1 : 0;
+    let todayExercisesDone = 0;
+    const todayDayName = getTodayDayName();
+    (workoutData[todayDayName]?.sessions || []).forEach((s, sessionIndex) => {
+      s.exercises.forEach((_, i) => {
+        if (checked[`${todayDayName}-${sessionIndex}-${i}`]) todayExercisesDone += 1;
+      });
+    });
+    const todayPrs = Object.entries(exerciseNotes).filter(([, note]) => {
+      if (!note?.pr) return false;
+      const ts = note.updatedAt || note.recordedAt || "";
+      return ts.startsWith(today);
+    }).length;
+    const todayWeightLogged = progressLog.some(p => p.date === today && p.type === "manual") ? 1 : 0;
+    return { todayExercisesDone, todayCardioDone, todayMeditation, todayMealEntries: todayFoodEntries, todayWaterHit, todayCompleted, todayPrs, todayWeightLogged };
+  }, [todayKey, foodLog, cardioLog, meditationLog, waterLog, calendarLog, workoutData, checked, exerciseNotes, progressLog]);
+
+  const weekCounters = useMemo(() => {
+    const weekKey = currentWeekSeed;
+    let weekCardioDone = 0;
+    Object.entries(cardioLog).forEach(([date, list]) => {
+      if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
+      weekCardioDone += (list || []).filter(isCardioCompleted).length;
+    });
+    let weekWaterDays = 0;
+    Object.entries(waterLog).forEach(([date, entry]) => {
+      if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
+      if (Number(entry.glasses || 0) >= Number(entry.goal || 8)) weekWaterDays += 1;
+    });
+    let weekFoodDays = 0;
+    Object.entries(foodLog).forEach(([date, day]) => {
+      if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
+      const totals = sumDayMacros(day);
+      if (
+        calorieTarget > 0 &&
+        totals.kcal >= calorieTarget * 0.9 &&
+        totals.kcal <= calorieTarget * 1.1
+      ) {
+        weekFoodDays += 1;
+      }
+    });
+    let weekMeditationCount = 0;
+    Object.entries(meditationLog).forEach(([date, list]) => {
+      if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
+      weekMeditationCount += Array.isArray(list) ? list.length : 0;
+    });
+    let weekTrainingDays = 0;
+    Object.entries(calendarLog).forEach(([date, entry]) => {
+      if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
+      if (entry?.status === "trained" || entry?.status === "completed") weekTrainingDays += 1;
+    });
+    return { weekCardioDone, weekWaterDays, weekFoodDays, weekMeditationCount, weekTrainingDays };
+  }, [currentWeekSeed, cardioLog, waterLog, foodLog, meditationLog, calendarLog, calorieTarget]);
+
+  const todayQuests = useMemo(() => pickQuests(DAILY_QUEST_POOL, 3, todayKey), [todayKey]);
+  const weeklyQuests = useMemo(() => pickQuests(WEEKLY_QUEST_POOL, 3, currentWeekSeed), [currentWeekSeed]);
+
+  const questCtx = useMemo(
+    () => ({
+      ...todayCounters,
+      ...weekCounters,
+      weeklyProgress: weeklyMetrics.weeklyProgress,
+    }),
+    [todayCounters, weekCounters, weeklyMetrics.weeklyProgress]
+  );
+
+  const todayQuestStatus = useMemo(
+    () => todayQuests.map(q => ({ quest: q, ...questProgress(q, questCtx) })),
+    [todayQuests, questCtx]
+  );
+  const weeklyQuestStatus = useMemo(
+    () => weeklyQuests.map(q => ({ quest: q, ...questProgress(q, questCtx) })),
+    [weeklyQuests, questCtx]
+  );
+
   const totalXp = useMemo(
     () =>
       xpBreakdown.exercises +
@@ -3263,11 +3547,13 @@ export default function AtlasLuthor() {
       xpBreakdown.prs +
       xpBreakdown.body +
       xpBreakdown.streaks +
-      xpBreakdown.challenges,
-    [xpBreakdown]
+      xpBreakdown.challenges +
+      bonusXp,
+    [xpBreakdown, bonusXp]
   );
 
   const rankInfo = useMemo(() => rankFor(totalXp), [totalXp]);
+  const subRankInfo = useMemo(() => subRankFor(totalXp), [totalXp]);
 
   const gamificationCtx = useMemo(
     () => ({
@@ -3293,9 +3579,51 @@ export default function AtlasLuthor() {
   );
 
   const earnedBadgeIds = useMemo(
-    () => BADGE_DEFS.filter(def => def.test(gamificationCtx)).map(def => def.id),
+    () => BADGE_TIER_ENTRIES.filter(entry => badgeTierTest(entry, gamificationCtx)).map(entry => entry.id),
     [gamificationCtx]
   );
+
+  // Activity heatmap: XP per date over the last 90 days (rough estimate based on counts).
+  const xpByDate = useMemo(() => {
+    const map = {};
+    const today = new Date();
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+    const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
+    const add = (date, amount) => {
+      if (!date || date < cutoffKey) return;
+      map[date] = (map[date] || 0) + amount;
+    };
+    Object.entries(calendarLog).forEach(([date, entry]) => {
+      if (entry?.status === "completed") add(date, XP_VALUES.dayDone);
+      if (entry?.status === "trained" || entry?.status === "completed") {
+        const exercisesDone = Number(entry?.completed || 0);
+        if (exercisesDone > 0) add(date, exercisesDone * XP_VALUES.exerciseDone);
+      }
+    });
+    Object.entries(cardioLog).forEach(([date, list]) => {
+      const count = (list || []).filter(isCardioCompleted).length;
+      if (count > 0) add(date, count * XP_VALUES.cardioDone);
+    });
+    Object.entries(meditationLog).forEach(([date, list]) => {
+      const count = Array.isArray(list) ? list.length : 0;
+      if (count > 0) add(date, count * XP_VALUES.meditationDone);
+    });
+    Object.entries(waterLog).forEach(([date, entry]) => {
+      const glasses = Number(entry?.glasses || 0);
+      if (glasses > 0) add(date, glasses * XP_VALUES.waterGlass);
+      if (Number(entry?.glasses || 0) >= Number(entry?.goal || 8)) add(date, XP_VALUES.waterGoalDay);
+    });
+    Object.entries(foodLog).forEach(([date, day]) => {
+      let entries = 0;
+      Object.values(day || {}).forEach(meal => {
+        if (Array.isArray(meal)) entries += meal.length;
+      });
+      if (entries > 0) add(date, entries * XP_VALUES.foodEntry);
+    });
+    return map;
+    // We don't include weights or PRs because they're harder to attribute to a single day reliably.
+  }, [calendarLog, cardioLog, meditationLog, waterLog, foodLog]);
 
   const measurementEntries = useMemo(
     () => Object.entries(measurementLog)
@@ -3461,7 +3789,16 @@ export default function AtlasLuthor() {
     setSeenBadges(Array.isArray(data?.seenBadges) ? data.seenBadges : []);
     setLastSeenXp(Number(data?.lastSeenXp) || 0);
     setLastSeenRankId(typeof data?.lastSeenRankId === "string" ? data.lastSeenRankId : "initiate");
+    setLastSeenSubRank(typeof data?.lastSeenSubRank === "string" ? data.lastSeenSubRank : "initiate-I");
+    setBonusXp(Number(data?.bonusXp) || 0);
+    setLastLoginDate(typeof data?.lastLoginDate === "string" ? data.lastLoginDate : "");
+    setCompletedQuests(data?.completedQuests && typeof data.completedQuests === "object" ? data.completedQuests : {});
+    setClaimedQuestXp(Array.isArray(data?.claimedQuestXp) ? data.claimedQuestXp : []);
+    setXpFloats([]);
+    setConfettiActive(false);
     gamificationSeedRef.current = null;
+    questSeedRef.current = null;
+    dailyLoginRef.current = null;
     setActiveDay(getTodayDayName());
     setActiveSession(0);
     setActiveFeaturePage("today");
@@ -3817,6 +4154,7 @@ export default function AtlasLuthor() {
       const list = Array.isArray(prev[date]) ? prev[date] : [];
       return { ...prev, [date]: [entry, ...list] };
     });
+    floatXp(XP_VALUES.meditationDone, "med");
   };
 
   const saveMedReflection = () => {
@@ -3851,10 +4189,16 @@ export default function AtlasLuthor() {
 
   const addWater = (amount = 1) => {
     const date = getDateKey();
+    let didIncrement = false;
     setWaterLog(prev => {
       const current = prev[date] || { glasses: 0, goal: 8 };
-      return { ...prev, [date]: { ...current, glasses: Math.min(Number(current.goal), Number(current.glasses) + amount) } };
+      const next = Math.min(Number(current.goal), Number(current.glasses) + amount);
+      didIncrement = next > Number(current.glasses);
+      return { ...prev, [date]: { ...current, glasses: next } };
     });
+    window.setTimeout(() => {
+      if (didIncrement) floatXp(XP_VALUES.waterGlass, "water");
+    }, 0);
   };
 
   const removeWater = (amount = 1) => {
@@ -3894,6 +4238,7 @@ export default function AtlasLuthor() {
       return { ...prev, [date]: { ...day, [meal]: [...(day[meal] || []), entry] } };
     });
     pushRecentFood({ id: entry.id, name: entry.name, kcal: entry.kcal, protein: entry.protein, carbs: entry.carbs, fat: entry.fat });
+    floatXp(XP_VALUES.foodEntry, "food");
   };
 
   const removeFoodEntry = (date, meal, entryId) => {
@@ -3940,13 +4285,20 @@ export default function AtlasLuthor() {
   };
 
   const toggleCardioCompleted = (date, id) => {
+    let willBeDone = false;
     setCardioLog(prev => {
       const list = prev[date] || [];
-      const next = list.map(item =>
-        item.id === id ? { ...item, completed: !isCardioCompleted(item) } : item
-      );
+      const next = list.map(item => {
+        if (item.id !== id) return item;
+        willBeDone = !isCardioCompleted(item);
+        return { ...item, completed: willBeDone };
+      });
       return { ...prev, [date]: next };
     });
+    // Fire-and-forget after state batched: float XP only if going to done.
+    window.setTimeout(() => {
+      if (willBeDone) floatXp(XP_VALUES.cardioDone, "cardio");
+    }, 0);
   };
 
   const removeCardioSession = (date, id) => {
@@ -4012,6 +4364,122 @@ export default function AtlasLuthor() {
     window.setTimeout(() => setToast(""), 2600);
   };
 
+  const floatXp = (amount, key = "default") => {
+    if (!amount || amount <= 0) return;
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${key}`;
+    setXpFloats(prev => [...prev, { id, amount }]);
+    window.setTimeout(() => {
+      setXpFloats(prev => prev.filter(f => f.id !== id));
+    }, 1400);
+  };
+
+  const playRankUpTone = () => {
+    if (!appSettings.tapFeedback) return;
+    try {
+      const Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) return;
+      const ctx = new Ctor();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      const t0 = ctx.currentTime;
+      osc.frequency.setValueAtTime(440, t0);
+      osc.frequency.linearRampToValueAtTime(660, t0 + 0.09);
+      osc.frequency.linearRampToValueAtTime(880, t0 + 0.18);
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.18, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.4);
+      osc.start(t0);
+      osc.stop(t0 + 0.42);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Daily login bonus: grant +DAILY_LOGIN_XP once per calendar day.
+  useEffect(() => {
+    if (!activeUserId || loadedUserRef.current !== activeUserId) return;
+    if (dailyLoginRef.current === activeUserId) return;
+    dailyLoginRef.current = activeUserId;
+    const today = getDateKey();
+    if (lastLoginDate === today) return;
+    // Only count it as a check-in once we've actually loaded; grant XP.
+    setBonusXp(prev => prev + DAILY_LOGIN_XP);
+    setLastLoginDate(today);
+    const streakDay = Math.max(1, dailyStreak || 1);
+    window.setTimeout(() => {
+      flashToast("🔥 " + text.dailyCheckIn.replace("{xp}", DAILY_LOGIN_XP).replace("{day}", streakDay));
+    }, 600);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUserId, lastLoginDate]);
+
+  // Quest evaluation: when a daily/weekly quest goes from incomplete to
+  // complete, pay its XP (once, via claimedQuestXp) and toast.
+  useEffect(() => {
+    if (!activeUserId || loadedUserRef.current !== activeUserId) return;
+
+    const today = getDateKey();
+    const weekKey = currentWeekKey;
+    const seedKey = `${activeUserId}|${today}|${weekKey}`;
+    const isFirstRun = questSeedRef.current !== seedKey;
+    questSeedRef.current = seedKey;
+
+    const allActive = [
+      ...todayQuestStatus.map(s => ({ ...s, bucket: today })),
+      ...weeklyQuestStatus.map(s => ({ ...s, bucket: weekKey })),
+    ];
+
+    const newlyDone = [];
+    const claimedSet = new Set(claimedQuestXp);
+    const nextCompletedByBucket = {};
+    allActive.forEach(({ quest, done, bucket }) => {
+      if (!done) return;
+      const cid = `${bucket}|${quest.id}`;
+      nextCompletedByBucket[bucket] = nextCompletedByBucket[bucket] || [];
+      nextCompletedByBucket[bucket].push(quest.id);
+      if (!claimedSet.has(cid)) {
+        newlyDone.push({ quest, cid });
+      }
+    });
+
+    if (newlyDone.length === 0 && !isFirstRun) return;
+
+    // Update completedQuests so the visible "✓" sticks
+    setCompletedQuests(prev => {
+      const next = { ...prev };
+      Object.entries(nextCompletedByBucket).forEach(([bucket, ids]) => {
+        next[bucket] = ids;
+      });
+      // Prune buckets that aren't today/this week.
+      Object.keys(next).forEach(k => {
+        if (k !== today && k !== weekKey) delete next[k];
+      });
+      return next;
+    });
+
+    if (newlyDone.length > 0) {
+      if (isFirstRun) {
+        // Seed: don't pay XP, don't toast — just mark as claimed.
+        setClaimedQuestXp(prev => Array.from(new Set([...prev, ...newlyDone.map(x => x.cid)])));
+      } else {
+        let totalXpToAdd = 0;
+        newlyDone.forEach(({ quest }, i) => {
+          totalXpToAdd += quest.xp;
+          const label = language === "es" ? quest.es : quest.en;
+          window.setTimeout(() => {
+            flashToast("✓ " + label + " · +" + quest.xp + " XP");
+            floatXp(quest.xp, "quest");
+          }, i * 700);
+        });
+        setBonusXp(prev => prev + totalXpToAdd);
+        setClaimedQuestXp(prev => Array.from(new Set([...prev, ...newlyDone.map(x => x.cid)])));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUserId, todayQuestStatus, weeklyQuestStatus]);
+
   useEffect(() => {
     if (!activeUserId || loadedUserRef.current !== activeUserId) return;
     if (gamificationSeedRef.current !== activeUserId) {
@@ -4021,6 +4489,7 @@ export default function AtlasLuthor() {
       if (lastSeenXp === 0 && lastSeenRankId === "initiate" && seenBadges.length === 0) {
         setLastSeenXp(totalXp);
         setLastSeenRankId(rankInfo.rank.id);
+        setLastSeenSubRank(subRankInfo.subRankId);
         setSeenBadges(earnedBadgeIds);
       }
       return;
@@ -4034,21 +4503,46 @@ export default function AtlasLuthor() {
     const lastRankIdx = RANKS.findIndex(r => r.id === lastSeenRankId);
     if (currentRankIdx > lastRankIdx) {
       const label = language === "es" ? rankInfo.rank.es : rankInfo.rank.en;
-      flashToast(text.rankUp.replace("{rank}", label));
+      flashToast("🎉 " + text.rankUp.replace("{rank}", label));
       setLastSeenRankId(rankInfo.rank.id);
+      setLastSeenSubRank(subRankInfo.subRankId);
+      setConfettiActive(true);
+      playRankUpTone();
+      window.setTimeout(() => setConfettiActive(false), 2800);
+    } else if (subRankInfo.subRankId !== lastSeenSubRank) {
+      // Sub-tier promotion (e.g., Warrior I → Warrior II)
+      const label = (language === "es" ? rankInfo.rank.es : rankInfo.rank.en) + " " + subRankInfo.tierName;
+      const lastIdx = SUB_TIER_NAMES.indexOf(lastSeenSubRank.split("-")[1] || "I");
+      const currIdx = subRankInfo.tier - 1;
+      const sameRank = lastSeenSubRank.split("-")[0] === rankInfo.rank.id;
+      if (!sameRank || currIdx > lastIdx) {
+        flashToast(text.subRankUp.replace("{rank}", label));
+      }
+      setLastSeenSubRank(subRankInfo.subRankId);
     }
     const newBadges = earnedBadgeIds.filter(id => !seenBadges.includes(id));
     if (newBadges.length > 0) {
       newBadges.forEach((id, i) => {
-        const def = BADGE_DEFS.find(d => d.id === id);
-        if (!def) return;
-        const name = language === "es" ? def.es : def.en;
-        window.setTimeout(() => flashToast("🏅 " + text.badgeUnlocked.replace("{name}", name)), i * 700);
+        const entry = BADGE_TIER_ENTRIES.find(e => e.id === id);
+        if (!entry) return;
+        const baseName = language === "es" ? entry.es : entry.en;
+        const tierLabel = entry.tierName === "bronze" ? text.tierBronze
+          : entry.tierName === "silver" ? text.tierSilver
+          : entry.tierName === "gold" ? text.tierGold
+          : "";
+        const display = tierLabel ? `${entry.emoji} ${baseName} (${tierLabel})` : `${entry.emoji} ${baseName}`;
+        window.setTimeout(() => {
+          flashToast(text.badgeUnlocked.replace("{name}", display));
+          if (entry.xp > 0) {
+            setBonusXp(prev => prev + entry.xp);
+            floatXp(entry.xp, "badge");
+          }
+        }, i * 700);
       });
       setSeenBadges(prev => Array.from(new Set([...prev, ...newBadges])));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUserId, totalXp, rankInfo.rank.id, earnedBadgeIds.join(",")]);
+  }, [activeUserId, totalXp, rankInfo.rank.id, subRankInfo.subRankId, earnedBadgeIds.join(",")]);
 
   const shareWorkoutSummary = async () => {
     const summary = language === "es"
@@ -4194,6 +4688,11 @@ export default function AtlasLuthor() {
         if (Array.isArray(data.seenBadges)) setSeenBadges(data.seenBadges);
         if (typeof data.lastSeenXp === "number") setLastSeenXp(data.lastSeenXp);
         if (typeof data.lastSeenRankId === "string") setLastSeenRankId(data.lastSeenRankId);
+        if (typeof data.lastSeenSubRank === "string") setLastSeenSubRank(data.lastSeenSubRank);
+        if (typeof data.bonusXp === "number") setBonusXp(data.bonusXp);
+        if (typeof data.lastLoginDate === "string") setLastLoginDate(data.lastLoginDate);
+        if (data.completedQuests && typeof data.completedQuests === "object") setCompletedQuests(data.completedQuests);
+        if (Array.isArray(data.claimedQuestXp)) setClaimedQuestXp(data.claimedQuestXp);
         setShowDataTools(false);
       } catch {
         window.alert("That backup file could not be imported.");
@@ -4298,6 +4797,11 @@ export default function AtlasLuthor() {
       if (Array.isArray(data.seenBadges)) setSeenBadges(data.seenBadges);
       if (typeof data.lastSeenXp === "number") setLastSeenXp(data.lastSeenXp);
       if (typeof data.lastSeenRankId === "string") setLastSeenRankId(data.lastSeenRankId);
+      if (typeof data.lastSeenSubRank === "string") setLastSeenSubRank(data.lastSeenSubRank);
+      if (typeof data.bonusXp === "number") setBonusXp(data.bonusXp);
+      if (typeof data.lastLoginDate === "string") setLastLoginDate(data.lastLoginDate);
+      if (data.completedQuests && typeof data.completedQuests === "object") setCompletedQuests(data.completedQuests);
+      if (Array.isArray(data.claimedQuestXp)) setClaimedQuestXp(data.claimedQuestXp);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
     } catch {
       setCloudSettings(prev => ({ ...prev, status: "Download failed" }));
@@ -4762,6 +5266,25 @@ export default function AtlasLuthor() {
         .med-breath-zazen { animation: medBreathZazen 10s ease-in-out infinite; }
         .med-breath-tummo { animation: medBreathTummo 20s ease-in-out infinite; }
 
+        @keyframes xpFloatRise {
+          0% { opacity: 0; transform: translateY(0) scale(0.9); }
+          15% { opacity: 1; transform: translateY(-10px) scale(1.08); }
+          100% { opacity: 0; transform: translateY(-60px) scale(0.95); }
+        }
+        .xp-float { animation: xpFloatRise 1.4s ease-out forwards; }
+
+        @keyframes confettiFall {
+          0% { transform: translateY(-12px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        .confetti-piece { animation: confettiFall 2.6s ease-in forwards; }
+
+        @keyframes rankUpPulse {
+          0%, 100% { box-shadow: 0 0 22px rgba(255,208,96,0.55); }
+          50% { box-shadow: 0 0 44px rgba(255,208,96,0.95); }
+        }
+        .rank-up-pulse { animation: rankUpPulse 1.4s ease-in-out infinite; }
+
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
@@ -5041,6 +5564,54 @@ export default function AtlasLuthor() {
       {toast && (
         <div style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", top: "calc(14px + env(safe-area-inset-top))", zIndex: 60, background: "#90C8FF", color: "#06182B", padding: "11px 18px", borderRadius: 999, fontFamily: "'Orbitron', monospace", fontSize: 11, fontWeight: 900, letterSpacing: 1, boxShadow: "0 10px 34px rgba(0,0,0,0.45)", maxWidth: "90vw", textAlign: "center" }}>
           {toast}
+        </div>
+      )}
+
+      {xpFloats.length > 0 && (
+        <div style={{ position: "fixed", right: "calc(16px + env(safe-area-inset-right))", top: "calc(70px + env(safe-area-inset-top))", zIndex: 70, display: "flex", flexDirection: "column", gap: 6, pointerEvents: "none" }}>
+          {xpFloats.map(f => (
+            <div
+              key={f.id}
+              className="xp-float"
+              style={{
+                background: "rgba(63,185,138,0.92)",
+                color: "#062018",
+                padding: "6px 12px",
+                borderRadius: 999,
+                fontFamily: "'Orbitron', monospace",
+                fontSize: 12,
+                fontWeight: 900,
+                letterSpacing: 1,
+                boxShadow: "0 6px 18px rgba(63,185,138,0.45)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              +{f.amount} XP
+            </div>
+          ))}
+        </div>
+      )}
+
+      {confettiActive && (
+        <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 80, overflow: "hidden" }}>
+          {Array.from({ length: 22 }).map((_, i) => (
+            <span
+              key={i}
+              className="confetti-piece"
+              style={{
+                position: "absolute",
+                left: `${(i * 43) % 100}%`,
+                top: "-12px",
+                width: 8,
+                height: 14,
+                background: CONFETTI_PALETTE[i % CONFETTI_PALETTE.length],
+                borderRadius: 2,
+                transform: `rotate(${i * 23}deg)`,
+                animationDelay: `${(i % 6) * 0.08}s`,
+                animationDuration: `${2.2 + (i % 4) * 0.3}s`,
+              }}
+            />
+          ))}
         </div>
       )}
 
@@ -5575,16 +6146,26 @@ export default function AtlasLuthor() {
                   {text.progressAtlas}
                 </p>
                 <p style={{ fontSize: 10, letterSpacing: 2, color: rankInfo.rank.color, fontFamily: "'Orbitron', monospace" }}>
-                  {(language === "es" ? rankInfo.rank.es : rankInfo.rank.en).toUpperCase()}
+                  {(language === "es" ? rankInfo.rank.es : rankInfo.rank.en).toUpperCase()} {subRankInfo.tierName}
                 </p>
               </div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1 }}>{totalXp}</span>
                 <span style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>{text.xpEarned}</span>
+                {dailyStreak > 0 && (
+                  <span style={{ fontSize: 11, color: "#FFD060", fontFamily: "'Orbitron', monospace", fontWeight: 900, padding: "3px 8px", borderRadius: 999, border: "1px solid rgba(255,208,96,0.4)", background: "rgba(255,208,96,0.08)" }}>
+                    🔥 {dailyStreak}
+                  </span>
+                )}
                 <span style={{ marginLeft: "auto", fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
-                  🏅 {earnedBadgeIds.length}/{BADGE_DEFS.length}
+                  🏅 {earnedBadgeIds.length}/{BADGE_TIER_ENTRIES.length}
                 </span>
               </div>
+              <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginBottom: rankInfo.next ? 8 : 0 }}>
+                {text.questsTodayMini
+                  .replace("{done}", todayQuestStatus.filter(s => s.done).length)
+                  .replace("{total}", todayQuestStatus.length)}
+              </p>
               {rankInfo.next ? (
                 <>
                   <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
@@ -6391,13 +6972,16 @@ export default function AtlasLuthor() {
 
             {activeFeaturePage === "achievements" && (() => {
               const rankLabel = language === "es" ? rankInfo.rank.es : rankInfo.rank.en;
+              const fullRankLabel = `${rankLabel} ${subRankInfo.tierName}`;
               const nextLabel = rankInfo.next ? (language === "es" ? rankInfo.next.es : rankInfo.next.en) : null;
               const earnedSet = new Set(earnedBadgeIds);
-              const sortedBadges = [...BADGE_DEFS].sort((a, b) => {
+              // Sort: earned (newer tier first), then locked.
+              const sortedBadges = [...BADGE_TIER_ENTRIES].sort((a, b) => {
                 const ae = earnedSet.has(a.id) ? 0 : 1;
                 const be = earnedSet.has(b.id) ? 0 : 1;
                 if (ae !== be) return ae - be;
-                return a.category.localeCompare(b.category);
+                if (a.baseId !== b.baseId) return a.category.localeCompare(b.category);
+                return a.threshold - b.threshold;
               });
               const breakdownRows = [
                 { label: text.xpFromExercises, value: xpBreakdown.exercises, color: "#90C8FF" },
@@ -6410,7 +6994,74 @@ export default function AtlasLuthor() {
                 { label: text.xpFromPRs, value: xpBreakdown.prs, color: "#FFD060" },
                 { label: text.xpFromBody, value: xpBreakdown.body, color: "#90C8FF" },
                 { label: text.xpFromStreaks, value: xpBreakdown.streaks, color: "#B8A0FF" },
+                { label: language === "es" ? "Misiones + Bonus" : "Quests + Bonus", value: bonusXp, color: "#FFD060" },
               ].filter(row => row.value > 0);
+
+              // Build heatmap cells: 91 days (13 cols x 7 rows), oldest top-left, newest bottom-right.
+              const heatCells = [];
+              const heatToday = new Date();
+              for (let i = 90; i >= 0; i -= 1) {
+                const d = new Date(heatToday);
+                d.setDate(d.getDate() - i);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                heatCells.push({ key, xp: xpByDate[key] || 0 });
+              }
+              const heatColor = xp => {
+                if (xp <= 0) return isLightMode ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)";
+                if (xp <= 20) return "rgba(63,185,138,0.18)";
+                if (xp <= 50) return "rgba(63,185,138,0.40)";
+                if (xp <= 100) return "rgba(63,185,138,0.65)";
+                return "#3FB98A";
+              };
+
+              const renderQuestList = (statuses, title) => (
+                <div className="home-card">
+                  <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                    {title.toUpperCase()}
+                  </p>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {statuses.map(({ quest, done, value, target }) => (
+                      <div
+                        key={quest.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "10px 12px",
+                          borderRadius: 10,
+                          background: done ? "rgba(63,185,138,0.12)" : (isLightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)"),
+                          border: done ? "1px solid rgba(63,185,138,0.4)" : `1px solid ${isLightMode ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)"}`,
+                        }}
+                      >
+                        <div style={{
+                          width: 24, height: 24, borderRadius: "50%",
+                          border: `2px solid ${done ? "#3FB98A" : (isLightMode ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.22)")}`,
+                          background: done ? "#3FB98A" : "transparent",
+                          color: done ? (isLightMode ? "#FFFFFF" : "#050507") : "transparent",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 13, fontWeight: 900, flexShrink: 0,
+                        }}>
+                          {done ? "✓" : ""}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", color: done ? "#3FB98A" : (isLightMode ? "#101015" : "#FFFFFF") }}>
+                            {language === "es" ? quest.es : quest.en}
+                          </p>
+                          {!done && target > 1 && (
+                            <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'Orbitron', monospace", marginTop: 2 }}>
+                              {Math.min(value, target)} / {target}
+                            </p>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 11, color: "#FFD060", fontFamily: "'Orbitron', monospace", fontWeight: 900, flexShrink: 0 }}>
+                          +{quest.xp} XP
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+
               return (
                 <div className="detail-list">
                   <div className="home-card">
@@ -6423,7 +7074,7 @@ export default function AtlasLuthor() {
                       </p>
                     </div>
                     <p style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: rankInfo.rank.color, lineHeight: 1, marginBottom: 8 }}>
-                      {rankLabel}
+                      {fullRankLabel}
                     </p>
                     {rankInfo.next ? (
                       <>
@@ -6443,7 +7094,7 @@ export default function AtlasLuthor() {
                   <div className="detail-grid">
                     <div className="detail-card">
                       <p className="detail-label">{text.dailyStreakLabel}</p>
-                      <p className="detail-value" style={{ color: "#FFD060" }}>{dailyStreak}</p>
+                      <p className="detail-value" style={{ color: "#FFD060" }}>🔥 {dailyStreak}</p>
                     </div>
                     <div className="detail-card">
                       <p className="detail-label">{text.weeklyStreakLabel}</p>
@@ -6451,7 +7102,7 @@ export default function AtlasLuthor() {
                     </div>
                     <div className="detail-card">
                       <p className="detail-label">{text.earnedBadgesLabel}</p>
-                      <p className="detail-value" style={{ color: "#3FB98A" }}>{earnedBadgeIds.length}<span style={{ fontSize: 11, color: "#8A8F99" }}> / {BADGE_DEFS.length}</span></p>
+                      <p className="detail-value" style={{ color: "#3FB98A" }}>{earnedBadgeIds.length}<span style={{ fontSize: 11, color: "#8A8F99" }}> / {BADGE_TIER_ENTRIES.length}</span></p>
                     </div>
                   </div>
 
@@ -6461,26 +7112,60 @@ export default function AtlasLuthor() {
                     </p>
                   )}
 
+                  {renderQuestList(todayQuestStatus, text.dailyQuests)}
+                  {renderQuestList(weeklyQuestStatus, text.weeklyQuests)}
+
+                  <div className="home-card">
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: "#3FB98A", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                      {text.activityHeatmap}
+                    </p>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(13, 1fr)", gap: 3 }}>
+                      {heatCells.map(cell => (
+                        <div
+                          key={cell.key}
+                          title={`${cell.key} · ${cell.xp} XP`}
+                          style={{
+                            aspectRatio: "1",
+                            borderRadius: 3,
+                            background: heatColor(cell.xp),
+                            boxShadow: cell.xp > 100 ? "0 0 6px rgba(63,185,138,0.6)" : "none",
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, marginTop: 10, fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                      <span>{language === "es" ? "menos" : "less"}</span>
+                      {[0, 15, 35, 75, 120].map(v => (
+                        <div key={v} style={{ width: 12, height: 12, borderRadius: 2, background: heatColor(v) }} />
+                      ))}
+                      <span>{language === "es" ? "más" : "more"}</span>
+                    </div>
+                  </div>
+
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {sortedBadges.map(def => {
-                      const earned = earnedSet.has(def.id);
-                      const name = language === "es" ? def.es : def.en;
-                      const criterion = badgeCriterionLabel(def.id, language);
+                    {sortedBadges.map(entry => {
+                      const earned = earnedSet.has(entry.id);
+                      const name = language === "es" ? entry.es : entry.en;
+                      const criterion = badgeCriterionLabel(entry, language);
+                      const tierLabel = entry.tierName === "bronze" ? text.tierBronze
+                        : entry.tierName === "silver" ? text.tierSilver
+                        : entry.tierName === "gold" ? text.tierGold
+                        : "";
                       return (
                         <div
-                          key={def.id}
+                          key={entry.id}
                           className="home-card"
                           style={{
                             padding: 12,
-                            border: earned ? `1px solid ${def.color}66` : `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"}`,
-                            background: earned ? `${def.color}11` : (isLightMode ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)"),
+                            border: earned ? `1px solid ${entry.tierColor}88` : `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"}`,
+                            background: earned ? `${entry.tierColor}1A` : (isLightMode ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)"),
                             opacity: earned ? 1 : 0.7,
                           }}
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                            <span style={{ fontSize: 14 }}>{earned ? "🏅" : "🔒"}</span>
-                            <p style={{ fontSize: 13, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: earned ? def.color : (isLightMode ? "#5A6270" : "#AAAAAA") }}>
-                              {name}
+                            <span style={{ fontSize: 16 }}>{earned ? entry.emoji : "🔒"}</span>
+                            <p style={{ fontSize: 13, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: earned ? entry.tierColor : (isLightMode ? "#5A6270" : "#AAAAAA") }}>
+                              {name}{tierLabel ? ` · ${tierLabel}` : ""}
                             </p>
                           </div>
                           <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>
@@ -8811,10 +9496,40 @@ export default function AtlasLuthor() {
 
             <div className="settings-grid">
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <div style={{ width: 66, height: 66, borderRadius: 999, overflow: "hidden", border: "1.5px solid #2A2A34", background: "#101015", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {appSettings.avatar
-                    ? <img src={appSettings.avatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 24, color: isLightMode ? "#7A8090" : "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
+                <div
+                  title={`${language === "es" ? rankInfo.rank.es : rankInfo.rank.en} ${subRankInfo.tierName}`}
+                  style={{
+                    position: "relative",
+                    width: 76, height: 76,
+                    borderRadius: "50%",
+                    padding: 4,
+                    background: `conic-gradient(${rankInfo.rank.color} ${rankInfo.progressPct}%, ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.10)"} 0)`,
+                    boxShadow: `0 0 14px ${rankInfo.rank.color}44`,
+                    flexShrink: 0,
+                  }}
+                >
+                  <div style={{ width: "100%", height: "100%", borderRadius: 999, overflow: "hidden", border: `1.5px solid ${rankInfo.rank.color}33`, background: "#101015", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {appSettings.avatar
+                      ? <img src={appSettings.avatar} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : <span style={{ fontFamily: "'Orbitron', monospace", fontWeight: 900, fontSize: 24, color: isLightMode ? "#7A8090" : "#888" }}>{userName.slice(0, 1).toUpperCase()}</span>}
+                  </div>
+                  <span style={{
+                    position: "absolute",
+                    bottom: -3,
+                    right: -3,
+                    background: rankInfo.rank.color,
+                    color: "#050507",
+                    padding: "2px 7px",
+                    borderRadius: 999,
+                    fontSize: 9,
+                    fontWeight: 900,
+                    fontFamily: "'Orbitron', monospace",
+                    letterSpacing: 1,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                    border: "1.5px solid #101015",
+                  }}>
+                    {subRankInfo.tierName}
+                  </span>
                 </div>
                 <div style={{ display: "grid", gap: 8, flex: 1, minWidth: 0 }}>
                   <label className="dark-btn" style={{ textAlign: "center" }}>
