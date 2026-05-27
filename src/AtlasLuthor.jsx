@@ -402,6 +402,120 @@ function isExerciseOptional(exercises, exerciseIndex, isCheckedFn) {
   });
   return groupDone >= PER_MUSCLE_REQUIRED;
 }
+
+const isCardioCompleted = item => item?.completed !== false;
+
+const XP_VALUES = {
+  exerciseDone: 5,
+  sessionDone: 25,
+  dayDone: 60,
+  cardioDone: 15,
+  meditationDone: 10,
+  waterGlass: 1,
+  waterGoalDay: 10,
+  foodEntry: 1,
+  foodGoalDay: 8,
+  pr: 50,
+  photoAdded: 5,
+  measurementLogged: 4,
+  challengeDone: 75,
+  progressLogged: 8,
+  weeklyStreakWeek: 30,
+};
+
+const RANKS = [
+  { id: "initiate",   min: 0,     es: "Iniciado",  en: "Initiate",   color: "#8A8F99" },
+  { id: "apprentice", min: 100,   es: "Aprendiz",  en: "Apprentice", color: "#90C8FF" },
+  { id: "warrior",    min: 300,   es: "Guerrero",  en: "Warrior",    color: "#3FB98A" },
+  { id: "veteran",    min: 700,   es: "Veterano",  en: "Veteran",    color: "#B8A0FF" },
+  { id: "elite",      min: 1500,  es: "Élite",     en: "Elite",      color: "#FF9860" },
+  { id: "master",     min: 3000,  es: "Maestro",   en: "Master",     color: "#FFD060" },
+  { id: "atlas",      min: 6000,  es: "Atlas",     en: "Atlas",      color: "#FFFFFF" },
+  { id: "luthor",     min: 10000, es: "Luthor",    en: "Luthor",     color: "#E5604D" },
+];
+
+function rankFor(xp) {
+  const total = Math.max(0, Math.floor(Number(xp) || 0));
+  let idx = 0;
+  for (let i = 0; i < RANKS.length; i += 1) {
+    if (total >= RANKS[i].min) idx = i;
+  }
+  const rank = RANKS[idx];
+  const next = RANKS[idx + 1] || null;
+  const xpIntoRank = total - rank.min;
+  const xpToNext = next ? next.min - rank.min : 0;
+  const progressPct = next && xpToNext > 0 ? Math.min(100, Math.round((xpIntoRank / xpToNext) * 100)) : 100;
+  return { rank, next, xpIntoRank, xpToNext, progressPct };
+}
+
+const BADGE_DEFS = [
+  { id: "first-step",       es: "Primer Paso",            en: "First Step",        category: "protocol",  color: "#8A8F99", test: ctx => ctx.checkedCount >= 1 },
+  { id: "protocol-clear",   es: "Protocolo Completo",     en: "Protocol Clear",    category: "protocol",  color: "#FFD060", test: ctx => ctx.weeklyProgress >= 100 },
+  { id: "session-hunter",   es: "Cazador de Sesiones",    en: "Session Hunter",    category: "protocol",  color: "#FFD060", test: ctx => ctx.completedSessions >= ctx.weeklySessionsGoal },
+  { id: "daily-grind",      es: "Constancia",             en: "Daily Grind",       category: "streak",    color: "#FFD060", test: ctx => ctx.dailyStreak >= 7 },
+  { id: "week-warrior",     es: "Guerrero Semanal",       en: "Week Warrior",      category: "streak",    color: "#B8A0FF", test: ctx => ctx.weeklyStreak >= 2 },
+  { id: "iron-month",       es: "Mes de Hierro",          en: "Iron Month",        category: "streak",    color: "#B8A0FF", test: ctx => ctx.weeklyStreak >= 4 },
+  { id: "cardio-rookie",    es: "Cardio Rookie",          en: "Cardio Rookie",     category: "cardio",    color: "#FF9860", test: ctx => ctx.cardioCompleted >= 1 },
+  { id: "cardio-marathon",  es: "Maratón",                en: "Marathoner",        category: "cardio",    color: "#FF9860", test: ctx => ctx.cardioCompleted >= 10 },
+  { id: "hydrated",         es: "Hidratado",              en: "Hydrated",          category: "nutrition", color: "#90C8FF", test: ctx => ctx.waterGoalDays >= 7 },
+  { id: "nutrition-master", es: "Maestro Nutrición",      en: "Nutrition Master",  category: "nutrition", color: "#3FB98A", test: ctx => ctx.foodGoalDays >= 7 },
+  { id: "mind-clear",       es: "Mente Clara",            en: "Mind Clear",        category: "mind",      color: "#B8A0FF", test: ctx => ctx.meditationStreak >= 7 },
+  { id: "meditation-300",   es: "5h Zen",                 en: "5h Zen",            category: "mind",      color: "#B8A0FF", test: ctx => ctx.meditationMinutes >= 300 },
+  { id: "first-pr",         es: "Primer Récord",          en: "First PR",          category: "pr",        color: "#FFD060", test: ctx => ctx.prCount >= 1 },
+  { id: "pr-collector",     es: "Coleccionista PR",       en: "PR Collector",      category: "pr",        color: "#FFD060", test: ctx => ctx.prCount >= 5 },
+  { id: "pr-legend",        es: "Leyenda PR",             en: "PR Legend",         category: "pr",        color: "#FFD060", test: ctx => ctx.prCount >= 15 },
+  { id: "progress-logged",  es: "Progreso Registrado",    en: "Progress Logged",   category: "body",      color: "#90C8FF", test: ctx => ctx.manualProgressCount >= 1 },
+  { id: "body-tracker",     es: "Rastreador Corporal",    en: "Body Tracker",      category: "body",      color: "#3FB98A", test: ctx => ctx.measurementCount >= 4 },
+  { id: "photo-journey",    es: "Diario Visual",          en: "Photo Journey",     category: "body",      color: "#90C8FF", test: ctx => ctx.photoCount >= 6 },
+  { id: "rank-elite",       es: "Élite",                  en: "Elite",             category: "rank",      color: "#FF9860", test: ctx => ctx.totalXp >= 1500 },
+  { id: "atlas-luthor",     es: "Atlas Luthor",           en: "Atlas Luthor",      category: "rank",      color: "#E5604D", test: ctx => ctx.totalXp >= 10000 },
+];
+
+function badgeCriterionLabel(badgeId, language) {
+  const es = language === "es";
+  const map = {
+    "first-step": es ? "Marca tu primer ejercicio." : "Mark your first exercise.",
+    "protocol-clear": es ? "Llega a 100% del protocolo semanal." : "Reach 100% weekly protocol.",
+    "session-hunter": es ? "Completa tus sesiones semanales." : "Complete your weekly sessions.",
+    "daily-grind": es ? "7 días seguidos con al menos un entreno." : "7 days in a row with at least one workout.",
+    "week-warrior": es ? "Racha de 2 semanas completas." : "2-week streak.",
+    "iron-month": es ? "Racha de 4 semanas completas." : "4-week streak.",
+    "cardio-rookie": es ? "Completa 1 sesión de cardio." : "Complete 1 cardio session.",
+    "cardio-marathon": es ? "Completa 10 sesiones de cardio." : "Complete 10 cardio sessions.",
+    "hydrated": es ? "Cumple tu meta de agua 7 días." : "Hit water goal on 7 days.",
+    "nutrition-master": es ? "7 días dentro de tu meta de kcal." : "7 days within kcal target.",
+    "mind-clear": es ? "Racha de meditación de 7 días." : "7-day meditation streak.",
+    "meditation-300": es ? "5 horas totales de meditación." : "5 total hours of meditation.",
+    "first-pr": es ? "Logra tu primer récord personal." : "Hit your first PR.",
+    "pr-collector": es ? "Acumula 5 récords personales." : "Hit 5 PRs.",
+    "pr-legend": es ? "Acumula 15 récords personales." : "Hit 15 PRs.",
+    "progress-logged": es ? "Registra peso manualmente." : "Log weight manually.",
+    "body-tracker": es ? "Registra 4 mediciones corporales." : "Log 4 body measurements.",
+    "photo-journey": es ? "Sube 6 fotos de progreso." : "Upload 6 progress photos.",
+    "rank-elite": es ? "Alcanza el rango Élite (1500 XP)." : "Reach Elite rank (1500 XP).",
+    "atlas-luthor": es ? "Alcanza el rango máximo Luthor (10000 XP)." : "Reach max Luthor rank (10000 XP).",
+  };
+  return map[badgeId] || "";
+}
+
+function deriveDailyStreak(calendarLog) {
+  let streak = 0;
+  const d = new Date();
+  for (let i = 0; i < 365; i += 1) {
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const entry = calendarLog[key];
+    const status = entry?.status;
+    if (status === "completed" || status === "trained") {
+      streak += 1;
+    } else if (i === 0 && (!entry || status === "planned")) {
+      // Today not yet logged — don't break the streak; just don't add.
+    } else {
+      break;
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
 const SET_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map(String);
 const REP_OPTIONS = [4, 5, 6, 8, 10, 12, 15, 20, "3x3", "AMRAP"].map(String);
 const RPE_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -949,6 +1063,38 @@ const UI_TEXT = {
     manualSave: "Manual save",
     autoSnapshot: "Auto snapshot",
     badgesLabel: "BADGES",
+    achievements: "Achievements",
+    achievementsLabel: "Achievements",
+    progressAtlas: "ATLAS PROGRESS",
+    rank: "Rank",
+    nextRank: "Next rank",
+    maxRank: "Max rank",
+    xpEarned: "XP",
+    xpGained: "+{xp} XP",
+    rankUp: "Rank up: {rank}",
+    badgeUnlocked: "Unlocked: {name}",
+    viewAchievements: "View achievements",
+    lockedBadges: "Locked",
+    earnedBadgesLabel: "Earned",
+    criteria: "Criteria",
+    dailyStreakLabel: "Daily streak",
+    weeklyStreakLabel: "Weekly streak",
+    cardioPending: "PENDING",
+    markDone: "Mark done",
+    markPending: "Mark pending",
+    xpStartCta: "Start your first session to earn XP.",
+    xpBreakdown: "XP breakdown",
+    xpFromExercises: "Exercises",
+    xpFromSessions: "Sessions",
+    xpFromDays: "Days",
+    xpFromCardio: "Cardio",
+    xpFromMeditation: "Meditation",
+    xpFromNutrition: "Nutrition",
+    xpFromWater: "Water",
+    xpFromPRs: "PRs",
+    xpFromBody: "Body tracking",
+    xpFromStreaks: "Streaks",
+    featDescAchievements: "Your XP, current rank, daily and weekly streaks, and all unlockable badges.",
     photosLabel: "PHOTOS",
     albumsLabel: "ALBUMS",
     addPhotoLabel: "ADD PHOTO",
@@ -1290,6 +1436,38 @@ const UI_TEXT = {
     manualSave: "Guardado manual",
     autoSnapshot: "Captura automática",
     badgesLabel: "INSIGNIAS",
+    achievements: "Logros",
+    achievementsLabel: "Logros",
+    progressAtlas: "PROGRESO ATLAS",
+    rank: "Rango",
+    nextRank: "Siguiente rango",
+    maxRank: "Rango máximo",
+    xpEarned: "XP",
+    xpGained: "+{xp} XP",
+    rankUp: "¡Subiste a {rank}!",
+    badgeUnlocked: "Desbloqueado: {name}",
+    viewAchievements: "Ver logros",
+    lockedBadges: "Bloqueados",
+    earnedBadgesLabel: "Conseguidos",
+    criteria: "Criterio",
+    dailyStreakLabel: "Racha diaria",
+    weeklyStreakLabel: "Racha semanal",
+    cardioPending: "PENDIENTE",
+    markDone: "Marcar hecho",
+    markPending: "Marcar pendiente",
+    xpStartCta: "Inicia tu primera sesión para ganar XP.",
+    xpBreakdown: "Desglose de XP",
+    xpFromExercises: "Ejercicios",
+    xpFromSessions: "Sesiones",
+    xpFromDays: "Días",
+    xpFromCardio: "Cardio",
+    xpFromMeditation: "Meditación",
+    xpFromNutrition: "Nutrición",
+    xpFromWater: "Agua",
+    xpFromPRs: "PRs",
+    xpFromBody: "Mediciones",
+    xpFromStreaks: "Rachas",
+    featDescAchievements: "Tu XP, rango actual, rachas diarias y semanales, y todas las insignias por desbloquear.",
     photosLabel: "FOTOS",
     albumsLabel: "ÁLBUMES",
     addPhotoLabel: "AGREGAR FOTO",
@@ -2038,6 +2216,10 @@ export default function AtlasLuthor() {
   const [exercisePerformance, setExercisePerformance] = useState({});
   const [challenges, setChallenges] = useState([]);
   const [meditationLog, setMeditationLog] = useState({});
+  const [seenBadges, setSeenBadges] = useState([]);
+  const [lastSeenXp, setLastSeenXp] = useState(0);
+  const [lastSeenRankId, setLastSeenRankId] = useState("initiate");
+  const gamificationSeedRef = useRef(null);
   const [medTimer, setMedTimer] = useState({
     running: false,
     practice: "pranayama",
@@ -2140,6 +2322,9 @@ export default function AtlasLuthor() {
       exercisePerformance,
       challenges,
       meditationLog,
+      seenBadges,
+      lastSeenXp,
+      lastSeenRankId,
     });
 
     setStorageFull(!saved);
@@ -2169,6 +2354,9 @@ export default function AtlasLuthor() {
     exercisePerformance,
     challenges,
     meditationLog,
+    seenBadges,
+    lastSeenXp,
+    lastSeenRankId,
   ]);
 
   useEffect(() => {
@@ -2828,6 +3016,7 @@ export default function AtlasLuthor() {
         (deloadWarning ? -10 : 5)
     )
   );
+
   const quickExerciseIndex = highlightedExerciseIndex >= 0 ? highlightedExerciseIndex : 0;
   const quickExercise = session.exercises[quickExerciseIndex] || session.exercises[0];
   const quickExerciseKey = quickExercise ? getExerciseKey(activeDay, activeSession, quickExerciseIndex) : "";
@@ -2871,11 +3060,13 @@ export default function AtlasLuthor() {
     ? { today:"Hoy", body:"Cuerpo", score:"Puntaje", calendar:"Calendario", prs:"Récords",
         fatigue:"Fatiga", goals:"Metas", progress:"Progreso", badges:"Insignias",
         photos:"Fotos", metrics:"Métricas", week:"Semana", water:"Agua", coach:"Coach",
-        nutrition:"Nutrición", cardio:"Cardio", challenges:"Retos", meditation:"Meditación" }
+        nutrition:"Nutrición", cardio:"Cardio", challenges:"Retos", meditation:"Meditación",
+        achievements:"Logros" }
     : { today:"Today", body:"Body", score:"Score", calendar:"Calendar", prs:"PRs",
         fatigue:"Fatigue", goals:"Goals", progress:"Progress", badges:"Badges",
         photos:"Photos", metrics:"Metrics", week:"Week", water:"Water", coach:"Coach",
-        nutrition:"Nutrition", cardio:"Cardio", challenges:"Challenges", meditation:"Meditation" };
+        nutrition:"Nutrition", cardio:"Cardio", challenges:"Challenges", meditation:"Meditation",
+        achievements:"Achievements" };
   const featurePages = [
     { id: "today", title: text.todayCommand, label: featurePageLabels.today, accent: themeFor(weeklyMetrics.todayType).accent },
     { id: "body", title: text.bodyStatus, label: featurePageLabels.body, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
@@ -2889,6 +3080,7 @@ export default function AtlasLuthor() {
     { id: "challenges", title: text.challenges, label: featurePageLabels.challenges, accent: "#B8A0FF" },
     { id: "progress", title: text.progressMemory, label: featurePageLabels.progress, accent: "#90C8FF" },
     { id: "badges", title: text.streakBadges, label: featurePageLabels.badges, accent: "#B8A0FF" },
+    { id: "achievements", title: text.achievements, label: featurePageLabels.achievements, accent: "#FFD060" },
     { id: "photos", title: text.progressPhotos, label: featurePageLabels.photos, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "metrics", title: text.weeklyMetrics, label: featurePageLabels.metrics, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "week", title: text.weekPlan, label: featurePageLabels.week, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
@@ -2935,6 +3127,7 @@ export default function AtlasLuthor() {
     Object.entries(cardioLog).forEach(([date, list]) => {
       if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
       (list || []).forEach(item => {
+        if (!isCardioCompleted(item)) return;
         totals.sessions += 1;
         totals.minutes += Number(item.durationMin) || 0;
         totals.distance += Number(item.distance) || 0;
@@ -2943,6 +3136,167 @@ export default function AtlasLuthor() {
     });
     return totals;
   }, [cardioLog]);
+
+  const dailyStreak = useMemo(() => deriveDailyStreak(calendarLog), [calendarLog]);
+
+  const xpBreakdown = useMemo(() => {
+    const checkedCount = Object.values(checked).filter(Boolean).length;
+    let sessionsDoneAll = 0;
+    days.forEach(dayName => {
+      workoutData[dayName].sessions.forEach((currentSession, sessionIndex) => {
+        const isChecked = i => !!checked[`${dayName}-${sessionIndex}-${i}`];
+        const { total, done } = sessionEffectiveCount(currentSession.exercises, isChecked);
+        if (total > 0 && done >= total) sessionsDoneAll += 1;
+      });
+    });
+    const daysDone = Object.values(calendarLog).filter(e => e?.status === "completed").length;
+    const cardioCompleted = Object.values(cardioLog).reduce(
+      (sum, list) => sum + (list || []).filter(isCardioCompleted).length,
+      0
+    );
+    const meditationCount = Object.values(meditationLog).reduce(
+      (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
+      0
+    );
+    const meditationMinutes = Object.values(meditationLog).reduce((sum, list) => {
+      if (!Array.isArray(list)) return sum;
+      return sum + list.reduce((s, item) => s + (Number(item.minutes) || 0), 0);
+    }, 0);
+    let waterGlassesAll = 0;
+    let waterGoalDays = 0;
+    Object.values(waterLog).forEach(entry => {
+      const glasses = Number(entry?.glasses || 0);
+      const goal = Number(entry?.goal || 8);
+      waterGlassesAll += glasses;
+      if (goal > 0 && glasses >= goal) waterGoalDays += 1;
+    });
+    let foodEntriesCount = 0;
+    let foodGoalDays = 0;
+    Object.values(foodLog).forEach(day => {
+      const totals = sumDayMacros(day);
+      Object.values(day || {}).forEach(meal => {
+        if (Array.isArray(meal)) foodEntriesCount += meal.length;
+      });
+      if (
+        calorieTarget > 0 &&
+        totals.kcal >= calorieTarget * 0.9 &&
+        totals.kcal <= calorieTarget * 1.1
+      ) {
+        foodGoalDays += 1;
+      }
+    });
+    const prCount = prEntries.length;
+    const photoCount = progressPhotos.length;
+    const measurementCount = Object.keys(measurementLog).length;
+    const challengesDone = challenges.filter(ch => {
+      const inRange = date => date >= ch.startDate && date <= ch.endDate;
+      let progress = 0;
+      if (ch.metric === "water") {
+        progress = Object.entries(waterLog).filter(([date, entry]) =>
+          inRange(date) && Number(entry.glasses || 0) >= Number(entry.goal || 8)).length;
+      } else if (ch.metric === "cardio") {
+        progress = Object.entries(cardioLog).reduce((sum, [date, list]) =>
+          inRange(date) ? sum + (list?.length || 0) : sum, 0);
+      } else {
+        progress = Object.entries(calendarLog).filter(([date, entry]) =>
+          inRange(date) && (entry.status === "completed" || entry.status === "trained")).length;
+      }
+      return progress >= Number(ch.target || 0);
+    }).length;
+    const manualProgressCount = progressLog.filter(p => p.type === "manual").length;
+
+    return {
+      exercises: checkedCount * XP_VALUES.exerciseDone,
+      sessions: sessionsDoneAll * XP_VALUES.sessionDone,
+      days: daysDone * XP_VALUES.dayDone,
+      cardio: cardioCompleted * XP_VALUES.cardioDone,
+      meditation: meditationCount * XP_VALUES.meditationDone,
+      water: waterGlassesAll * XP_VALUES.waterGlass + waterGoalDays * XP_VALUES.waterGoalDay,
+      nutrition: foodEntriesCount * XP_VALUES.foodEntry + foodGoalDays * XP_VALUES.foodGoalDay,
+      prs: prCount * XP_VALUES.pr,
+      body:
+        photoCount * XP_VALUES.photoAdded +
+        measurementCount * XP_VALUES.measurementLogged +
+        manualProgressCount * XP_VALUES.progressLogged,
+      streaks: weeklyStreak * XP_VALUES.weeklyStreakWeek,
+      challenges: challengesDone * XP_VALUES.challengeDone,
+      counters: {
+        checkedCount,
+        cardioCompleted,
+        meditationMinutes,
+        waterGoalDays,
+        foodGoalDays,
+        prCount,
+        photoCount,
+        measurementCount,
+        manualProgressCount,
+        sessionsDoneAll,
+        daysDone,
+      },
+    };
+  }, [
+    checked,
+    workoutData,
+    calendarLog,
+    cardioLog,
+    meditationLog,
+    waterLog,
+    foodLog,
+    progressLog,
+    progressPhotos,
+    measurementLog,
+    challenges,
+    prEntries,
+    weeklyStreak,
+    calorieTarget,
+  ]);
+
+  const totalXp = useMemo(
+    () =>
+      xpBreakdown.exercises +
+      xpBreakdown.sessions +
+      xpBreakdown.days +
+      xpBreakdown.cardio +
+      xpBreakdown.meditation +
+      xpBreakdown.water +
+      xpBreakdown.nutrition +
+      xpBreakdown.prs +
+      xpBreakdown.body +
+      xpBreakdown.streaks +
+      xpBreakdown.challenges,
+    [xpBreakdown]
+  );
+
+  const rankInfo = useMemo(() => rankFor(totalXp), [totalXp]);
+
+  const gamificationCtx = useMemo(
+    () => ({
+      ...xpBreakdown.counters,
+      meditationStreak: meditationStats.streak,
+      weeklyProgress: weeklyMetrics.weeklyProgress,
+      completedSessions: weeklyMetrics.completedSessions,
+      weeklySessionsGoal,
+      weeklyStreak,
+      dailyStreak,
+      totalXp,
+    }),
+    [
+      xpBreakdown.counters,
+      meditationStats.streak,
+      weeklyMetrics.weeklyProgress,
+      weeklyMetrics.completedSessions,
+      weeklySessionsGoal,
+      weeklyStreak,
+      dailyStreak,
+      totalXp,
+    ]
+  );
+
+  const earnedBadgeIds = useMemo(
+    () => BADGE_DEFS.filter(def => def.test(gamificationCtx)).map(def => def.id),
+    [gamificationCtx]
+  );
+
   const measurementEntries = useMemo(
     () => Object.entries(measurementLog)
       .map(([date, values]) => ({ date, ...values }))
@@ -3104,6 +3458,10 @@ export default function AtlasLuthor() {
     setExercisePerformance(data?.exercisePerformance || {});
     setChallenges(Array.isArray(data?.challenges) ? data.challenges : []);
     setMeditationLog(data?.meditationLog && typeof data.meditationLog === "object" ? data.meditationLog : {});
+    setSeenBadges(Array.isArray(data?.seenBadges) ? data.seenBadges : []);
+    setLastSeenXp(Number(data?.lastSeenXp) || 0);
+    setLastSeenRankId(typeof data?.lastSeenRankId === "string" ? data.lastSeenRankId : "initiate");
+    gamificationSeedRef.current = null;
     setActiveDay(getTodayDayName());
     setActiveSession(0);
     setActiveFeaturePage("today");
@@ -3575,9 +3933,20 @@ export default function AtlasLuthor() {
       distance: distanceInputToMiles(cardioDraft.distance, unitSystem),
       calories: estimateCardioCalories(cardioDraft.type, durationMin, profile.currentWeight),
       note: cardioDraft.note || "",
+      completed: true,
     };
     setCardioLog(prev => ({ ...prev, [date]: [entry, ...(prev[date] || [])] }));
     setCardioDraft({ type: cardioDraft.type, durationMin: "", distance: "", note: "" });
+  };
+
+  const toggleCardioCompleted = (date, id) => {
+    setCardioLog(prev => {
+      const list = prev[date] || [];
+      const next = list.map(item =>
+        item.id === id ? { ...item, completed: !isCardioCompleted(item) } : item
+      );
+      return { ...prev, [date]: next };
+    });
   };
 
   const removeCardioSession = (date, id) => {
@@ -3642,6 +4011,44 @@ export default function AtlasLuthor() {
     setToast(message);
     window.setTimeout(() => setToast(""), 2600);
   };
+
+  useEffect(() => {
+    if (!activeUserId || loadedUserRef.current !== activeUserId) return;
+    if (gamificationSeedRef.current !== activeUserId) {
+      // First effect run for this account: seed snapshots from the current
+      // derived state so legacy data doesn't trigger a toast storm.
+      gamificationSeedRef.current = activeUserId;
+      if (lastSeenXp === 0 && lastSeenRankId === "initiate" && seenBadges.length === 0) {
+        setLastSeenXp(totalXp);
+        setLastSeenRankId(rankInfo.rank.id);
+        setSeenBadges(earnedBadgeIds);
+      }
+      return;
+    }
+    const delta = totalXp - lastSeenXp;
+    if (delta >= 50) {
+      flashToast(text.xpGained.replace("{xp}", delta));
+      setLastSeenXp(totalXp);
+    }
+    const currentRankIdx = RANKS.findIndex(r => r.id === rankInfo.rank.id);
+    const lastRankIdx = RANKS.findIndex(r => r.id === lastSeenRankId);
+    if (currentRankIdx > lastRankIdx) {
+      const label = language === "es" ? rankInfo.rank.es : rankInfo.rank.en;
+      flashToast(text.rankUp.replace("{rank}", label));
+      setLastSeenRankId(rankInfo.rank.id);
+    }
+    const newBadges = earnedBadgeIds.filter(id => !seenBadges.includes(id));
+    if (newBadges.length > 0) {
+      newBadges.forEach((id, i) => {
+        const def = BADGE_DEFS.find(d => d.id === id);
+        if (!def) return;
+        const name = language === "es" ? def.es : def.en;
+        window.setTimeout(() => flashToast("🏅 " + text.badgeUnlocked.replace("{name}", name)), i * 700);
+      });
+      setSeenBadges(prev => Array.from(new Set([...prev, ...newBadges])));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeUserId, totalXp, rankInfo.rank.id, earnedBadgeIds.join(",")]);
 
   const shareWorkoutSummary = async () => {
     const summary = language === "es"
@@ -3784,6 +4191,9 @@ export default function AtlasLuthor() {
         if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
         if (Array.isArray(data.challenges)) setChallenges(data.challenges);
         if (data.meditationLog && typeof data.meditationLog === "object") setMeditationLog(data.meditationLog);
+        if (Array.isArray(data.seenBadges)) setSeenBadges(data.seenBadges);
+        if (typeof data.lastSeenXp === "number") setLastSeenXp(data.lastSeenXp);
+        if (typeof data.lastSeenRankId === "string") setLastSeenRankId(data.lastSeenRankId);
         setShowDataTools(false);
       } catch {
         window.alert("That backup file could not be imported.");
@@ -3885,6 +4295,9 @@ export default function AtlasLuthor() {
       if (data.exercisePerformance) setExercisePerformance(data.exercisePerformance);
       if (Array.isArray(data.challenges)) setChallenges(data.challenges);
       if (data.meditationLog && typeof data.meditationLog === "object") setMeditationLog(data.meditationLog);
+      if (Array.isArray(data.seenBadges)) setSeenBadges(data.seenBadges);
+      if (typeof data.lastSeenXp === "number") setLastSeenXp(data.lastSeenXp);
+      if (typeof data.lastSeenRankId === "string") setLastSeenRankId(data.lastSeenRankId);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
     } catch {
       setCloudSettings(prev => ({ ...prev, status: "Download failed" }));
@@ -5144,6 +5557,48 @@ export default function AtlasLuthor() {
               </div>
             </div>
 
+            <div
+              className="home-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => setActiveFeaturePage("achievements")}
+              onKeyDown={event => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setActiveFeaturePage("achievements");
+                }
+              }}
+              style={{ marginBottom: 14, cursor: "pointer" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+                <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                  {text.progressAtlas}
+                </p>
+                <p style={{ fontSize: 10, letterSpacing: 2, color: rankInfo.rank.color, fontFamily: "'Orbitron', monospace" }}>
+                  {(language === "es" ? rankInfo.rank.es : rankInfo.rank.en).toUpperCase()}
+                </p>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1 }}>{totalXp}</span>
+                <span style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>{text.xpEarned}</span>
+                <span style={{ marginLeft: "auto", fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
+                  🏅 {earnedBadgeIds.length}/{BADGE_DEFS.length}
+                </span>
+              </div>
+              {rankInfo.next ? (
+                <>
+                  <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${rankInfo.progressPct}%`, background: rankInfo.rank.color, borderRadius: 4, transition: "width 0.4s ease" }} />
+                  </div>
+                  <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6 }}>
+                    {rankInfo.xpToNext - rankInfo.xpIntoRank} XP → {language === "es" ? rankInfo.next.es : rankInfo.next.en}
+                  </p>
+                </>
+              ) : (
+                <p style={{ fontSize: 11, color: rankInfo.rank.color, fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>{text.maxRank} ✓</p>
+              )}
+            </div>
+
             <div className="home-card" style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
                 {text.monthCalendar.toUpperCase()}
@@ -5515,6 +5970,7 @@ export default function AtlasLuthor() {
                 {activeFeaturePage === "goals" && text.featDescGoals}
                 {activeFeaturePage === "progress" && text.featDescProgress}
                 {activeFeaturePage === "badges" && text.featDescBadges}
+                {activeFeaturePage === "achievements" && text.featDescAchievements}
                 {activeFeaturePage === "photos" && text.featDescPhotos}
                 {activeFeaturePage === "metrics" && text.featDescMetrics}
                 {activeFeaturePage === "week" && text.featDescWeek}
@@ -5927,8 +6383,132 @@ export default function AtlasLuthor() {
                     </span>
                   ))}
                 </div>
+                <button className="dark-btn" onClick={() => setActiveFeaturePage("achievements")}>
+                  {text.viewAchievements} →
+                </button>
               </div>
             )}
+
+            {activeFeaturePage === "achievements" && (() => {
+              const rankLabel = language === "es" ? rankInfo.rank.es : rankInfo.rank.en;
+              const nextLabel = rankInfo.next ? (language === "es" ? rankInfo.next.es : rankInfo.next.en) : null;
+              const earnedSet = new Set(earnedBadgeIds);
+              const sortedBadges = [...BADGE_DEFS].sort((a, b) => {
+                const ae = earnedSet.has(a.id) ? 0 : 1;
+                const be = earnedSet.has(b.id) ? 0 : 1;
+                if (ae !== be) return ae - be;
+                return a.category.localeCompare(b.category);
+              });
+              const breakdownRows = [
+                { label: text.xpFromExercises, value: xpBreakdown.exercises, color: "#90C8FF" },
+                { label: text.xpFromSessions, value: xpBreakdown.sessions, color: "#3FB98A" },
+                { label: text.xpFromDays, value: xpBreakdown.days, color: "#FFD060" },
+                { label: text.xpFromCardio, value: xpBreakdown.cardio, color: "#FF9860" },
+                { label: text.xpFromMeditation, value: xpBreakdown.meditation, color: "#B8A0FF" },
+                { label: text.xpFromNutrition, value: xpBreakdown.nutrition, color: "#3FB98A" },
+                { label: text.xpFromWater, value: xpBreakdown.water, color: "#90C8FF" },
+                { label: text.xpFromPRs, value: xpBreakdown.prs, color: "#FFD060" },
+                { label: text.xpFromBody, value: xpBreakdown.body, color: "#90C8FF" },
+                { label: text.xpFromStreaks, value: xpBreakdown.streaks, color: "#B8A0FF" },
+              ].filter(row => row.value > 0);
+              return (
+                <div className="detail-list">
+                  <div className="home-card">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: rankInfo.rank.color, fontFamily: "'Orbitron', monospace" }}>
+                        {text.rank}
+                      </p>
+                      <p style={{ fontSize: 10, letterSpacing: 2, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                        {totalXp} {text.xpEarned}
+                      </p>
+                    </div>
+                    <p style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: rankInfo.rank.color, lineHeight: 1, marginBottom: 8 }}>
+                      {rankLabel}
+                    </p>
+                    {rankInfo.next ? (
+                      <>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginBottom: 6 }}>
+                          <span>{rankInfo.xpIntoRank} / {rankInfo.xpToNext} XP</span>
+                          <span>{text.nextRank}: {nextLabel}</span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${rankInfo.progressPct}%`, background: rankInfo.rank.color, borderRadius: 4, transition: "width 0.4s ease" }} />
+                        </div>
+                      </>
+                    ) : (
+                      <p style={{ fontSize: 12, color: rankInfo.rank.color, fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>{text.maxRank} ✓</p>
+                    )}
+                  </div>
+
+                  <div className="detail-grid">
+                    <div className="detail-card">
+                      <p className="detail-label">{text.dailyStreakLabel}</p>
+                      <p className="detail-value" style={{ color: "#FFD060" }}>{dailyStreak}</p>
+                    </div>
+                    <div className="detail-card">
+                      <p className="detail-label">{text.weeklyStreakLabel}</p>
+                      <p className="detail-value" style={{ color: "#B8A0FF" }}>{weeklyStreak}</p>
+                    </div>
+                    <div className="detail-card">
+                      <p className="detail-label">{text.earnedBadgesLabel}</p>
+                      <p className="detail-value" style={{ color: "#3FB98A" }}>{earnedBadgeIds.length}<span style={{ fontSize: 11, color: "#8A8F99" }}> / {BADGE_DEFS.length}</span></p>
+                    </div>
+                  </div>
+
+                  {totalXp === 0 && (
+                    <p style={{ color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontSize: 13, textAlign: "center" }}>
+                      {text.xpStartCta}
+                    </p>
+                  )}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {sortedBadges.map(def => {
+                      const earned = earnedSet.has(def.id);
+                      const name = language === "es" ? def.es : def.en;
+                      const criterion = badgeCriterionLabel(def.id, language);
+                      return (
+                        <div
+                          key={def.id}
+                          className="home-card"
+                          style={{
+                            padding: 12,
+                            border: earned ? `1px solid ${def.color}66` : `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"}`,
+                            background: earned ? `${def.color}11` : (isLightMode ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.02)"),
+                            opacity: earned ? 1 : 0.7,
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                            <span style={{ fontSize: 14 }}>{earned ? "🏅" : "🔒"}</span>
+                            <p style={{ fontSize: 13, fontWeight: 800, fontFamily: "'DM Sans', sans-serif", color: earned ? def.color : (isLightMode ? "#5A6270" : "#AAAAAA") }}>
+                              {name}
+                            </p>
+                          </div>
+                          <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>
+                            {criterion}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {breakdownRows.length > 0 && (
+                    <div className="home-card">
+                      <p style={{ fontSize: 10, letterSpacing: 3, color: "#FFD060", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
+                        {text.xpBreakdown.toUpperCase()}
+                      </p>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        {breakdownRows.map(row => (
+                          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
+                            <span style={{ color: "#8A8F99" }}>{row.label}</span>
+                            <span style={{ fontFamily: "'Orbitron', monospace", color: row.color }}>{row.value} XP</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {activeFeaturePage === "photos" && (() => {
               const photosByDate = [...progressPhotos].sort((a, b) => (a.date || "").localeCompare(b.date || ""));
@@ -6549,17 +7129,62 @@ export default function AtlasLuthor() {
                     <div key={date} className="home-card">
                       <p className="detail-label">{date === getDateKey() ? (language === "es" ? "HOY" : "TODAY") : date}</p>
                       <div style={{ display: "grid", gap: 6, marginTop: 8 }}>
-                        {(list || []).map(item => (
-                          <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, background: isLightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)", borderRadius: 10, padding: "8px 10px" }}>
-                            <div style={{ minWidth: 0 }}>
-                              <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{cardioTypeLabel(item.type, language)}</p>
-                              <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
-                                {item.durationMin} {text.minutesShort}{item.distance > 0 ? ` · ${fmtDist(item.distance)} · ${formatPace(item.distance, item.durationMin, unitSystem)}` : ""} · {item.calories} kcal
-                              </p>
+                        {(list || []).map(item => {
+                          const done = isCardioCompleted(item);
+                          return (
+                            <div
+                              key={item.id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                background: isLightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)",
+                                borderRadius: 10,
+                                padding: "8px 10px",
+                                opacity: done ? 1 : 0.55,
+                              }}
+                            >
+                              <button
+                                type="button"
+                                aria-label={done ? text.markPending : text.markDone}
+                                onClick={() => toggleCardioCompleted(date, item.id)}
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: "50%",
+                                  border: `2px solid ${done ? "#3FB98A" : (isLightMode ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.22)")}`,
+                                  background: done ? "#3FB98A" : "transparent",
+                                  color: done ? (isLightMode ? "#FFFFFF" : "#050507") : "transparent",
+                                  fontSize: 14,
+                                  fontWeight: 900,
+                                  cursor: "pointer",
+                                  flexShrink: 0,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  padding: 0,
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {done ? "✓" : ""}
+                              </button>
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <p style={{ fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{cardioTypeLabel(item.type, language)}</p>
+                                  {!done && (
+                                    <span style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", fontFamily: "'Orbitron', monospace", padding: "2px 6px", borderRadius: 999, border: `1px solid ${isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.14)"}` }}>
+                                      {text.cardioPending}
+                                    </span>
+                                  )}
+                                </div>
+                                <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
+                                  {item.durationMin} {text.minutesShort}{item.distance > 0 ? ` · ${fmtDist(item.distance)} · ${formatPace(item.distance, item.durationMin, unitSystem)}` : ""} · {item.calories} kcal
+                                </p>
+                              </div>
+                              <button className="edit-btn" onClick={() => removeCardioSession(date, item.id)} style={{ color: "#E5604D", flexShrink: 0 }}>{text.removeBtn}</button>
                             </div>
-                            <button className="edit-btn" onClick={() => removeCardioSession(date, item.id)} style={{ color: "#E5604D", flexShrink: 0 }}>{text.removeBtn}</button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
