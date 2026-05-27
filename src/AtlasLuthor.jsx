@@ -606,28 +606,69 @@ function badgeCriterionLabel(entry, language) {
   return `${entry.threshold} ${unit}`;
 }
 
-const DAILY_QUEST_POOL = [
-  { id: "d-3ex",    es: "Marca 3 ejercicios",           en: "Mark 3 exercises",         xp: 15, target: 3,  metric: "todayExercisesDone" },
-  { id: "d-cardio", es: "Completa 1 cardio",            en: "Complete 1 cardio",        xp: 20, target: 1,  metric: "todayCardioDone" },
-  { id: "d-water",  es: "Cumple tu meta de agua",       en: "Hit your water goal",      xp: 15, target: 1,  metric: "todayWaterHit" },
-  { id: "d-med",    es: "1 sesión de meditación",       en: "1 meditation session",     xp: 15, target: 1,  metric: "todayMeditation" },
-  { id: "d-meal",   es: "Registra una comida",          en: "Log a meal",               xp: 10, target: 1,  metric: "todayMealEntries" },
-  { id: "d-day",    es: "Completa el día entero",       en: "Complete the full day",    xp: 30, target: 1,  metric: "todayCompleted" },
-  { id: "d-pr",     es: "Marca un PR",                  en: "Hit a PR",                 xp: 40, target: 1,  metric: "todayPrs" },
-  { id: "d-weight", es: "Registra tu peso",             en: "Log your weight",          xp: 12, target: 1,  metric: "todayWeightLogged" },
-];
+// Daily quests are GENERATED from today's plan, not picked from a pool.
+// They push you to complete the actual workout/cardio scheduled for today, plus
+// a handful of cross-cutting habits (water, meditation, meals).
+function generateDailyQuests(daySessions) {
+  const quests = [];
+  const sessions = Array.isArray(daySessions) ? daySessions : [];
+  // Per muscle-group quests for today's training sessions.
+  const muscleTotals = {};
+  let hasWarmupCardio = false;
+  let hasWorkout = false;
+  sessions.forEach(s => {
+    if (s.warmup) hasWarmupCardio = true;
+    if (s.rest || !s.exercises || s.exercises.length === 0) return;
+    hasWorkout = true;
+    s.exercises.forEach(ex => {
+      const g = muscleGroupFor(ex.name);
+      if (g === "Other") return;
+      muscleTotals[g] = (muscleTotals[g] || 0) + 1;
+    });
+  });
+  Object.entries(muscleTotals).forEach(([muscle, total]) => {
+    const target = Math.min(PER_MUSCLE_REQUIRED, total);
+    quests.push({
+      id: `mg-${muscle.toLowerCase().replace(/\s+/g, "-")}`,
+      es: `Completa ${target} de ${muscle}`,
+      en: `Complete ${target} of ${muscle}`,
+      xp: 20,
+      target,
+      metric: `todayMuscle:${muscle}`,
+      kind: "muscle",
+    });
+  });
+  if (hasWorkout) {
+    quests.push({ id: "d-day",    es: "Completa el día entero",      en: "Complete the full day",   xp: 50, target: 1, metric: "todayCompleted" });
+  }
+  if (hasWarmupCardio) {
+    quests.push({ id: "d-cardio", es: "Haz tu cardio del día",       en: "Do today's cardio",       xp: 25, target: 1, metric: "todayCardioDone" });
+  } else {
+    quests.push({ id: "d-cardio", es: "Suma 1 sesión de cardio",     en: "Log 1 cardio session",    xp: 20, target: 1, metric: "todayCardioDone" });
+  }
+  // Cross-cutting daily habits.
+  quests.push({ id: "d-water", es: "Cumple tu meta de agua",        en: "Hit your water goal",       xp: 15, target: 1, metric: "todayWaterHit" });
+  quests.push({ id: "d-meals", es: "Registra 3 comidas",            en: "Log 3 meals",               xp: 12, target: 3, metric: "todayMealEntries" });
+  quests.push({ id: "d-med",   es: "1 sesión de meditación",        en: "1 meditation session",      xp: 15, target: 1, metric: "todayMeditation" });
+  // PR quest only appears if there's a workout today.
+  if (hasWorkout) {
+    quests.push({ id: "d-pr",  es: "Marca un récord personal (PR)", en: "Hit a personal record",     xp: 40, target: 1, metric: "todayPrs" });
+  }
+  return quests;
+}
 
 const WEEKLY_QUEST_POOL = [
   { id: "w-3days",   es: "3 días de entreno",           en: "3 training days",          xp: 60,  target: 3, metric: "weekTrainingDays" },
+  { id: "w-4days",   es: "4 días de entreno",           en: "4 training days",          xp: 90,  target: 4, metric: "weekTrainingDays" },
   { id: "w-5cardio", es: "5 cardios esta semana",       en: "5 cardios this week",      xp: 80,  target: 5, metric: "weekCardioDone" },
   { id: "w-100",     es: "Protocolo al 100%",           en: "100% protocol",            xp: 100, target: 100, metric: "weeklyProgress" },
   { id: "w-water5",  es: "Meta de agua 5 días",         en: "Water goal 5 days",        xp: 60,  target: 5, metric: "weekWaterDays" },
   { id: "w-kcal3",   es: "Meta de kcal 3 días",         en: "Kcal goal 3 days",         xp: 50,  target: 3, metric: "weekFoodDays" },
   { id: "w-med5",    es: "5 meditaciones",              en: "5 meditations",            xp: 60,  target: 5, metric: "weekMeditationCount" },
+  { id: "w-pr",      es: "Marca al menos 1 PR",         en: "Hit at least 1 PR",        xp: 80,  target: 1, metric: "weekPrCount" },
 ];
 
-// Deterministic quest picker: same seed → same quests, but adjacent seeds give
-// substantially different selections (good shuffling).
+// Deterministic weekly quest picker.
 function pickQuests(pool, count, seedStr) {
   const base = [...String(seedStr)].reduce((a, c) => Math.imul(a ^ c.charCodeAt(0), 2654435761) >>> 0, 0xdeadbeef);
   const indexed = pool.map((q, i) => {
@@ -639,7 +680,13 @@ function pickQuests(pool, count, seedStr) {
 }
 
 function questProgress(quest, ctx) {
-  const value = Number(ctx[quest.metric]) || 0;
+  let value;
+  if (typeof quest.metric === "string" && quest.metric.startsWith("todayMuscle:")) {
+    const muscle = quest.metric.slice("todayMuscle:".length);
+    value = (ctx.todayMuscleDone && ctx.todayMuscleDone[muscle]) || 0;
+  } else {
+    value = Number(ctx[quest.metric]) || 0;
+  }
   const done = value >= quest.target;
   return { done, value, target: quest.target };
 }
@@ -1212,9 +1259,9 @@ const UI_TEXT = {
     manualSave: "Manual save",
     autoSnapshot: "Auto snapshot",
     badgesLabel: "BADGES",
-    achievements: "Achievements",
-    achievementsLabel: "Achievements",
-    progressAtlas: "ATLAS PROGRESS",
+    achievements: "Missions",
+    achievementsLabel: "Missions",
+    progressAtlas: "ATLAS RANK",
     rank: "Rank",
     nextRank: "Next rank",
     maxRank: "Max rank",
@@ -1243,7 +1290,7 @@ const UI_TEXT = {
     xpFromPRs: "PRs",
     xpFromBody: "Body tracking",
     xpFromStreaks: "Streaks",
-    featDescAchievements: "Your XP, current rank, daily and weekly streaks, and all unlockable badges.",
+    featDescAchievements: "Today's personalized missions, your rank, streaks, activity heatmap, and unlockable badges.",
     dailyQuests: "Today's Quests",
     weeklyQuests: "Weekly Quests",
     questCompleted: "Quest done · +{xp} XP",
@@ -1596,9 +1643,9 @@ const UI_TEXT = {
     manualSave: "Guardado manual",
     autoSnapshot: "Captura automática",
     badgesLabel: "INSIGNIAS",
-    achievements: "Logros",
-    achievementsLabel: "Logros",
-    progressAtlas: "PROGRESO ATLAS",
+    achievements: "Misiones",
+    achievementsLabel: "Misiones",
+    progressAtlas: "ATLAS RANK",
     rank: "Rango",
     nextRank: "Siguiente rango",
     maxRank: "Rango máximo",
@@ -1627,7 +1674,7 @@ const UI_TEXT = {
     xpFromPRs: "PRs",
     xpFromBody: "Mediciones",
     xpFromStreaks: "Rachas",
-    featDescAchievements: "Tu XP, rango actual, rachas diarias y semanales, y todas las insignias por desbloquear.",
+    featDescAchievements: "Misiones personalizadas del día, tu rango, rachas, heatmap de actividad e insignias por desbloquear.",
     dailyQuests: "Misiones de Hoy",
     weeklyQuests: "Misiones Semanales",
     questCompleted: "Misión completada · +{xp} XP",
@@ -3253,15 +3300,15 @@ export default function AtlasLuthor() {
   const todayDisplayName = displayDay(weeklyMetrics.today);
   const featurePageLabels = language === "es"
     ? { today:"Hoy", body:"Cuerpo", score:"Puntaje", calendar:"Calendario", prs:"Récords",
-        fatigue:"Fatiga", goals:"Metas", progress:"Progreso", badges:"Insignias",
+        fatigue:"Fatiga", goals:"Metas", progress:"Progreso",
         photos:"Fotos", metrics:"Métricas", week:"Semana", water:"Agua", coach:"Coach",
         nutrition:"Nutrición", cardio:"Cardio", challenges:"Retos", meditation:"Meditación",
-        achievements:"Logros" }
+        achievements:"Misiones" }
     : { today:"Today", body:"Body", score:"Score", calendar:"Calendar", prs:"PRs",
-        fatigue:"Fatigue", goals:"Goals", progress:"Progress", badges:"Badges",
+        fatigue:"Fatigue", goals:"Goals", progress:"Progress",
         photos:"Photos", metrics:"Metrics", week:"Week", water:"Water", coach:"Coach",
         nutrition:"Nutrition", cardio:"Cardio", challenges:"Challenges", meditation:"Meditation",
-        achievements:"Achievements" };
+        achievements:"Missions" };
   const featurePages = [
     { id: "today", title: text.todayCommand, label: featurePageLabels.today, accent: themeFor(weeklyMetrics.todayType).accent },
     { id: "body", title: text.bodyStatus, label: featurePageLabels.body, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
@@ -3274,7 +3321,6 @@ export default function AtlasLuthor() {
     { id: "goals", title: text.myGoals, label: featurePageLabels.goals, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "challenges", title: text.challenges, label: featurePageLabels.challenges, accent: "#B8A0FF" },
     { id: "progress", title: text.progressMemory, label: featurePageLabels.progress, accent: "#90C8FF" },
-    { id: "badges", title: text.streakBadges, label: featurePageLabels.badges, accent: "#B8A0FF" },
     { id: "achievements", title: text.achievements, label: featurePageLabels.achievements, accent: "#FFD060" },
     { id: "photos", title: text.progressPhotos, label: featurePageLabels.photos, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
     { id: "metrics", title: text.weeklyMetrics, label: featurePageLabels.metrics, accent: isLightMode ? "#0C0C10" : "#FFFFFF" },
@@ -3462,10 +3508,15 @@ export default function AtlasLuthor() {
     const calStatus = calendarLog[today]?.status;
     const todayCompleted = calStatus === "completed" ? 1 : 0;
     let todayExercisesDone = 0;
+    const todayMuscleDone = {};
     const todayDayName = getTodayDayName();
     (workoutData[todayDayName]?.sessions || []).forEach((s, sessionIndex) => {
-      s.exercises.forEach((_, i) => {
-        if (checked[`${todayDayName}-${sessionIndex}-${i}`]) todayExercisesDone += 1;
+      s.exercises.forEach((ex, i) => {
+        if (checked[`${todayDayName}-${sessionIndex}-${i}`]) {
+          todayExercisesDone += 1;
+          const g = muscleGroupFor(ex.name);
+          if (g !== "Other") todayMuscleDone[g] = (todayMuscleDone[g] || 0) + 1;
+        }
       });
     });
     const todayPrs = Object.entries(exerciseNotes).filter(([, note]) => {
@@ -3474,7 +3525,7 @@ export default function AtlasLuthor() {
       return ts.startsWith(today);
     }).length;
     const todayWeightLogged = progressLog.some(p => p.date === today && p.type === "manual") ? 1 : 0;
-    return { todayExercisesDone, todayCardioDone, todayMeditation, todayMealEntries: todayFoodEntries, todayWaterHit, todayCompleted, todayPrs, todayWeightLogged };
+    return { todayExercisesDone, todayMuscleDone, todayCardioDone, todayMeditation, todayMealEntries: todayFoodEntries, todayWaterHit, todayCompleted, todayPrs, todayWeightLogged };
   }, [todayKey, foodLog, cardioLog, meditationLog, waterLog, calendarLog, workoutData, checked, exerciseNotes, progressLog]);
 
   const weekCounters = useMemo(() => {
@@ -3511,11 +3562,23 @@ export default function AtlasLuthor() {
       if (getWorkoutWeekKey(new Date(`${date}T00:00:00`)) !== weekKey) return;
       if (entry?.status === "trained" || entry?.status === "completed") weekTrainingDays += 1;
     });
-    return { weekCardioDone, weekWaterDays, weekFoodDays, weekMeditationCount, weekTrainingDays };
-  }, [currentWeekSeed, cardioLog, waterLog, foodLog, meditationLog, calendarLog, calorieTarget]);
+    let weekPrCount = 0;
+    Object.values(exerciseNotes).forEach(note => {
+      if (!note?.pr) return;
+      const ts = note.updatedAt || note.recordedAt || "";
+      if (!ts) return;
+      const noteDate = ts.slice(0, 10);
+      if (getWorkoutWeekKey(new Date(`${noteDate}T00:00:00`)) === weekKey) weekPrCount += 1;
+    });
+    return { weekCardioDone, weekWaterDays, weekFoodDays, weekMeditationCount, weekTrainingDays, weekPrCount };
+  }, [currentWeekSeed, cardioLog, waterLog, foodLog, meditationLog, calendarLog, calorieTarget, exerciseNotes]);
 
-  const todayQuests = useMemo(() => pickQuests(DAILY_QUEST_POOL, 3, todayKey), [todayKey]);
-  const weeklyQuests = useMemo(() => pickQuests(WEEKLY_QUEST_POOL, 3, currentWeekSeed), [currentWeekSeed]);
+  const todayDayName = getTodayDayName();
+  const todayQuests = useMemo(() => {
+    const sessions = workoutData[todayDayName]?.sessions || [];
+    return generateDailyQuests(sessions);
+  }, [workoutData, todayDayName]);
+  const weeklyQuests = useMemo(() => pickQuests(WEEKLY_QUEST_POOL, 4, currentWeekSeed), [currentWeekSeed]);
 
   const questCtx = useMemo(
     () => ({
@@ -6128,57 +6191,110 @@ export default function AtlasLuthor() {
               </div>
             </div>
 
-            <div
-              className="home-card"
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveFeaturePage("achievements")}
-              onKeyDown={event => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  setActiveFeaturePage("achievements");
-                }
-              }}
-              style={{ marginBottom: 14, cursor: "pointer" }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-                <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
-                  {text.progressAtlas}
-                </p>
-                <p style={{ fontSize: 10, letterSpacing: 2, color: rankInfo.rank.color, fontFamily: "'Orbitron', monospace" }}>
-                  {(language === "es" ? rankInfo.rank.es : rankInfo.rank.en).toUpperCase()} {subRankInfo.tierName}
-                </p>
-              </div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1 }}>{totalXp}</span>
-                <span style={{ fontSize: 12, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>{text.xpEarned}</span>
-                {dailyStreak > 0 && (
-                  <span style={{ fontSize: 11, color: "#FFD060", fontFamily: "'Orbitron', monospace", fontWeight: 900, padding: "3px 8px", borderRadius: 999, border: "1px solid rgba(255,208,96,0.4)", background: "rgba(255,208,96,0.08)" }}>
-                    🔥 {dailyStreak}
-                  </span>
-                )}
-                <span style={{ marginLeft: "auto", fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif" }}>
-                  🏅 {earnedBadgeIds.length}/{BADGE_TIER_ENTRIES.length}
-                </span>
-              </div>
-              <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginBottom: rankInfo.next ? 8 : 0 }}>
-                {text.questsTodayMini
-                  .replace("{done}", todayQuestStatus.filter(s => s.done).length)
-                  .replace("{total}", todayQuestStatus.length)}
-              </p>
-              {rankInfo.next ? (
-                <>
-                  <div style={{ height: 6, borderRadius: 4, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${rankInfo.progressPct}%`, background: rankInfo.rank.color, borderRadius: 4, transition: "width 0.4s ease" }} />
+            {(() => {
+              const rankColor = rankInfo.rank.color;
+              const rankName = language === "es" ? rankInfo.rank.es : rankInfo.rank.en;
+              const questsDone = todayQuestStatus.filter(s => s.done).length;
+              const questsTotal = todayQuestStatus.length;
+              return (
+                <div
+                  className="home-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActiveFeaturePage("achievements")}
+                  onKeyDown={event => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setActiveFeaturePage("achievements");
+                    }
+                  }}
+                  style={{
+                    marginBottom: 14,
+                    cursor: "pointer",
+                    background: isLightMode
+                      ? `linear-gradient(135deg, ${rankColor}14 0%, rgba(255,255,255,0.6) 100%)`
+                      : `linear-gradient(135deg, ${rankColor}1F 0%, rgba(12,12,16,0.85) 100%)`,
+                    border: `1px solid ${rankColor}44`,
+                    boxShadow: `0 0 24px ${rankColor}1A, inset 0 0 0 1px ${rankColor}22`,
+                  }}
+                >
+                  {/* Top row: rank label + tier chip */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                    <p style={{ fontSize: 9, letterSpacing: 3, color: rankColor, fontFamily: "'Orbitron', monospace" }}>
+                      {text.progressAtlas}
+                    </p>
+                    <span style={{ background: rankColor, color: "#050507", padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 900, fontFamily: "'Orbitron', monospace", letterSpacing: 2, boxShadow: `0 2px 10px ${rankColor}66` }}>
+                      {subRankInfo.tierName}
+                    </span>
                   </div>
-                  <p style={{ fontSize: 11, color: "#8A8F99", fontFamily: "'DM Sans', sans-serif", marginTop: 6 }}>
-                    {rankInfo.xpToNext - rankInfo.xpIntoRank} XP → {language === "es" ? rankInfo.next.es : rankInfo.next.en}
+
+                  {/* Rank name as protagonist */}
+                  <p style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: rankColor, lineHeight: 1, marginBottom: 10, textShadow: `0 0 18px ${rankColor}44` }}>
+                    {rankName}
                   </p>
-                </>
-              ) : (
-                <p style={{ fontSize: 11, color: rankInfo.rank.color, fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>{text.maxRank} ✓</p>
-              )}
-            </div>
+
+                  {/* Stats row */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontSize: 22, fontWeight: 900, fontFamily: "'Orbitron', monospace", color: isLightMode ? "#101015" : "#FFFFFF", lineHeight: 1 }}>{totalXp}</span>
+                      <span style={{ fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 2 }}>XP</span>
+                    </div>
+                    {dailyStreak > 0 && (
+                      <span style={{ fontSize: 12, color: "#FFD060", fontFamily: "'Orbitron', monospace", fontWeight: 900, padding: "4px 9px", borderRadius: 999, border: "1px solid rgba(255,208,96,0.4)", background: "rgba(255,208,96,0.10)" }}>
+                        🔥 {dailyStreak}
+                      </span>
+                    )}
+                    <span style={{ marginLeft: "auto", fontSize: 11, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'DM Sans', sans-serif", fontWeight: 700 }}>
+                      🏅 {earnedBadgeIds.length}/{BADGE_TIER_ENTRIES.length}
+                    </span>
+                  </div>
+
+                  {/* Progress bar to next rank */}
+                  {rankInfo.next ? (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#8A8F99", fontFamily: "'Orbitron', monospace", letterSpacing: 1, marginBottom: 5 }}>
+                        <span>{rankInfo.xpIntoRank}/{rankInfo.xpToNext}</span>
+                        <span>→ {language === "es" ? rankInfo.next.es : rankInfo.next.en}</span>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 6, background: isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: 14 }}>
+                        <div style={{ height: "100%", width: `${rankInfo.progressPct}%`, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}cc)`, borderRadius: 6, boxShadow: `0 0 8px ${rankColor}88`, transition: "width 0.4s ease" }} />
+                      </div>
+                    </>
+                  ) : (
+                    <p style={{ fontSize: 11, color: rankColor, fontFamily: "'Orbitron', monospace", letterSpacing: 2, marginBottom: 14 }}>{text.maxRank} ✓</p>
+                  )}
+
+                  {/* Today's quests progress as dots */}
+                  {questsTotal > 0 && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <p style={{ fontSize: 9, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                          {(language === "es" ? "MISIONES HOY" : "TODAY'S MISSIONS")}
+                        </p>
+                        <p style={{ fontSize: 11, color: questsDone === questsTotal ? "#3FB98A" : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'Orbitron', monospace", fontWeight: 900 }}>
+                          {questsDone}/{questsTotal}{questsDone === questsTotal ? " ✓" : ""}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {todayQuestStatus.map(({ quest, done }) => (
+                          <div
+                            key={quest.id}
+                            style={{
+                              flex: 1,
+                              height: 6,
+                              borderRadius: 4,
+                              background: done ? "#3FB98A" : (isLightMode ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.08)"),
+                              boxShadow: done ? "0 0 6px rgba(63,185,138,0.55)" : "none",
+                              transition: "background 0.3s ease",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="home-card" style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 10, letterSpacing: 3, color: isLightMode ? "#7A8090" : "#8A8F99", fontFamily: "'Orbitron', monospace", marginBottom: 10 }}>
