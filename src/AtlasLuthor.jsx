@@ -692,6 +692,8 @@ function questProgress(quest, ctx) {
 }
 
 const DAILY_LOGIN_XP = 10;
+const DAILY_LOGIN_MAX_PER_DAY = 2;
+const DAILY_LOGIN_COOLDOWN_HOURS = 6;
 const CONFETTI_PALETTE = ["#FFD060", "#3FB98A", "#90C8FF", "#FF9860", "#B8A0FF"];
 
 function deriveDailyStreak(calendarLog) {
@@ -1295,7 +1297,7 @@ const UI_TEXT = {
     weeklyQuests: "Weekly Quests",
     questCompleted: "Quest done · +{xp} XP",
     questProgressText: "{done} / {target}",
-    dailyCheckIn: "+{xp} XP · Day {day} streak",
+    dailyCheckIn: "+{xp} XP · Check-in {n}/{max}",
     activityHeatmap: "ACTIVITY (90 DAYS)",
     subRankUp: "{rank} ⬆",
     tierBronze: "Bronze",
@@ -1679,7 +1681,7 @@ const UI_TEXT = {
     weeklyQuests: "Misiones Semanales",
     questCompleted: "Misión completada · +{xp} XP",
     questProgressText: "{done} / {target}",
-    dailyCheckIn: "+{xp} XP · Día {day} de racha",
+    dailyCheckIn: "+{xp} XP · Check-in {n}/{max}",
     activityHeatmap: "ACTIVIDAD (90 DÍAS)",
     subRankUp: "{rank} ⬆",
     tierBronze: "Bronce",
@@ -2439,7 +2441,7 @@ export default function AtlasLuthor() {
   const [lastSeenRankId, setLastSeenRankId] = useState("initiate");
   const [lastSeenSubRank, setLastSeenSubRank] = useState("initiate-I");
   const [bonusXp, setBonusXp] = useState(0);
-  const [lastLoginDate, setLastLoginDate] = useState("");
+  const [loginCheckIns, setLoginCheckIns] = useState({}); // { "YYYY-MM-DD": [isoTs, ...] }
   const [completedQuests, setCompletedQuests] = useState({});
   const [claimedQuestXp, setClaimedQuestXp] = useState([]);
   const [xpFloats, setXpFloats] = useState([]);
@@ -2554,7 +2556,7 @@ export default function AtlasLuthor() {
       lastSeenRankId,
       lastSeenSubRank,
       bonusXp,
-      lastLoginDate,
+      loginCheckIns,
       completedQuests,
       claimedQuestXp,
     });
@@ -2591,7 +2593,7 @@ export default function AtlasLuthor() {
     lastSeenRankId,
     lastSeenSubRank,
     bonusXp,
-    lastLoginDate,
+    loginCheckIns,
     completedQuests,
     claimedQuestXp,
   ]);
@@ -3854,7 +3856,15 @@ export default function AtlasLuthor() {
     setLastSeenRankId(typeof data?.lastSeenRankId === "string" ? data.lastSeenRankId : "initiate");
     setLastSeenSubRank(typeof data?.lastSeenSubRank === "string" ? data.lastSeenSubRank : "initiate-I");
     setBonusXp(Number(data?.bonusXp) || 0);
-    setLastLoginDate(typeof data?.lastLoginDate === "string" ? data.lastLoginDate : "");
+    // Migrate legacy `lastLoginDate` (single string) into the new
+    // `loginCheckIns` (per-date array of timestamps).
+    let loadedCheckIns = {};
+    if (data?.loginCheckIns && typeof data.loginCheckIns === "object") {
+      loadedCheckIns = { ...data.loginCheckIns };
+    } else if (typeof data?.lastLoginDate === "string" && data.lastLoginDate) {
+      loadedCheckIns = { [data.lastLoginDate]: [`${data.lastLoginDate}T08:00:00.000Z`] };
+    }
+    setLoginCheckIns(loadedCheckIns);
     setCompletedQuests(data?.completedQuests && typeof data.completedQuests === "object" ? data.completedQuests : {});
     setClaimedQuestXp(Array.isArray(data?.claimedQuestXp) ? data.claimedQuestXp : []);
     setXpFloats([]);
@@ -4461,22 +4471,43 @@ export default function AtlasLuthor() {
     }
   };
 
-  // Daily login bonus: grant +DAILY_LOGIN_XP once per calendar day.
+  // Daily login bonus: at most DAILY_LOGIN_MAX_PER_DAY check-ins per calendar
+  // day, with a DAILY_LOGIN_COOLDOWN_HOURS cooldown between them. So opening
+  // the app 10 times in a row only ever pays the first; you have to wait
+  // hours for the second bonus.
   useEffect(() => {
     if (!activeUserId || loadedUserRef.current !== activeUserId) return;
     if (dailyLoginRef.current === activeUserId) return;
     dailyLoginRef.current = activeUserId;
     const today = getDateKey();
-    if (lastLoginDate === today) return;
-    // Only count it as a check-in once we've actually loaded; grant XP.
+    const todays = Array.isArray(loginCheckIns[today]) ? loginCheckIns[today] : [];
+    if (todays.length >= DAILY_LOGIN_MAX_PER_DAY) return;
+    const nowMs = Date.now();
+    const lastTs = todays[todays.length - 1];
+    if (lastTs) {
+      const hoursSinceLast = (nowMs - new Date(lastTs).getTime()) / 3600000;
+      if (hoursSinceLast < DAILY_LOGIN_COOLDOWN_HOURS) return;
+    }
     setBonusXp(prev => prev + DAILY_LOGIN_XP);
-    setLastLoginDate(today);
-    const streakDay = Math.max(1, dailyStreak || 1);
+    // Prune any date older than 30 days to keep the store small.
+    setLoginCheckIns(prev => {
+      const next = { ...prev };
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+      const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
+      Object.keys(next).forEach(k => { if (k < cutoffKey) delete next[k]; });
+      next[today] = [...todays, new Date(nowMs).toISOString()];
+      return next;
+    });
+    const checkinIndex = todays.length + 1; // 1 or 2
     window.setTimeout(() => {
-      flashToast("🔥 " + text.dailyCheckIn.replace("{xp}", DAILY_LOGIN_XP).replace("{day}", streakDay));
+      flashToast("🔥 " + text.dailyCheckIn
+        .replace("{xp}", DAILY_LOGIN_XP)
+        .replace("{n}", checkinIndex)
+        .replace("{max}", DAILY_LOGIN_MAX_PER_DAY));
     }, 600);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUserId, lastLoginDate]);
+  }, [activeUserId, loginCheckIns]);
 
   // Quest evaluation: when a daily/weekly quest goes from incomplete to
   // complete, pay its XP (once, via claimedQuestXp) and toast.
@@ -4753,7 +4784,8 @@ export default function AtlasLuthor() {
         if (typeof data.lastSeenRankId === "string") setLastSeenRankId(data.lastSeenRankId);
         if (typeof data.lastSeenSubRank === "string") setLastSeenSubRank(data.lastSeenSubRank);
         if (typeof data.bonusXp === "number") setBonusXp(data.bonusXp);
-        if (typeof data.lastLoginDate === "string") setLastLoginDate(data.lastLoginDate);
+        if (data.loginCheckIns && typeof data.loginCheckIns === "object") setLoginCheckIns(data.loginCheckIns);
+        else if (typeof data.lastLoginDate === "string" && data.lastLoginDate) setLoginCheckIns({ [data.lastLoginDate]: [`${data.lastLoginDate}T08:00:00.000Z`] });
         if (data.completedQuests && typeof data.completedQuests === "object") setCompletedQuests(data.completedQuests);
         if (Array.isArray(data.claimedQuestXp)) setClaimedQuestXp(data.claimedQuestXp);
         setShowDataTools(false);
@@ -4862,7 +4894,8 @@ export default function AtlasLuthor() {
       if (typeof data.lastSeenRankId === "string") setLastSeenRankId(data.lastSeenRankId);
       if (typeof data.lastSeenSubRank === "string") setLastSeenSubRank(data.lastSeenSubRank);
       if (typeof data.bonusXp === "number") setBonusXp(data.bonusXp);
-      if (typeof data.lastLoginDate === "string") setLastLoginDate(data.lastLoginDate);
+      if (data.loginCheckIns && typeof data.loginCheckIns === "object") setLoginCheckIns(data.loginCheckIns);
+      else if (typeof data.lastLoginDate === "string" && data.lastLoginDate) setLoginCheckIns({ [data.lastLoginDate]: [`${data.lastLoginDate}T08:00:00.000Z`] });
       if (data.completedQuests && typeof data.completedQuests === "object") setCompletedQuests(data.completedQuests);
       if (Array.isArray(data.claimedQuestXp)) setClaimedQuestXp(data.claimedQuestXp);
       setCloudSettings(prev => ({ ...prev, status: "Downloaded" }));
