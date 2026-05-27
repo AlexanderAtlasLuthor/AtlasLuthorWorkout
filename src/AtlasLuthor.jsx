@@ -360,6 +360,48 @@ function muscleGroupFor(name) {
   }
   return "Other";
 }
+
+const PER_MUSCLE_REQUIRED = 4;
+
+function muscleGroupProgress(exercises, isCheckedFn) {
+  const groups = {};
+  exercises.forEach((ex, i) => {
+    const group = muscleGroupFor(ex.name);
+    if (!groups[group]) groups[group] = { total: 0, done: 0, indexes: [], doneIndexes: [] };
+    groups[group].total += 1;
+    groups[group].indexes.push(i);
+    if (isCheckedFn(i)) {
+      groups[group].done += 1;
+      groups[group].doneIndexes.push(i);
+    }
+  });
+  Object.values(groups).forEach(g => {
+    g.cap = Math.min(PER_MUSCLE_REQUIRED, g.total);
+    g.satisfied = g.done >= g.cap;
+  });
+  return groups;
+}
+
+function sessionEffectiveCount(exercises, isCheckedFn) {
+  const groups = muscleGroupProgress(exercises, isCheckedFn);
+  let total = 0;
+  let done = 0;
+  Object.values(groups).forEach(g => {
+    total += g.cap;
+    done += Math.min(g.cap, g.done);
+  });
+  return { total, done, groups };
+}
+
+function isExerciseOptional(exercises, exerciseIndex, isCheckedFn) {
+  if (isCheckedFn(exerciseIndex)) return false;
+  const group = muscleGroupFor(exercises[exerciseIndex]?.name);
+  let groupDone = 0;
+  exercises.forEach((ex, i) => {
+    if (muscleGroupFor(ex.name) === group && isCheckedFn(i)) groupDone += 1;
+  });
+  return groupDone >= PER_MUSCLE_REQUIRED;
+}
 const SET_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8].map(String);
 const REP_OPTIONS = [4, 5, 6, 8, 10, 12, 15, 20, "3x3", "AMRAP"].map(String);
 const RPE_OPTIONS = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -2349,23 +2391,31 @@ export default function AtlasLuthor() {
     const date = getDateKey();
     const today = getTodayDayName();
     const todaySessions = workoutData[today].sessions;
-    const dayExercises = todaySessions.reduce((sum, currentSession) => sum + currentSession.exercises.length, 0);
-    const dayDone = todaySessions.reduce(
-      (sum, currentSession, sessionIndex) =>
-        sum + currentSession.exercises.filter((_, exerciseIndex) => nextChecked[getExerciseKey(today, sessionIndex, exerciseIndex)]).length,
-      0
-    );
+    let dayEffectiveTotal = 0;
+    let dayEffectiveDone = 0;
+    todaySessions.forEach((currentSession, sessionIndex) => {
+      const isChecked = exerciseIndex => !!nextChecked[getExerciseKey(today, sessionIndex, exerciseIndex)];
+      const { total, done } = sessionEffectiveCount(currentSession.exercises, isChecked);
+      dayEffectiveTotal += total;
+      dayEffectiveDone += done;
+    });
     // Today is never "missed" while it is still in progress.
     const status =
-      dayExercises === 0 ? "rest" : dayDone === dayExercises ? "completed" : dayDone > 0 ? "trained" : "planned";
+      dayEffectiveTotal === 0
+        ? "rest"
+        : dayEffectiveDone >= dayEffectiveTotal
+          ? "completed"
+          : dayEffectiveDone > 0
+            ? "trained"
+            : "planned";
 
     setCalendarLog(prev => ({
       ...prev,
       [date]: {
         date,
         status,
-        completed: dayDone,
-        total: dayExercises,
+        completed: dayEffectiveDone,
+        total: dayEffectiveTotal,
         dayName: today,
         updatedAt: new Date().toISOString(),
       },
@@ -2458,9 +2508,18 @@ export default function AtlasLuthor() {
     }
   };
 
-  const total = session.exercises.length;
-  const done = session.exercises.filter((_, i) => checked[`${activeDay}-${activeSession}-${i}`]).length;
+  const sessionIsChecked = i => !!checked[`${activeDay}-${activeSession}-${i}`];
+  const sessionGroupMap = muscleGroupProgress(session.exercises, sessionIsChecked);
+  const sessionEffective = (() => {
+    let t = 0; let d = 0;
+    Object.values(sessionGroupMap).forEach(g => { t += g.cap; d += Math.min(g.cap, g.done); });
+    return { total: t, done: d };
+  })();
+  const total = sessionEffective.total;
+  const done = sessionEffective.done;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const rawTotal = session.exercises.length;
+  const rawDone = session.exercises.filter((_, i) => sessionIsChecked(i)).length;
 
   const weeklyMetrics = useMemo(() => {
     let totalExercises = 0;
@@ -2474,35 +2533,34 @@ export default function AtlasLuthor() {
     let trainingSessions = 0;
 
     days.forEach(dayName => {
-      let dayExercises = 0;
-      let dayDone = 0;
+      let dayEffectiveTotal = 0;
+      let dayEffectiveDone = 0;
 
       workoutData[dayName].sessions.forEach((currentSession, sessionIndex) => {
         if (!currentSession.rest) workoutSessions += 1;
         if (!currentSession.rest && currentSession.exercises.length > 0) trainingSessions += 1;
         if (currentSession.warmup) cardioSessions += 1;
 
-        totalExercises += currentSession.exercises.length;
-        dayExercises += currentSession.exercises.length;
         totalSets += currentSession.exercises.reduce((sum, ex) => sum + Number(ex.sets || 0), 0);
 
-        const sessionDone = currentSession.exercises.filter(
-          (_, exerciseIndex) => checked[`${dayName}-${sessionIndex}-${exerciseIndex}`]
-        ).length;
+        const isChecked = exerciseIndex => !!checked[`${dayName}-${sessionIndex}-${exerciseIndex}`];
+        const { total: sessionTotal, done: sessionDone } = sessionEffectiveCount(currentSession.exercises, isChecked);
 
+        totalExercises += sessionTotal;
         completedExercises += sessionDone;
-        dayDone += sessionDone;
+        dayEffectiveTotal += sessionTotal;
+        dayEffectiveDone += sessionDone;
 
-        if (currentSession.exercises.length > 0 && sessionDone === currentSession.exercises.length) {
+        if (sessionTotal > 0 && sessionDone >= sessionTotal) {
           completedSessions += 1;
         }
       });
 
-      if (dayExercises > 0) {
+      if (dayEffectiveTotal > 0) {
         trainingDays += 1;
       }
 
-      if (dayExercises > 0 && dayDone === dayExercises) {
+      if (dayEffectiveTotal > 0 && dayEffectiveDone >= dayEffectiveTotal) {
         completedDays += 1;
       }
     });
@@ -7691,9 +7749,47 @@ export default function AtlasLuthor() {
                 </div>
               )}
 
+              {Object.keys(sessionGroupMap).length > 0 && rawTotal !== total && (
+                <div style={{ marginBottom: 14, padding: "12px 14px", borderRadius: 12, background: isLightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", border: `1px solid ${isLightMode ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                    <p style={{ fontSize: 10, letterSpacing: 3, color: theme.accent, fontFamily: "'Orbitron', monospace" }}>
+                      {language === "es" ? "POR MÚSCULO" : "PER MUSCLE"}
+                    </p>
+                    <p style={{ fontSize: 10, letterSpacing: 2, color: "#8A8F99", fontFamily: "'Orbitron', monospace" }}>
+                      {language === "es" ? `Hasta ${PER_MUSCLE_REQUIRED} por músculo` : `Up to ${PER_MUSCLE_REQUIRED} per muscle`}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {Object.entries(sessionGroupMap).map(([groupName, g]) => {
+                      const shown = Math.min(g.cap, g.done);
+                      return (
+                        <div
+                          key={groupName}
+                          style={{
+                            padding: "5px 9px",
+                            borderRadius: 999,
+                            fontSize: 11,
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontWeight: 700,
+                            border: `1px solid ${g.satisfied ? "#3FB98A88" : (isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.14)")}`,
+                            background: g.satisfied ? "#3FB98A22" : "transparent",
+                            color: g.satisfied ? "#3FB98A" : (isLightMode ? "#5A6270" : "#AAAAAA"),
+                          }}
+                        >
+                          {groupName} {shown}/{g.cap}{g.satisfied ? " ✓" : ""}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {session.exercises.map((ex, i) => {
                 const key = `${activeDay}-${activeSession}-${i}`;
                 const isDone = !!checked[key];
+                const exerciseGroup = muscleGroupFor(ex.name);
+                const groupInfo = sessionGroupMap[exerciseGroup];
+                const isOptional = !isDone && !!groupInfo && groupInfo.done >= groupInfo.cap;
                 const note = exerciseNotes[key];
                 const hasNote = note && (note.pain || note.difficulty || note.pr || note.technique);
                 const setsDone = Number(setProgress[key] || 0);
@@ -7845,7 +7941,7 @@ export default function AtlasLuthor() {
                     role="button"
                     tabIndex={0}
                     aria-pressed={isDone}
-                    aria-label={`${ex.name}, ${isDone ? "completed" : "not completed"}`}
+                    aria-label={`${ex.name}, ${isDone ? "completed" : isOptional ? "optional" : "not completed"}`}
                     onClick={() => {
                       if (!isDone) {
                         setExpandedExerciseIndex(i);
@@ -7861,7 +7957,10 @@ export default function AtlasLuthor() {
                         else toggleExercise(i);
                       }
                     }}
-                    style={highlightedExerciseIndex === i && !isDone ? { borderColor: theme.accent, boxShadow: `0 0 22px ${theme.accent}22` } : {}}
+                    style={{
+                      ...(highlightedExerciseIndex === i && !isDone ? { borderColor: theme.accent, boxShadow: `0 0 22px ${theme.accent}22` } : {}),
+                      ...(isOptional ? { opacity: 0.55 } : {}),
+                    }}
                   >
                     <div
                       className="check"
@@ -7872,9 +7971,16 @@ export default function AtlasLuthor() {
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 15, fontWeight: 600, color: isDone ? (isLightMode ? "#9CA1AC" : "#555") : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {ex.name}
-                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                        <p style={{ fontSize: 15, fontWeight: 600, color: isDone ? (isLightMode ? "#9CA1AC" : "#555") : (isLightMode ? "#101015" : "#FFFFFF"), fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>
+                          {ex.name}
+                        </p>
+                        {isOptional && (
+                          <span style={{ fontSize: 9, letterSpacing: 2, color: "#8A8F99", fontFamily: "'Orbitron', monospace", padding: "2px 6px", borderRadius: 999, border: `1px solid ${isLightMode ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.14)"}`, flexShrink: 0 }}>
+                            {language === "es" ? "OPCIONAL" : "OPTIONAL"}
+                          </span>
+                        )}
+                      </div>
                       <p style={{ fontSize: 12, color: isDone ? "#6E7480" : (isLightMode ? "#5A6270" : "#888"), marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>
                         {ex.sets} {text.setsWord} x {ex.reps} {text.repsWord}
                       </p>
